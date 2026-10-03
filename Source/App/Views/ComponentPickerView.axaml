@@ -1,0 +1,103 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Unvault.App.ViewModels"
+             x:Class="Unvault.App.Views.ComponentPickerView"
+             x:DataType="vm:ComponentPickerViewModel"
+             Width="660">
+
+    <UserControl.Resources>
+        <DataTemplate x:Key="OptionTemplate" DataType="vm:ComponentOptionViewModel">
+            <Grid ColumnDefinitions="*,Auto" Margin="0,1">
+                <CheckBox IsChecked="{Binding IsSelected}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBlock Text="{Binding DisplayName}" VerticalAlignment="Center" />
+                        <Border Classes="chip success" IsVisible="{Binding WasInstalled}">
+                            <TextBlock Text="installed" />
+                        </Border>
+                    </StackPanel>
+                </CheckBox>
+                <StackPanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding SizeText}" HorizontalAlignment="Right" />
+                    <TextBlock Text="{Binding DetailText}" Classes="muted small" HorizontalAlignment="Right" />
+                </StackPanel>
+            </Grid>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <Border Classes="card" Padding="0" BoxShadow="0 12 40 0 #80000000">
+        <Grid RowDefinitions="Auto,*,Auto" MaxHeight="680">
+
+            <StackPanel Margin="24,20,24,8" Spacing="2">
+                <TextBlock Text="{Binding Title}" FontSize="20" FontWeight="SemiBold" />
+                <TextBlock Text="{Binding Subtitle}" Classes="muted small" />
+            </StackPanel>
+
+            <ScrollViewer Grid.Row="1" Padding="24,0">
+                <StackPanel>
+                    <!-- First, so a different version can be picked while one is still loading. -->
+                    <StackPanel IsVisible="{Binding IsInstall}">
+                        <TextBlock Text="VERSION" Classes="section" />
+                        <ComboBox ItemsSource="{Binding VersionOptions}" SelectedItem="{Binding SelectedVersion}" HorizontalAlignment="Stretch">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate DataType="vm:EngineVersionOption">
+                                    <TextBlock Text="{Binding Label}" />
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </StackPanel>
+
+                    <StackPanel IsVisible="{Binding IsLoading}" Margin="0,24" Spacing="10">
+                        <ProgressBar IsIndeterminate="True" />
+                        <TextBlock Text="Reading the build manifest… (the first time for a version takes a few seconds)" Classes="muted" HorizontalAlignment="Center" />
+                    </StackPanel>
+
+                    <Border Classes="banner warning" IsVisible="{Binding Error, Converter={x:Static ObjectConverters.IsNotNull}}" Margin="0,12">
+                        <TextBlock Text="{Binding Error}" TextWrapping="Wrap" />
+                    </Border>
+
+                    <StackPanel IsVisible="{Binding IsReady}">
+                        <TextBlock Text="LOCATION" Classes="section" />
+                        <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding IsInstall}">
+                            <TextBox Text="{Binding Directory}" />
+                            <Button Grid.Column="1" Content="Browse…" Margin="8,0,0,0" Command="{Binding BrowseCommand}" />
+                        </Grid>
+                        <TextBlock Text="{Binding Directory}" IsVisible="{Binding IsModify}" />
+
+                        <TextBlock Text="CONTENT" Classes="section" />
+                        <Grid ColumnDefinitions="*,Auto" Margin="0,1">
+                            <CheckBox IsChecked="True" IsEnabled="False" Content="Core components (required)" />
+                            <TextBlock Grid.Column="1" Text="{Binding CoreSizeText}" VerticalAlignment="Center" />
+                        </Grid>
+                        <ItemsControl ItemsSource="{Binding ContentOptions}" ItemTemplate="{StaticResource OptionTemplate}" />
+
+                        <TextBlock Text="TARGET PLATFORMS" Classes="section" IsVisible="{Binding HasPlatformOptions}" />
+                        <ItemsControl ItemsSource="{Binding PlatformOptions}" ItemTemplate="{StaticResource OptionTemplate}" />
+
+                        <TextBlock Text="DEBUGGING" Classes="section" IsVisible="{Binding HasDebugOptions}" />
+                        <ItemsControl ItemsSource="{Binding DebugOptions}" ItemTemplate="{StaticResource OptionTemplate}" />
+
+                        <Border Classes="banner" Margin="0,16,0,0" IsVisible="{Binding Note, Converter={x:Static ObjectConverters.IsNotNull}}">
+                            <TextBlock Text="{Binding Note}" TextWrapping="Wrap" />
+                        </Border>
+                        <Border Classes="banner warning" Margin="0,8,0,0" IsVisible="{Binding Warning, Converter={x:Static ObjectConverters.IsNotNull}}">
+                            <TextBlock Text="{Binding Warning}" TextWrapping="Wrap" />
+                        </Border>
+                    </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
+
+            <Border Grid.Row="2" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="0,1,0,0" Padding="24,14" Margin="0,16,0,0">
+                <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel VerticalAlignment="Center" IsVisible="{Binding IsReady}">
+                        <TextBlock Text="{Binding SummaryText}" FontWeight="SemiBold" />
+                        <TextBlock Text="{Binding FreeSpaceText}" Classes="muted small" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                        <Button Content="Cancel" Command="{Binding CancelCommand}" />
+                        <Button Content="{Binding ConfirmText}" Classes="accent" Command="{Binding ConfirmCommand}" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
+    </Border>
+</UserControl>

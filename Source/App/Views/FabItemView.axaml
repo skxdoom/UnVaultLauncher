@@ -1,0 +1,62 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Unvault.App.ViewModels"
+             x:Class="Unvault.App.Views.FabItemView"
+             x:DataType="vm:FabItemViewModel">
+
+    <!-- A fixed size, set by its row (FabRowView); only the gaps between tiles follow the window -->
+    <Border Classes="card" Padding="0">
+        <Grid RowDefinitions="Auto,*,Auto">
+
+            <!-- Picture, 16:9, with the type as a badge -->
+            <Border x:Name="Picture" Height="133" CornerRadius="10,10,0,0" ClipToBounds="True" Background="#222733">
+                <Panel>
+                    <TextBlock Text="{Binding KindLabel}" Classes="muted small" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    <Image Source="{Binding Thumbnail}" Stretch="UniformToFill" />
+                    <Border Classes="chip" Background="#CC0E1014" Margin="8" HorizontalAlignment="Left" VerticalAlignment="Top">
+                        <TextBlock Text="{Binding KindLabel}" />
+                    </Border>
+                </Panel>
+            </Border>
+
+            <!-- What it is, who made it, which engines it's for; then what you have of it. Each part has a fixed
+                 number of lines (title 2, the rest 1, cut with … and shown whole on hover), so tiles stay compact. -->
+            <StackPanel Grid.Row="1" Margin="12,9,12,0" Spacing="6">
+                <StackPanel Spacing="1">
+                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis"
+                               ToolTip.Tip="{Binding Title}" />
+                    <TextBlock Text="{Binding SellerText}" Classes="muted small" TextTrimming="CharacterEllipsis"
+                               IsVisible="{Binding SellerText, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                    <TextBlock Text="{Binding EngineVersionsText}" Classes="muted small" TextTrimming="CharacterEllipsis"
+                               ToolTip.Tip="{Binding EngineVersionsText}" />
+                </StackPanel>
+                <Grid ColumnDefinitions="Auto,Auto,*">
+                    <Border Classes="chip" Margin="0,0,4,0" IsVisible="{Binding IsBusy}">
+                        <TextBlock Text="Working…" />
+                    </Border>
+                    <Border Grid.Column="1" Classes="chip success" Margin="0,0,4,0" IsVisible="{Binding IsInstalled}" ToolTip.Tip="{Binding InstalledText}">
+                        <TextBlock Text="{Binding InstalledText}" TextTrimming="CharacterEllipsis" MaxWidth="120" />
+                    </Border>
+                    <Border Grid.Column="2" Classes="chip" HorizontalAlignment="Left" IsVisible="{Binding IsDownloaded}" ToolTip.Tip="{Binding DownloadedText}">
+                        <TextBlock Text="{Binding DownloadedPlateText}" TextTrimming="CharacterEllipsis" />
+                    </Border>
+                </Grid>
+            </StackPanel>
+
+            <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="12,8,12,12">
+                <Button Content="{Binding PrimaryText}" Classes="accent" Command="{Binding PrimaryCommand}" IsEnabled="{Binding IsIdle}"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
+                <Button Grid.Column="1" Content="⋯" Margin="6,0,0,0" ToolTip.Tip="More">
+                    <Button.Flyout>
+                        <MenuFlyout>
+                            <MenuItem Header="Download to Vault Cache" Command="{Binding DownloadCommand}" IsEnabled="{Binding IsInLibrary}" />
+                            <MenuItem Header="Show in Folder" Command="{Binding ShowInFolderCommand}" IsEnabled="{Binding HasFolder}" />
+                            <MenuItem Header="Open on Fab" Command="{Binding OpenFabPageCommand}" IsEnabled="{Binding HasFabPage}" />
+                            <MenuItem Header="Remove from Engine" Command="{Binding RemoveCommand}" IsEnabled="{Binding IsInstalled}" />
+                        </MenuFlyout>
+                    </Button.Flyout>
+                </Button>
+            </Grid>
+        </Grid>
+    </Border>
+</UserControl>

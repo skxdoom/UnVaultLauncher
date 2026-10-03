@@ -1,0 +1,168 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Unvault.App.App"
+             RequestedThemeVariant="Dark">
+
+    <Application.Resources>
+        <SolidColorBrush x:Key="WindowBackgroundBrush">#0E1014</SolidColorBrush>
+        <SolidColorBrush x:Key="HeaderBackgroundBrush">#13161C</SolidColorBrush>
+        <SolidColorBrush x:Key="CardBackgroundBrush">#171A21</SolidColorBrush>
+        <SolidColorBrush x:Key="CardHoverBrush">#1C2029</SolidColorBrush>
+        <SolidColorBrush x:Key="CardBorderBrush">#262B35</SolidColorBrush>
+        <SolidColorBrush x:Key="MutedTextBrush">#8B93A1</SolidColorBrush>
+        <SolidColorBrush x:Key="AccentBrushUL">#4F8CFF</SolidColorBrush>
+        <SolidColorBrush x:Key="SuccessBrush">#34C77B</SolidColorBrush>
+        <SolidColorBrush x:Key="WarningBrush">#F2A93B</SolidColorBrush>
+        <SolidColorBrush x:Key="DangerBrush">#EF5B5B</SolidColorBrush>
+        <SolidColorBrush x:Key="OverlayBrush">#B0000000</SolidColorBrush>
+
+        <!-- Width of the page content (Engines and Library alike), centered in wider windows -->
+        <x:Double x:Key="PageMaxWidth">1400</x:Double>
+
+        <!-- Fluent rests the scroll thumb at 2 px (16 px scaled by 0.125) and only widens it under the pointer. -->
+        <TransformOperations x:Key="VerticalSmallScrollThumbScaleTransform">scaleX(0.375) translateX(-2px)</TransformOperations>
+        <TransformOperations x:Key="HorizontalSmallScrollThumbScaleTransform">scaleY(0.375) translateY(-2px)</TransformOperations>
+    </Application.Resources>
+
+    <Application.Styles>
+        <FluentTheme>
+            <FluentTheme.Palettes>
+                <ColorPaletteResources x:Key="Dark" Accent="#FF4F8CFF" RegionColor="#FF0E1014" />
+            </FluentTheme.Palettes>
+        </FluentTheme>
+
+        <!-- Text -->
+        <Style Selector="TextBlock.muted">
+            <Setter Property="Foreground" Value="{StaticResource MutedTextBrush}" />
+        </Style>
+        <Style Selector="TextBlock.small">
+            <Setter Property="FontSize" Value="12" />
+        </Style>
+        <Style Selector="TextBlock.section">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{StaticResource MutedTextBrush}" />
+            <Setter Property="Margin" Value="0,16,0,6" />
+        </Style>
+
+        <!-- Cards -->
+        <Style Selector="Border.card">
+            <Setter Property="Background" Value="{StaticResource CardBackgroundBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource CardBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="10" />
+            <Setter Property="Padding" Value="16" />
+        </Style>
+        <Style Selector="Border.card:pointerover">
+            <Setter Property="Background" Value="{StaticResource CardHoverBrush}" />
+        </Style>
+
+        <!-- Version tile on engine cards -->
+        <Style Selector="Border.tile">
+            <Setter Property="Width" Value="64" />
+            <Setter Property="Height" Value="64" />
+            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="Background" Value="#222733" />
+        </Style>
+        <Style Selector="Border.tile.installed">
+            <Setter Property="Background" Value="#1D3461" />
+        </Style>
+
+        <!-- Status chips -->
+        <Style Selector="Border.chip">
+            <Setter Property="CornerRadius" Value="999" />
+            <Setter Property="Padding" Value="8,2" />
+            <Setter Property="Background" Value="#262B35" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Border.chip > TextBlock">
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{StaticResource MutedTextBrush}" />
+        </Style>
+        <Style Selector="Border.chip.success">
+            <Setter Property="Background" Value="#1A3A2A" />
+        </Style>
+        <Style Selector="Border.chip.success > TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource SuccessBrush}" />
+        </Style>
+        <Style Selector="Border.chip.warning">
+            <Setter Property="Background" Value="#3D2E14" />
+        </Style>
+        <Style Selector="Border.chip.warning > TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource WarningBrush}" />
+        </Style>
+        <Style Selector="Border.chip.danger">
+            <Setter Property="Background" Value="#3D1A1A" />
+        </Style>
+        <Style Selector="Border.chip.danger > TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource DangerBrush}" />
+        </Style>
+
+        <!-- Banners -->
+        <Style Selector="Border.banner">
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="14,10" />
+            <Setter Property="Background" Value="#16243D" />
+            <Setter Property="BorderBrush" Value="#24406E" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
+        <!-- A folder in a list (Settings > Project Folders), drawn like a read-only text box -->
+        <Style Selector="Border.folder">
+            <Setter Property="BorderBrush" Value="{StaticResource CardBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Padding" Value="10,0" />
+            <Setter Property="MinHeight" Value="34" />
+            <Setter Property="Margin" Value="0,0,0,6" />
+        </Style>
+        <Style Selector="Border.folder > TextBlock">
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Border.banner.warning">
+            <Setter Property="Background" Value="#2E2410" />
+            <Setter Property="BorderBrush" Value="#5A4519" />
+        </Style>
+
+        <!-- Buttons -->
+        <Style Selector="Button">
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Padding" Value="14,7" />
+        </Style>
+        <Style Selector="Button.subtle">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+        </Style>
+        <!-- Header tabs: the active one stays highlighted, also on hover -->
+        <Style Selector="Button.tab">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Foreground" Value="{StaticResource MutedTextBrush}" />
+        </Style>
+        <Style Selector="Button.tab.active /template/ ContentPresenter#PART_ContentPresenter, Button.tab.active:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#1D3461" />
+            <Setter Property="Foreground" Value="White" />
+        </Style>
+        <Style Selector="Button.clear">
+            <Setter Property="Padding" Value="7" />
+            <Setter Property="Margin" Value="0,0,3,0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+        </Style>
+        <Style Selector="Button.clear /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+        <Style Selector="Button.clear:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource CardBorderBrush}" />
+        </Style>
+        <Style Selector="Button.link">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Foreground" Value="{StaticResource AccentBrushUL}" />
+        </Style>
+    </Application.Styles>
+</Application>

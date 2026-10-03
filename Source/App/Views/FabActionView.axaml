@@ -1,0 +1,84 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Unvault.App.ViewModels"
+             x:Class="Unvault.App.Views.FabActionView"
+             x:DataType="vm:FabActionViewModel"
+             Width="640">
+
+    <Border Classes="card" Padding="0" BoxShadow="0 12 40 0 #80000000">
+        <Grid RowDefinitions="Auto,*,Auto" MaxHeight="620">
+
+            <StackPanel Margin="24,20,24,4" Spacing="2">
+                <TextBlock Text="{Binding Title}" FontSize="20" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                <TextBlock Text="{Binding Subtitle}" Classes="muted small" TextTrimming="CharacterEllipsis" />
+            </StackPanel>
+
+            <Grid Grid.Row="1" Margin="24,0" RowDefinitions="Auto,*,Auto">
+                <StackPanel>
+                    <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsLoading}" Margin="0,16" />
+
+                    <!-- Engines / projects -->
+                    <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding ShowsTargets}">
+                        <TextBlock Text="{Binding TargetsHeading}" Classes="section" />
+                        <Button Grid.Column="1" Classes="link" Content="Choose a .uproject…" Margin="0,16,0,6"
+                                Command="{Binding BrowseProjectFileCommand}" IsVisible="{Binding CanBrowseProject}" />
+                    </Grid>
+
+                    <!-- Version + folder (create project, download) -->
+                    <StackPanel IsVisible="{Binding ShowsVersionChoice}">
+                        <TextBlock Text="VERSION" Classes="section" />
+                        <ComboBox ItemsSource="{Binding VersionChoices}" SelectedItem="{Binding SelectedVersion}" HorizontalAlignment="Stretch">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate DataType="vm:FabVersionOption">
+                                    <TextBlock Text="{Binding Label}" />
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </StackPanel>
+                    <StackPanel IsVisible="{Binding ShowsProjectLocation}">
+                        <TextBlock Text="LOCATION" Classes="section" />
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBox Text="{Binding ProjectParent}" />
+                            <Button Grid.Column="1" Content="Browse…" Margin="8,0,0,0" Command="{Binding BrowseProjectParentCommand}" />
+                        </Grid>
+                        <TextBlock Text="PROJECT NAME" Classes="section" />
+                        <TextBox Text="{Binding ProjectName}" />
+                    </StackPanel>
+                </StackPanel>
+
+                <ListBox Grid.Row="1" ItemsSource="{Binding Targets}" SelectedItem="{Binding SelectedTarget}" IsVisible="{Binding ShowsTargets}"
+                         Background="Transparent" MaxHeight="340">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate DataType="vm:FabTargetViewModel">
+                            <Grid ColumnDefinitions="*,Auto" Opacity="{Binding IsAvailable, Converter={x:Static vm:Converters.AvailableOpacity}}">
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                                    <TextBlock Text="{Binding Subtitle}" Classes="muted small" TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+                                <Border Grid.Column="1" Classes="chip" VerticalAlignment="Center" Margin="8,0,0,0"
+                                        IsVisible="{Binding Badge, Converter={x:Static ObjectConverters.IsNotNull}}">
+                                    <TextBlock Text="{Binding Badge}" />
+                                </Border>
+                            </Grid>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+
+                <StackPanel Grid.Row="2" Spacing="8" Margin="0,12,0,0">
+                    <TextBlock Text="{Binding EmptyText}" Classes="muted" TextWrapping="Wrap"
+                               IsVisible="{Binding EmptyText, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                    <Border Classes="banner" IsVisible="{Binding HasNote}">
+                        <TextBlock Text="{Binding Note}" TextWrapping="Wrap" />
+                    </Border>
+                </StackPanel>
+            </Grid>
+
+            <Border Grid.Row="2" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="0,1,0,0" Padding="24,14" Margin="0,16,0,0">
+                <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                    <Button Content="Cancel" Command="{Binding CancelCommand}" />
+                    <Button Content="{Binding ConfirmText}" Classes="accent" Command="{Binding ConfirmCommand}" />
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Border>
+</UserControl>

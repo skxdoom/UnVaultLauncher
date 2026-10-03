@@ -1,0 +1,44 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Unvault.App.ViewModels"
+             x:Class="Unvault.App.Views.EngineCardView"
+             x:DataType="vm:EngineCardViewModel">
+
+    <Border Classes="card">
+        <Grid ColumnDefinitions="Auto,*,Auto">
+
+            <Border Classes="tile" Classes.installed="{Binding IsInstalled}" VerticalAlignment="Top">
+                <TextBlock Text="{Binding VersionLabel}" FontSize="20" FontWeight="Bold"
+                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Border>
+
+            <StackPanel Grid.Column="1" Margin="16,0" Spacing="4" VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <TextBlock Text="{Binding Title}" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
+                    <Border Classes="chip" Classes.success="{Binding IsUpToDate}" Classes.warning="{Binding HasUpdate}" Classes.danger="{Binding IsStale}">
+                        <TextBlock Text="{Binding StatusText}" />
+                    </Border>
+                    <Border Classes="chip" IsVisible="{Binding IsBusy}">
+                        <TextBlock Text="Working…" />
+                    </Border>
+                </StackPanel>
+                <TextBlock Text="{Binding Details}" Classes="muted" TextWrapping="Wrap" IsVisible="{Binding Details, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                <TextBlock Text="{Binding OriginText}" Classes="muted small" IsVisible="{Binding OriginText, Converter={x:Static ObjectConverters.IsNotNull}}" />
+            </StackPanel>
+
+            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                <Button Content="Launch" Classes="accent" Command="{Binding LaunchCommand}" IsVisible="{Binding IsInstalled}" />
+                <Button Content="Install…" Classes="accent" Command="{Binding InstallCommand}" IsVisible="{Binding CanInstall}" />
+                <Button Content="Options" Command="{Binding ModifyCommand}" IsVisible="{Binding IsInstalled}" />
+                <Button Content="⋯" IsVisible="{Binding IsInstalled}" ToolTip.Tip="More">
+                    <Button.Flyout>
+                        <MenuFlyout>
+                            <MenuItem Header="Verify files" Command="{Binding VerifyCommand}" />
+                            <MenuItem Header="Open folder" Command="{Binding OpenFolderCommand}" />
+                        </MenuFlyout>
+                    </Button.Flyout>
+                </Button>
+            </StackPanel>
+        </Grid>
+    </Border>
+</UserControl>

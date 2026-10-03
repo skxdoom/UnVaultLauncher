@@ -1,0 +1,30 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Unvault.App.ViewModels"
+             x:Class="Unvault.App.Views.OperationView"
+             x:DataType="vm:OperationViewModel">
+
+    <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto">
+        <StackPanel Orientation="Horizontal" Spacing="10">
+            <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+            <TextBlock Text="{Binding Phase}" Classes="muted" />
+        </StackPanel>
+
+        <StackPanel Grid.Column="1" Grid.RowSpan="3" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Margin="16,0,0,0">
+            <Button Content="{Binding FollowUpText}" Classes="accent" Command="{Binding RunFollowUpCommand}"
+                    IsVisible="{Binding FollowUpText, Converter={x:Static ObjectConverters.IsNotNull}}" />
+            <Button Content="Cancel" Command="{Binding CancelCommand}" IsVisible="{Binding IsRunning}" />
+            <Button Content="Retry" Command="{Binding RetryCommand}" IsVisible="{Binding CanRetry}" />
+            <Button Content="Dismiss" Classes="subtle" Command="{Binding DismissCommand}" IsVisible="{Binding IsFinished}" />
+        </StackPanel>
+
+        <ProgressBar Grid.Row="1" Margin="0,6" Value="{Binding Progress}" IsIndeterminate="{Binding IsIndeterminate}" IsVisible="{Binding IsRunning}" />
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="16">
+            <TextBlock Text="{Binding ProgressText}" Classes="muted small" IsVisible="{Binding IsRunning}" />
+            <TextBlock Text="{Binding SpeedText}" Classes="muted small" IsVisible="{Binding IsRunning}" />
+            <TextBlock Text="{Binding Message}" Classes="muted small" TextWrapping="Wrap" IsVisible="{Binding IsSucceededOrCancelled}" />
+            <TextBlock Text="{Binding Message}" Classes="small" TextWrapping="Wrap" Foreground="{StaticResource DangerBrush}" IsVisible="{Binding IsFailed}" />
+        </StackPanel>
+    </Grid>
+</UserControl>

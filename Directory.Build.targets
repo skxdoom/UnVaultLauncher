@@ -1,0 +1,9 @@
+<Project>
+  <!-- We host WebView2 through its core API only; its WPF/WinForms wrappers would drag in WindowsBase conflicts.
+       Lives here so projects that get WebView2 transitively (the app's tests) drop them too. -->
+  <Target Name="DropWebView2UIWrappers" BeforeTargets="ResolveAssemblyReferences">
+    <ItemGroup>
+      <Reference Remove="@(Reference)" Condition="'%(Filename)' == 'Microsoft.Web.WebView2.Wpf' Or '%(Filename)' == 'Microsoft.Web.WebView2.WinForms'" />
+    </ItemGroup>
+  </Target>
+</Project>

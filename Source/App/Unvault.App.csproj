@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <AssemblyName>UnvaultLauncher</AssemblyName>
+    <RootNamespace>Unvault.App</RootNamespace>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\unvault.ico</ApplicationIcon>
+    <Product>Unvault Launcher</Product>
+    <AssemblyTitle>Unvault Launcher</AssemblyTitle>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AvaloniaResource Include="Assets\**" />
+    <InternalsVisibleTo Include="Unvault.App.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="12.1.3" />
+    <PackageReference Include="Avalonia.Desktop" Version="12.1.3" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.3" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.3" />
+    <PackageReference Include="AvaloniaUI.DiagnosticsSupport" Version="2.2.3">
+      <IncludeAssets Condition="'$(Configuration)' != 'Debug'">None</IncludeAssets>
+      <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4258.31" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Core\Unvault.Core.csproj" />
+  </ItemGroup>
+
+  <!-- Publish profiles can set CopyExeTo to put the finished exe somewhere handy (win-x64: the repository root). -->
+  <Target Name="CopyPublishedExe" AfterTargets="Publish" Condition="'$(CopyExeTo)' != ''">
+    <Copy SourceFiles="$(PublishDir)$(AssemblyName).exe" DestinationFolder="$(CopyExeTo)" />
+    <Message Importance="high" Text="Unvault Launcher -&gt; $([System.IO.Path]::GetFullPath('$(CopyExeTo)$(AssemblyName).exe'))" />
+  </Target>
+</Project>

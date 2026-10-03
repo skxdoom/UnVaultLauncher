@@ -1,0 +1,73 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Unvault.App.ViewModels"
+             xmlns:views="using:Unvault.App.Views"
+             x:Class="Unvault.App.Views.FabLibraryView"
+             x:DataType="vm:FabLibraryViewModel">
+
+    <!-- Header and grid share the page width with the Engines tab; the grid scrolls with its scroll bar at the window edge -->
+    <Grid RowDefinitions="Auto,Auto,*">
+
+        <StackPanel Spacing="12" Margin="24,20,24,0" MaxWidth="{StaticResource PageMaxWidth}">
+            <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Text="Library" FontSize="22" FontWeight="SemiBold" VerticalAlignment="Center" />
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                    <ProgressBar IsIndeterminate="True" Width="120" IsVisible="{Binding IsLoading}" />
+                    <TextBlock Text="{Binding LoadingText}" Classes="muted" VerticalAlignment="Center"
+                               IsVisible="{Binding LoadingText, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                    <TextBlock Text="{Binding Summary}" Classes="muted" VerticalAlignment="Center" />
+                </StackPanel>
+            </Grid>
+
+            <Grid ColumnDefinitions="*,Auto,Auto,Auto">
+                <TextBox Text="{Binding SearchText}" PlaceholderText="Search your library">
+                    <TextBox.KeyBindings>
+                        <KeyBinding Gesture="Escape" Command="{Binding ClearSearchCommand}" />
+                    </TextBox.KeyBindings>
+                    <TextBox.InnerRightContent>
+                        <Button Classes="clear" Command="{Binding ClearSearchCommand}" ToolTip.Tip="Clear search (Esc)"
+                                IsVisible="{Binding SearchText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                            <Path Data="M0,0 L9,9 M9,0 L0,9" Stroke="{StaticResource MutedTextBrush}" StrokeThickness="1.6" StrokeLineCap="Round" />
+                        </Button>
+                    </TextBox.InnerRightContent>
+                </TextBox>
+                <ComboBox Grid.Column="1" Margin="8,0,0,0" MinWidth="130" ItemsSource="{Binding KindOptions}" SelectedIndex="{Binding KindIndex}" />
+                <ComboBox Grid.Column="2" Margin="8,0,0,0" MinWidth="130" ItemsSource="{Binding EngineOptions}" SelectedItem="{Binding EngineOption}" />
+                <CheckBox Grid.Column="3" Margin="12,0,0,0" Content="Downloaded only" IsChecked="{Binding DownloadedOnly}" />
+            </Grid>
+        </StackPanel>
+
+        <StackPanel Grid.Row="1" Spacing="8" Margin="24,12,24,0" MaxWidth="{StaticResource PageMaxWidth}">
+            <Border Classes="banner" IsVisible="{Binding IsSignedOut}">
+                <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock TextWrapping="Wrap" VerticalAlignment="Center"
+                               Text="Showing what's already in your Vault Cache. Sign in to see your whole library and download more." />
+                    <Button Grid.Column="1" Content="Sign in" Classes="accent" Margin="12,0,0,0" Command="{Binding Owner.SignInCommand}" />
+                </Grid>
+            </Border>
+            <Border Classes="banner warning" IsVisible="{Binding HasError}">
+                <TextBlock Text="{Binding Error}" TextWrapping="Wrap" />
+            </Border>
+        </StackPanel>
+
+        <ScrollViewer Grid.Row="2" x:Name="Scroller" Margin="0,12,0,0">
+            <Panel x:Name="Page" Margin="24,0,24,10" MaxWidth="{StaticResource PageMaxWidth}">
+                <TextBlock Text="Nothing matches. Try another search or filter." Classes="muted" HorizontalAlignment="Center" Margin="0,40"
+                           IsVisible="{Binding IsEmpty}" />
+                <!-- Rows of tiles, created only for rows on screen: a thousand tiles at once made showing and searching slow. -->
+                <ItemsControl ItemsSource="{Binding Rows}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <VirtualizingStackPanel />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="vm:FabItemRow">
+                            <views:FabRowView />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </Panel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>
