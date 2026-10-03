@@ -143,6 +143,24 @@
             <Setter Property="Background" Value="#1D3461" />
             <Setter Property="Foreground" Value="White" />
         </Style>
+        <!-- The orange "Update" badge on a Library tile -->
+        <Style Selector="Button.update">
+            <Setter Property="Background" Value="{StaticResource WarningBrush}" />
+            <Setter Property="Foreground" Value="#1B1405" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Padding" Value="9,2" />
+            <Setter Property="CornerRadius" Value="10" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="Button.update:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#F7BE63" />
+            <Setter Property="Foreground" Value="#1B1405" />
+        </Style>
+        <Style Selector="Button.update:pressed /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#E0962A" />
+            <Setter Property="Foreground" Value="#1B1405" />
+        </Style>
         <Style Selector="Button.clear">
             <Setter Property="Padding" Value="7" />
             <Setter Property="Margin" Value="0,0,3,0" />

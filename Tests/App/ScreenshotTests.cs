@@ -171,6 +171,15 @@ public class ScreenshotTests
         WaitFor(() => fab.Items.Single(i => i.Title.StartsWith("Modular Warehouse")).Thumbnail is not null); // local:// picture loaded
         Save(window, "fab-library.png");
 
+        // Greybox Tools has a newer build on Fab than its 5.7 download and its 5.7 install: an Update badge, the dot on the tab.
+        Assert.True(blockout.HasUpdate);
+        Assert.Equal(["UE_5.7"], blockout.OutdatedDownloads.Select(v => v.EngineAppName));
+        Assert.Equal(["UE_5.7"], blockout.OutdatedInstalls.Select(i => i.EngineAppName));
+        Assert.Equal((1, true, "Update available (1)"), (fab.UpdateCount, viewModel.HasLibraryUpdates, fab.UpdatesFilterText));
+        fab.UpdatesOnly = true;
+        Assert.Equal(["Greybox Tools"], fab.Items.Select(i => i.Title));
+        fab.UpdatesOnly = false;
+
         fab.KindIndex = 1; // plugins
         Assert.Equal(["Edge Smoother", "Greybox Tools"], fab.Items.Select(i => i.Title));
         fab.KindIndex = 0;
@@ -271,6 +280,22 @@ public class ScreenshotTests
     }
 
     [AvaloniaFact]
+    public void Fab_update_confirmation()
+    {
+        var viewModel = SampleMainViewModel();
+        viewModel.IsFabTab = true;
+        SampleFab(viewModel);
+        var item = viewModel.Fab.Items.Single(i => i.Title == "Greybox Tools");
+
+        viewModel.Fab.OpenUpdate(item);
+        var window = Show(viewModel);
+
+        var confirm = Assert.IsType<ConfirmViewModel>(viewModel.Dialog);
+        Assert.Equal(("Update Greybox Tools?", "Only files that changed are downloaded.", "Update"), (confirm.Title, confirm.Message, confirm.ConfirmText));
+        Save(window, "fab-update-confirm.png");
+    }
+
+    [AvaloniaFact]
     public async Task Fab_remove_plugin_dialog()
     {
         var viewModel = SampleMainViewModel();
@@ -317,14 +342,16 @@ public class ScreenshotTests
     private static void SampleFab(MainViewModel viewModel)
     {
         string vaultRoot = Path.Combine(Path.GetTempPath(), "unvault-screenshot-fab-vault");
-        VaultEntry Vault(string artifact, string title, string version, string categories)
+        // Fab's current build of everything is "build-2"; Greybox Tools' 5.7 copies below are still on "build-1".
+        VaultEntry Vault(string artifact, string title, string version, string categories, string build = "build-2")
         {
-            var entry = new VaultEntry { ArtifactID = artifact, Title = title, Version = version, Categories = categories, Directory = Path.Combine(vaultRoot, artifact) };
+            var entry = new VaultEntry { ArtifactID = artifact, Title = title, Version = version, Build = build, Categories = categories, Directory = Path.Combine(vaultRoot, artifact) };
             Directory.CreateDirectory(entry.DataDirectory);
             File.WriteAllBytes(entry.ManifestPath, [0]);
             return entry;
         }
-        FabProjectVersion Version(string artifact, params string[] engines) => new() { ArtifactID = artifact, EngineVersions = [.. engines] };
+        FabProjectVersion Version(string artifact, params string[] engines) =>
+            new() { ArtifactID = artifact, EngineVersions = [.. engines], BuildVersions = [new FabBuildVersion { BuildVersion = "build-2", Platform = "Windows" }] };
         FabLibraryItem Item(string title, string seller, string method, params FabProjectVersion[] versions) =>
             new() { Title = title, Seller = seller, AssetID = title + seller, AssetNamespace = "fab", DistributionMethod = method, ProjectVersions = [.. versions], URL = "https://www.fab.com/listings/x" };
 
@@ -342,7 +369,7 @@ public class ScreenshotTests
         var vault = new List<VaultEntry>
         {
             Vault("Greybox_56", "Greybox Tools", "5.6.0-43254731", "|Engine Tools|plugins|"),
-            Vault("Greybox_57", "Greybox Tools", "5.7.0-48201490", "|Engine Tools|plugins|"),
+            Vault("Greybox_57", "Greybox Tools", "5.7.0-48201490", "|Engine Tools|plugins|", build: "build-1"),
             Vault("StreetVehicles", "Street Vehicles", "5.7.0-1", "|Vehicles & Transportation|assets|"),
             WithThumbnail(Vault("Warehous3c4d5e6f7a8bV5", "Modular Warehouse V. 2", "5.8.0-46051459", "|Industrial|projects|"), valid: true),
             WithThumbnail(Vault("Temple_4.27", "Lakeside Temple", "4.27.0-1", "|Unreal Engine|projects|"), valid: false),
@@ -363,7 +390,7 @@ public class ScreenshotTests
         // One EGL install, and one folder nothing has a record of (as found on a real machine).
         var installs = new List<FabInstall>
         {
-            new("UE_5.7", @"E:\Epic Games\UE_5.7", "Greybox_57", PluginSource.EGL, @"E:\Epic Games\UE_5.7\Engine\Plugins\Marketplace\Greybox_57", CanRemove: true),
+            new("UE_5.7", @"E:\Epic Games\UE_5.7", "Greybox_57", PluginSource.EGL, @"E:\Epic Games\UE_5.7\Engine\Plugins\Marketplace\Greybox_57", CanRemove: true, BuildVersion: "build-1"),
             new("UE_4.27", @"E:\Epic Games\UE_4.27", "Greybox_427", PluginSource.Unlisted, @"E:\Epic Games\UE_4.27\Engine\Plugins\Marketplace\Greybox_427", CanRemove: true),
         };
 

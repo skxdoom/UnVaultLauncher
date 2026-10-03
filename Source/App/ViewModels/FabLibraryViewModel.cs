@@ -73,6 +73,14 @@ public partial class FabLibraryViewModel : ViewModelBase
     [ObservableProperty] public partial int KindIndex { get; set; }
     [ObservableProperty] public partial string? EngineOption { get; set; } = AllEngines;
     [ObservableProperty] public partial bool DownloadedOnly { get; set; }
+    [ObservableProperty] public partial bool UpdatesOnly { get; set; }
+
+    /// <summary>How many items have a newer build on Fab (drives the dot on the Library tab).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(UpdatesFilterText))]
+    public partial int UpdateCount { get; private set; }
+
+    public string UpdatesFilterText => UpdateCount > 0 ? $"Update available ({UpdateCount:N0})" : "Update available";
     [ObservableProperty] public partial bool IsLoading { get; set; }
     [ObservableProperty] public partial string? LoadingText { get; set; }
     [ObservableProperty] public partial string Summary { get; set; } = "";
@@ -117,6 +125,7 @@ public partial class FabLibraryViewModel : ViewModelBase
     partial void OnKindIndexChanged(int value) => OnFilterChanged();
     partial void OnEngineOptionChanged(string? value) => OnFilterChanged();
     partial void OnDownloadedOnlyChanged(bool value) => OnFilterChanged();
+    partial void OnUpdatesOnlyChanged(bool value) => OnFilterChanged();
     partial void OnIsLoadingChanged(bool value) => IsEmpty = !value && Items.Count == 0;
 
     private void OnFilterChanged()
@@ -279,11 +288,13 @@ public partial class FabLibraryViewModel : ViewModelBase
                 (kind is null || item.Kind == kind)
                 && (engine is null || item.Versions.Any(v => string.Equals(v.EngineAppName, engine, StringComparison.OrdinalIgnoreCase)))
                 && (!DownloadedOnly || item.IsDownloaded)
+                && (!UpdatesOnly || item.HasUpdate)
                 && item.Matches(search))
             .ToList();
         BuildRows();
 
         int downloaded = _all.Count(i => i.IsDownloaded);
+        UpdateCount = _all.Count(i => i.HasUpdate);
         Summary = Items.Count == _all.Count ? $"{_all.Count:N0} items  ·  {downloaded:N0} downloaded" : $"{Items.Count:N0} of {_all.Count:N0} items";
         IsEmpty = !IsLoading && Items.Count == 0;
     }
@@ -300,7 +311,7 @@ public partial class FabLibraryViewModel : ViewModelBase
             try
             {
                 installs.AddRange(EnginePlugins.Find(engine.Directory, launcherInstalled)
-                    .Select(p => new FabInstall(engine.AppName, engine.Directory, p.ArtifactID, p.Source, p.Folder, p.CanRemove)));
+                    .Select(p => new FabInstall(engine.AppName, engine.Directory, p.ArtifactID, p.Source, p.Folder, p.CanRemove, p.BuildVersion)));
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
@@ -345,7 +356,7 @@ public partial class FabLibraryViewModel : ViewModelBase
     {
         Owner.StartOperation(new OperationViewModel(Owner, $"Installing {item.Title} into UE {engine.AppName[3..]}", async (operation, status, cancellationToken) =>
         {
-            if (version.IsDownloaded)
+            if (version.IsDownloaded && !version.IsOutdated)
             {
                 operation.SetPhase("Copying from Vault Cache");
                 await FabWorkflow.InstallPluginFromVaultAsync(version.Vault!, engine.Directory, status, cancellationToken);
@@ -403,16 +414,52 @@ public partial class FabLibraryViewModel : ViewModelBase
         }, engineAppName: install.EngineAppName, fabItemKey: item.Key));
     }
 
-    /// <summary>Uses the vault copy if there is one; otherwise downloads into the vault cache first.</summary>
+    /// <summary>Uses the Vault Cache copy if it's current; otherwise downloads (or updates) it there first.</summary>
     private async Task<VaultEntry> EnsureInVaultAsync(FabItemViewModel item, FabVersion version, OperationViewModel operation, InstallStatus status, CancellationToken cancellationToken)
     {
-        if (version.IsDownloaded)
+        if (version.IsDownloaded && !version.IsOutdated)
             return version.Vault!;
 
-        operation.SetPhase("Downloading");
+        operation.SetPhase(version.IsOutdated ? "Updating Vault Cache copy" : "Downloading");
         var artifact = Artifact(item, version);
         var source = await FabWorkflow.FetchAsync(Owner.Services.API, artifact, cancellationToken);
         return await FabWorkflow.DownloadToVaultAsync(source, artifact, Owner.Settings.ResolveVaultCache().Path, Owner.CreateInstaller(), status, cancellationToken);
+    }
+
+    internal void OpenUpdate(FabItemViewModel item)
+    {
+        if (!item.HasUpdate)
+            return;
+        Owner.Dialog = new ConfirmViewModel(Owner, $"Update {item.Title}?", "Only files that changed are downloaded.",
+            "Update", () => StartUpdate(item, item.OutdatedDownloads, item.OutdatedInstalls));
+    }
+
+    /// <summary>Brings outdated copies of an item up to Fab's build, one after another.</summary>
+    internal void StartUpdate(FabItemViewModel item, IReadOnlyList<FabVersion> downloads, IReadOnlyList<FabInstall> installs)
+    {
+        Owner.StartOperation(new OperationViewModel(Owner, $"Updating {item.Title}", async (operation, _, cancellationToken) =>
+        {
+            foreach (var version in downloads)
+            {
+                var status = operation.BeginPhase($"Updating Vault Cache copy ({version.EngineAppName[3..]})");
+                var artifact = Artifact(item, version);
+                var source = await FabWorkflow.FetchAsync(Owner.Services.API, artifact, cancellationToken);
+                await FabWorkflow.DownloadToVaultAsync(source, artifact, Owner.Settings.ResolveVaultCache().Path, Owner.CreateInstaller(), status, cancellationToken);
+            }
+            foreach (var install in installs)
+            {
+                string engine = install.EngineAppName[3..];
+                var version = item.Versions.First(v => string.Equals(v.ArtifactID, install.ArtifactID, StringComparison.OrdinalIgnoreCase));
+                var artifact = Artifact(item, version);
+                var checking = operation.BeginPhase($"Checking UE {engine}");
+                var source = await FabWorkflow.FetchAsync(Owner.Services.API, artifact, cancellationToken);
+                var update = await FabWorkflow.PlanPluginUpdateAsync(source, artifact, install.EngineDirectory, checking, cancellationToken);
+                var status = operation.BeginPhase($"Updating in UE {engine}");
+                await FabWorkflow.ApplyPluginUpdateAsync(update, Owner.CreateInstaller(), status, cancellationToken);
+            }
+            int count = downloads.Count + installs.Count;
+            return $"Updated {count} {(count == 1 ? "copy" : "copies")} to Fab's latest build.";
+        }, fabItemKey: item.Key));
     }
 
     private static FabArtifact Artifact(FabItemViewModel item, FabVersion version) =>

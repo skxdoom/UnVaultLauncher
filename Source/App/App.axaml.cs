@@ -24,7 +24,7 @@ public partial class App : Application
             viewModel.Interaction = window;
             desktop.MainWindow = window;
             HandleUnexpectedErrors(viewModel);
-            _ = viewModel.RefreshAsync();
+            _ = viewModel.StartAsync();
         }
 
         base.OnFrameworkInitializationCompleted();

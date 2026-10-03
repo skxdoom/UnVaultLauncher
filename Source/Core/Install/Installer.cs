@@ -29,6 +29,8 @@ public sealed class Installer(HttpClient http)
         IReadOnlyDictionary<string, string> secrets, InstallStatus status, CancellationToken cancellationToken,
         string? stateDirectory = null)
     {
+        if (plan.Files.Count == 0)
+            return; // e.g. an update in which no file changed
         if (sources.Count == 0)
             throw new InstallException("No download locations for this build.");
 

@@ -19,7 +19,7 @@
                 </StackPanel>
             </Grid>
 
-            <Grid ColumnDefinitions="*,Auto,Auto,Auto">
+            <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto">
                 <TextBox Text="{Binding SearchText}" PlaceholderText="Search your library">
                     <TextBox.KeyBindings>
                         <KeyBinding Gesture="Escape" Command="{Binding ClearSearchCommand}" />
@@ -34,6 +34,7 @@
                 <ComboBox Grid.Column="1" Margin="8,0,0,0" MinWidth="130" ItemsSource="{Binding KindOptions}" SelectedIndex="{Binding KindIndex}" />
                 <ComboBox Grid.Column="2" Margin="8,0,0,0" MinWidth="130" ItemsSource="{Binding EngineOptions}" SelectedItem="{Binding EngineOption}" />
                 <CheckBox Grid.Column="3" Margin="12,0,0,0" Content="Downloaded only" IsChecked="{Binding DownloadedOnly}" />
+                <CheckBox Grid.Column="4" Margin="12,0,0,0" Content="{Binding UpdatesFilterText}" IsChecked="{Binding UpdatesOnly}" />
             </Grid>
         </StackPanel>
 

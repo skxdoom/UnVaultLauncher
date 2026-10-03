@@ -223,10 +223,11 @@ public partial class FabActionViewModel : ViewModelBase
                      .GroupBy(v => v.ArtifactID).Select(g => BestVersion(g)!)
                      .OrderByDescending(v => EngineLibrary.ParseVersion(v.EngineAppName)))
         {
-            VersionChoices.Add(new FabVersionOption(version, $"Unreal Engine {Short(version.EngineAppName)}{(version.IsDownloaded ? "  (downloaded)" : "")}"));
+            string state = version.IsOutdated ? "  (update available)" : version.IsDownloaded ? "  (downloaded)" : "";
+            VersionChoices.Add(new FabVersionOption(version, $"Unreal Engine {Short(version.EngineAppName)}{state}"));
         }
         SelectedVersion = Mode == FabActionMode.Download
-            ? VersionChoices.FirstOrDefault(o => !o.Version.IsDownloaded) ?? VersionChoices.FirstOrDefault()
+            ? VersionChoices.FirstOrDefault(o => !o.Version.IsDownloaded || o.Version.IsOutdated) ?? VersionChoices.FirstOrDefault()
             : VersionChoices.FirstOrDefault();
         EmptyText = VersionChoices.Count == 0 ? (SignedIn ? "No downloadable versions." : "Sign in to download this item.") : null;
     }
@@ -295,7 +296,11 @@ public partial class FabActionViewModel : ViewModelBase
     }
 
     private string DescribeSource(FabVersion version) =>
-        version.IsDownloaded ? $"Already in your Vault Cache ({Short(version.EngineAppName)} version): nothing to download."
+        version.IsOutdated
+            ? Mode == FabActionMode.InstallPlugin
+                ? "Your Vault Cache copy is an older build, so Fab's latest downloads straight into the engine."
+                : "Your Vault Cache copy is an older build: it's updated first, downloading only the files that changed."
+        : version.IsDownloaded ? $"Already in your Vault Cache ({Short(version.EngineAppName)} version): nothing to download."
         : Mode == FabActionMode.InstallPlugin ? "Downloads straight into the engine."
         : "Downloads into your Vault Cache first, so it can be reused later.";
 

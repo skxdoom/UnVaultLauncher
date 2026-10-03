@@ -16,6 +16,8 @@
                     <Border Classes="chip" Background="#CC0E1014" Margin="8" HorizontalAlignment="Left" VerticalAlignment="Top">
                         <TextBlock Text="{Binding KindLabel}" />
                     </Border>
+                    <Button Classes="update" Content="Update" Margin="8" HorizontalAlignment="Right" VerticalAlignment="Top"
+                            Command="{Binding UpdateCommand}" IsVisible="{Binding HasUpdate}" IsEnabled="{Binding IsIdle}" ToolTip.Tip="{Binding UpdateText}" />
                 </Panel>
             </Border>
 
@@ -49,6 +51,7 @@
                 <Button Grid.Column="1" Content="⋯" Margin="6,0,0,0" ToolTip.Tip="More">
                     <Button.Flyout>
                         <MenuFlyout>
+                            <MenuItem Header="Update" Command="{Binding UpdateCommand}" IsEnabled="{Binding HasUpdate}" />
                             <MenuItem Header="Download to Vault Cache" Command="{Binding DownloadCommand}" IsEnabled="{Binding IsInLibrary}" />
                             <MenuItem Header="Show in Folder" Command="{Binding ShowInFolderCommand}" IsEnabled="{Binding HasFolder}" />
                             <MenuItem Header="Open on Fab" Command="{Binding OpenFabPageCommand}" IsEnabled="{Binding HasFabPage}" />

@@ -12,10 +12,21 @@ namespace Unvault.App.ViewModels;
 public sealed record FabVersion(string EngineAppName, string ArtifactID, FabProjectVersion? Library, VaultEntry? Vault)
 {
     public bool IsDownloaded => Vault is { IsComplete: true };
+
+    /// <summary>The Windows build Fab currently offers for this artifact.</summary>
+    public string? LatestBuild => Library?.BuildVersions?.FirstOrDefault(b => b.Platform == "Windows")?.BuildVersion;
+
+    /// <summary>Downloaded, but Fab has another (newer) build than the Vault Cache copy.</summary>
+    public bool IsOutdated => IsDownloaded && IsOlder(Vault!.Build, LatestBuild);
+
+    /// <summary>Fab's build is the current one, so any different build here counts as older.</summary>
+    internal static bool IsOlder(string? have, string? latest) =>
+        !string.IsNullOrEmpty(have) && !string.IsNullOrEmpty(latest) && !string.Equals(have, latest, StringComparison.OrdinalIgnoreCase);
 }
 
-/// <summary>A plugin installed into an engine: where, in which folder, and who put it there.</summary>
-public sealed record FabInstall(string EngineAppName, string EngineDirectory, string ArtifactID, PluginSource Source, string Folder, bool CanRemove);
+/// <summary>A plugin installed into an engine: where, in which folder, who put it there, and which build it is (if known).</summary>
+public sealed record FabInstall(string EngineAppName, string EngineDirectory, string ArtifactID, PluginSource Source, string Folder, bool CanRemove,
+    string? BuildVersion = null);
 
 /// <summary>One row in the Fab library: a product with all its per-engine versions.</summary>
 public partial class FabItemViewModel : ViewModelBase
@@ -36,6 +47,13 @@ public partial class FabItemViewModel : ViewModelBase
         Installs = installs;
         _thumbnailURL = thumbnailURL;
         SearchText = $"{title} {library?.Seller} {library?.Description} {string.Join(' ', (library?.Categories ?? []).Select(c => c.Name))}";
+
+        // Versions can repeat an artifact (one per engine it supports); updates are per artifact.
+        var latest = versions.Where(v => v.LatestBuild is not null).GroupBy(v => v.ArtifactID, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.First().LatestBuild, StringComparer.OrdinalIgnoreCase);
+        OutdatedDownloads = [.. versions.Where(v => v.IsOutdated).GroupBy(v => v.ArtifactID, StringComparer.OrdinalIgnoreCase).Select(g => g.First())];
+        // Only installs Unvault can bring up to date: its own, or EGL's in their own Marketplace folder.
+        OutdatedInstalls = [.. installs.Where(i => i.CanRemove && FabVersion.IsOlder(i.BuildVersion, latest.GetValueOrDefault(i.ArtifactID)))];
     }
 
     /// <summary>Identifies the product across reloads; titles aren't unique (two sellers' "Garden Pack").</summary>
@@ -63,6 +81,30 @@ public partial class FabItemViewModel : ViewModelBase
 
     public bool IsInstalled => Installs.Count > 0;
     public string? InstalledText => IsInstalled ? "Installed: " + CompactVersions(Installs.Select(i => i.EngineAppName)) : null;
+
+    /// <summary>Vault Cache copies with a newer build on Fab (one per artifact).</summary>
+    public IReadOnlyList<FabVersion> OutdatedDownloads { get; }
+
+    /// <summary>Plugins in engines with a newer build on Fab.</summary>
+    public IReadOnlyList<FabInstall> OutdatedInstalls { get; }
+
+    public bool HasUpdate => OutdatedDownloads.Count > 0 || OutdatedInstalls.Count > 0;
+
+    /// <summary>What an update would refresh, e.g. "Newer build on Fab for: installed in UE 5.7; Vault Cache copy for 5.6".</summary>
+    public string? UpdateText
+    {
+        get
+        {
+            if (!HasUpdate)
+                return null;
+            var parts = new List<string>();
+            if (OutdatedInstalls.Count > 0)
+                parts.Add("installed in UE " + CompactVersions(OutdatedInstalls.Select(i => i.EngineAppName)));
+            if (OutdatedDownloads.Count > 0)
+                parts.Add("Vault Cache copy for " + CompactVersions(OutdatedDownloads.Select(v => v.EngineAppName)));
+            return "Newer build on Fab: " + string.Join("; ", parts);
+        }
+    }
 
     public bool IsInLibrary => Library is not null;
     public bool HasFabPage => !string.IsNullOrEmpty(Library?.URL);
@@ -133,6 +175,9 @@ public partial class FabItemViewModel : ViewModelBase
 
     [RelayCommand]
     private void Remove() => _owner.OpenRemove(this);
+
+    [RelayCommand]
+    private void Update() => _owner.OpenUpdate(this);
 
     /// <summary>["UE_4.27","UE_5.3","UE_5.4","UE_5.5"] → "4.27, 5.3–5.5".</summary>
     internal static string CompactVersions(IEnumerable<string> engineAppNames)

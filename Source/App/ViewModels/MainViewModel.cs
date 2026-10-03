@@ -22,6 +22,14 @@ public partial class MainViewModel : ViewModelBase
     {
         Services = services;
         Fab = new FabLibraryViewModel(this);
+        Fab.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(FabLibraryViewModel.UpdateCount))
+            {
+                OnPropertyChanged(nameof(HasLibraryUpdates));
+                OnPropertyChanged(nameof(LibraryUpdatesText));
+            }
+        };
         Operations.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasOperations));
         UpdateAccount();
     }
@@ -33,6 +41,16 @@ public partial class MainViewModel : ViewModelBase
     public AppSettings Settings { get; } = AppSettings.Load();
 
     public FabLibraryViewModel Fab { get; }
+
+    /// <summary>Shows the dot on the Library tab.</summary>
+    public bool HasLibraryUpdates => Fab.UpdateCount > 0;
+
+    public string? LibraryUpdatesText => Fab.UpdateCount switch
+    {
+        0 => null,
+        1 => "1 item has an update on Fab",
+        var n => $"{n:N0} items have updates on Fab",
+    };
 
     /// <summary>Engine installs found by the last refresh (also used by the Fab tab to pick plugin targets).</summary>
     public IReadOnlyList<LocalEngine> LocalEngines => _local;
@@ -85,6 +103,14 @@ public partial class MainViewModel : ViewModelBase
     /// <summary>Engine versions the account owns but hasn't installed (stale EGL records count as not installed).</summary>
     public IReadOnlyList<EpicAsset> InstallableEngines =>
         _owned.Where(o => !_local.Any(l => l.Exists && string.Equals(l.AppName, o.AppName, StringComparison.OrdinalIgnoreCase))).ToList();
+
+    /// <summary>First load: engines, then (signed in) the library in the background, so the Library tab shows pending updates before it's opened.</summary>
+    public async Task StartAsync()
+    {
+        await RefreshAsync();
+        if (IsSignedIn && !Fab.HasLoaded)
+            await Fab.LoadAsync(includeLibrary: true);
+    }
 
     /// <summary>Rescans local installs and, when signed in, asks Epic which engines the account can install.</summary>
     [RelayCommand]
@@ -229,7 +255,7 @@ public partial class MainViewModel : ViewModelBase
     private async Task RefreshAfterAccountChangeAsync()
     {
         await RefreshCoreAsync(includeOwned: true);
-        if (Fab.HasLoaded)
+        if (Fab.HasLoaded || IsSignedIn)
             await Fab.LoadAsync(includeLibrary: true);
     }
 

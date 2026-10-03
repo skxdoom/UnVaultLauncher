@@ -269,6 +269,60 @@ public sealed class FabTests : IDisposable
         Assert.Throws<InstallException>(() => FabWorkflow.UninstallPlugin(_dir, artifactID, LauncherInstalled));
 
     [Fact]
+    public async Task Updating_a_vault_copy_swaps_its_manifest_and_drops_files_the_new_build_lacks()
+    {
+        var entry = MakeVaultEntry("GardenV2", "Garden Pack", "5.4.0-1", ("Content/Garden/Rock.uasset", 30), ("Content/Garden/Old.uasset", 20));
+        File.WriteAllText(Path.Combine(entry.Directory, "manifest.json"), "{}"); // EGL's JSON copy of the old manifest
+        string next = JSONManifestBuilder.Build("GardenV2", "5.4.0-2", ("Content/Garden/Rock.uasset", 30));
+        var source = Source(next);
+
+        var updated = await FabWorkflow.DownloadToVaultAsync(source, Artifact("GardenV2", "Garden Pack"), Path.Combine(_dir, "Vault"),
+            new Installer(new HttpClient()), new InstallStatus(), default);
+
+        Assert.Equal("5.4.0-2", updated.Build);
+        Assert.Equal(next, File.ReadAllText(entry.ManifestPath));
+        Assert.True(File.Exists(Path.Combine(entry.DataDirectory, "Content/Garden/Rock.uasset"))); // unchanged, kept
+        Assert.False(File.Exists(Path.Combine(entry.DataDirectory, "Content/Garden/Old.uasset")));
+        Assert.False(File.Exists(Path.Combine(entry.Directory, "manifest.json")));
+        Assert.False(Directory.Exists(Path.Combine(entry.Directory, ".unvault")));
+        Assert.Equal("5.4.0-2", VaultCache.Scan(Path.Combine(_dir, "Vault")).Single().Build);
+    }
+
+    [Fact]
+    public async Task Plans_an_update_of_a_plugin_EGL_installed_from_what_is_on_disk()
+    {
+        string engine = Directory.CreateDirectory(Path.Combine(_dir, "UE_5.7")).FullName;
+        const string Root = "Engine/Plugins/Marketplace/Greybox9f8e7d6c5b4aV14";
+        Directory.CreateDirectory(Path.Combine(engine, Root, "Binaries/Win64"));
+        File.WriteAllText(Path.Combine(engine, Root, "Greybox.uplugin"), "same");
+        File.WriteAllText(Path.Combine(engine, Root, "Binaries/Win64/Old.dll"), "old build only");
+        FileManifest Entry(string name, string content) => new()
+            { Filename = name, FileSize = content.Length, SHA1 = System.Security.Cryptography.SHA1.HashData(Encoding.UTF8.GetBytes(content)) };
+        var next = new Manifest
+        {
+            Version = 21, Meta = new ManifestMeta { FeatureLevel = 21, BuildVersion = "5.7.0-2" }, Chunks = [],
+            Files = [Entry($"{Root}/Greybox.uplugin", "same"), Entry($"{Root}/Binaries/Win64/New.dll", "new build")],
+            CustomFields = new Dictionary<string, string>(),
+        };
+        var source = new InstallSource(new DownloadedManifest(next, [], [new ChunkSource("https://cdn.test/CloudDir")], new Dictionary<string, string>()),
+            FabKinds.FabNamespace, "item");
+
+        var update = await FabWorkflow.PlanPluginUpdateAsync(source, Artifact("Greybox9f8e7d6c5b4aV14", "Greybox Tools"), engine, new InstallStatus(), default);
+
+        Assert.Equal([$"{Root}/Binaries/Win64/New.dll"], update.Write.Select(f => f.Filename));
+        Assert.Equal([$"{Root}/Binaries/Win64/Old.dll"], update.Delete.Select(f => f.Filename));
+    }
+
+    private static InstallSource Source(string jsonManifest) => new(
+        new DownloadedManifest(Manifest.Parse(Encoding.UTF8.GetBytes(jsonManifest)), Encoding.UTF8.GetBytes(jsonManifest),
+            [new ChunkSource("https://cdn.test/CloudDir")], new Dictionary<string, string>()),
+        FabKinds.FabNamespace, "item");
+
+    private static FabArtifact Artifact(string artifactID, string title) => new(
+        new FabLibraryItem { AssetID = "item", AssetNamespace = FabKinds.FabNamespace, Title = title },
+        new FabProjectVersion { ArtifactID = artifactID });
+
+    [Fact]
     public async Task Refuses_to_install_content_into_an_engine()
     {
         var entry = MakeVaultEntry("Pack", "Pack", "5.7.0-1", ("Content/Pack/A.uasset", 5));

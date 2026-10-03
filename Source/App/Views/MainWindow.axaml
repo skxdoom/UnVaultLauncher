@@ -24,7 +24,13 @@
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                             <Button Content="Engines" Classes="tab" Classes.active="{Binding IsEnginesTab}" Command="{Binding ShowEnginesCommand}" />
-                            <Button Content="Library" Classes="tab" Classes.active="{Binding IsFabTab}" Command="{Binding ShowFabCommand}" />
+                            <Button Classes="tab" Classes.active="{Binding IsFabTab}" Command="{Binding ShowFabCommand}" ToolTip.Tip="{Binding LibraryUpdatesText}">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <TextBlock Text="Library" />
+                                    <!-- Something in the library has a newer build on Fab -->
+                                    <Ellipse Width="7" Height="7" Fill="{StaticResource WarningBrush}" VerticalAlignment="Center" IsVisible="{Binding HasLibraryUpdates}" />
+                                </StackPanel>
+                            </Button>
                         </StackPanel>
                     </StackPanel>
 

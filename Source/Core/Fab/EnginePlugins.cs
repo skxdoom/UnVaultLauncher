@@ -21,7 +21,8 @@ public enum PluginSource
 /// plugins elsewhere (a few of Epic's own go straight into Engine\Plugins\<Name>); without a file
 /// list there's no telling their files from the engine's own.
 /// </param>
-public sealed record EnginePlugin(string ArtifactID, PluginSource Source, string Folder, bool CanRemove);
+/// <param name="BuildVersion">The installed build (as Fab lists it), when Unvault or EGL recorded one; unknown for a bare folder.</param>
+public sealed record EnginePlugin(string ArtifactID, PluginSource Source, string Folder, bool CanRemove, string? BuildVersion = null);
 
 /// <summary>Fab plugins inside an engine. Nearly all live in Engine\Plugins\Marketplace\{ArtifactID}, whoever installed them.</summary>
 public static class EnginePlugins
@@ -42,14 +43,14 @@ public static class EnginePlugins
         var found = new Dictionary<string, EnginePlugin>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var record in PluginInstalls.List(engineDir))
-            found[record.ArtifactID] = new EnginePlugin(record.ArtifactID, PluginSource.Unvault, SafeFolder(engineDir, record.ArtifactID), CanRemove: true);
+            found[record.ArtifactID] = new EnginePlugin(record.ArtifactID, PluginSource.Unvault, SafeFolder(engineDir, record.ArtifactID), CanRemove: true, record.BuildVersion);
 
         foreach (var entry in launcherInstalled)
         {
             if (!EngineLibrary.IsEngineApp(entry.AppName) && SamePath(entry.InstallLocation, engineDir) && !found.ContainsKey(entry.AppName))
             {
                 string folder = SafeFolder(engineDir, entry.AppName);
-                found[entry.AppName] = new EnginePlugin(entry.AppName, PluginSource.EGL, folder, CanRemove: Directory.Exists(folder) && folder != MarketplaceDirectory(engineDir));
+                found[entry.AppName] = new EnginePlugin(entry.AppName, PluginSource.EGL, folder, CanRemove: Directory.Exists(folder) && folder != MarketplaceDirectory(engineDir), entry.AppVersion);
             }
         }
 

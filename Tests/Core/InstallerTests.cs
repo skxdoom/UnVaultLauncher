@@ -4,6 +4,7 @@ using System.Net;
 using System.Security.Cryptography;
 using Unvault.Core.Chunks;
 using Unvault.Core.Epic;
+using Unvault.Core.Fab;
 using Unvault.Core.Install;
 using Unvault.Core.Manifests;
 
@@ -184,6 +185,65 @@ public sealed class InstallerTests : IDisposable
     /// Two chunks, four files: Big.bin spans both chunks, Small.txt and ReadOnly.txt share the tail of
     /// chunk B with Big.bin's end, Empty.txt has no data.
     /// </summary>
+    [Fact]
+    public async Task An_update_downloads_only_changed_files_and_drops_removed_ones()
+    {
+        var (v1, expected, chunkFiles) = BuildTestBuild();
+        var cdn = new FakeCDN(chunkFiles);
+        var installer = new Installer(new HttpClient(cdn));
+        ChunkSource[] sources = [new("https://cdn.test/CloudDir")];
+        await installer.InstallAsync(InstallPlan.Create(v1, v1.Files), _dir, sources, new Dictionary<string, string>(), new InstallStatus(), default);
+        var bigWritten = File.GetLastWriteTimeUtc(Path.Combine(_dir, "Engine/Big.bin"));
+
+        // The next build: Small.txt changed and New.txt added (both in a new chunk), Empty.txt dropped, the rest as before.
+        byte[] dataC = RandomNumberGenerator.GetBytes(1000);
+        var (chunkC, fileC) = ChunkFactory.Create(new EpicGUID(0xC, 0, 0, 0), dataC);
+        chunkFiles[chunkC.GUID] = fileC;
+        FileManifest Changed(string name, byte[] content, uint offset) => new()
+        {
+            Filename = name, SHA1 = SHA1.HashData(content), FileSize = content.Length,
+            ChunkParts = [new ChunkPart(chunkC.GUID, offset, (uint)content.Length)],
+        };
+        var v2 = new Manifest
+        {
+            Version = 21,
+            Meta = new ManifestMeta { FeatureLevel = 21, AppName = "Test", BuildVersion = "2.0" },
+            Chunks = [.. v1.Chunks, chunkC],
+            Files = [v1.Files[0], Changed("Engine/Small.txt", dataC[..400], 0), v1.Files[2], Changed("Engine/New.txt", dataC[400..], 400)],
+            CustomFields = new Dictionary<string, string>(),
+        };
+
+        var (write, delete) = FabWorkflow.Diff(v1, v2);
+        Assert.Equal(["Engine/Small.txt", "Engine/New.txt"], write.Select(f => f.Filename));
+        Assert.Equal(["Engine/Empty.txt"], delete.Select(f => f.Filename));
+
+        cdn.Requests.Clear();
+        InstallCleaner.DeleteFiles(_dir, delete);
+        await installer.InstallAsync(InstallPlan.Create(v2, write), _dir, sources, new Dictionary<string, string>(), new InstallStatus(), default);
+
+        Assert.All(cdn.Requests, url => Assert.Contains(chunkC.GUID.ToString(), url)); // only the new chunk was fetched
+        Assert.Equal(dataC[..400], File.ReadAllBytes(Path.Combine(_dir, "Engine/Small.txt")));
+        Assert.Equal(dataC[400..], File.ReadAllBytes(Path.Combine(_dir, "Engine/New.txt")));
+        Assert.False(File.Exists(Path.Combine(_dir, "Engine/Empty.txt")));
+        Assert.Equal(expected["Engine/Big.bin"], File.ReadAllBytes(Path.Combine(_dir, "Engine/Big.bin")));
+        Assert.Equal(bigWritten, File.GetLastWriteTimeUtc(Path.Combine(_dir, "Engine/Big.bin"))); // untouched
+    }
+
+    [Fact]
+    public void Diff_without_trustworthy_hashes_rewrites_the_file()
+    {
+        FileManifest Entry(string name, int size, byte[] sha1) => new() { Filename = name, FileSize = size, SHA1 = sha1 };
+        Manifest Build(params FileManifest[] files) => new()
+        {
+            Version = 21, Meta = new ManifestMeta(), Chunks = [], Files = files, CustomFields = new Dictionary<string, string>(),
+        };
+
+        var (write, delete) = FabWorkflow.Diff(Build(Entry("a", 5, []), Entry("b", 5, new byte[20])), Build(Entry("a", 5, []), Entry("b", 6, new byte[20])));
+        Assert.Equal(["a", "b"], write.Select(f => f.Filename)); // no hash to compare, and a size change
+        Assert.Empty(delete);
+        Assert.Equal(2, FabWorkflow.Diff(null, Build(Entry("a", 5, []), Entry("b", 5, []))).Write.Count);
+    }
+
     private static (Manifest Manifest, Dictionary<string, byte[]> Expected, Dictionary<EpicGUID, byte[]> ChunkFiles) BuildTestBuild()
     {
         var dataA = RandomNumberGenerator.GetBytes(4096);
