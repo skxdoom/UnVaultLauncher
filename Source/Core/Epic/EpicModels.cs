@@ -114,4 +114,5 @@ internal sealed class EpicBuildInfoResponse
 [JsonSerializable(typeof(EpicAuthorizationCodeResponse))]
 [JsonSerializable(typeof(List<EpicAsset>))]
 [JsonSerializable(typeof(EpicBuildInfoResponse))]
+[JsonSerializable(typeof(OwnedEnginesSnapshot))]
 internal sealed partial class EpicJSONContext : JsonSerializerContext;

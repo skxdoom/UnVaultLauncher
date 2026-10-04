@@ -63,6 +63,7 @@ internal sealed class LogoutCommand : EpicCommand<NoSettings>
     {
         await Services.Account.LogoutAsync(cancellationToken);
         FabLibraryCache.Delete();
+        OwnedEnginesCache.Delete();
         AnsiConsole.MarkupLine("Logged out; the saved session was removed.");
         return 0;
     }

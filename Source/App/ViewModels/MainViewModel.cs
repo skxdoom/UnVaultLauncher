@@ -138,7 +138,16 @@ public partial class MainViewModel : ViewModelBase
         try
         {
             _local = await Task.Run(EngineLibrary.ScanLocal);
-            if (includeOwned && Services.Account.IsLoggedIn)
+            string? accountID = Services.Account.IsLoggedIn ? Services.Account.Session?.AccountID : null;
+            if (accountID is null)
+                _owned = [];
+            else if (_owned.Count == 0 && await Task.Run(() => OwnedEnginesCache.Load(accountID)) is { } saved)
+                _owned = saved.Engines; // Epic's list from last time, so update badges and installable versions are there at once
+
+            // The installed engines show right away: the scan takes milliseconds, Epic's list several seconds.
+            SetEngines(_local, _owned);
+
+            if (includeOwned && accountID is not null)
             {
                 int installed = _local.Where(l => l.Exists).Select(l => l.AppName).Distinct(StringComparer.OrdinalIgnoreCase).Count();
                 LoadingText = $"{installed:N0} installed  ·  checking Epic for versions and updates…";
@@ -146,6 +155,7 @@ public partial class MainViewModel : ViewModelBase
                 {
                     _owned = (await Services.API.GetAssetsAsync()).Where(a => a.IsEngine).ToList();
                     Notice = null;
+                    await SaveOwnedEnginesAsync(accountID);
                 }
                 catch (NotLoggedInException)
                 {
@@ -156,17 +166,26 @@ public partial class MainViewModel : ViewModelBase
                 {
                     Notice = $"Couldn't reach Epic: {ex.Message}";
                 }
+                SetEngines(_local, _owned);
             }
-            else if (!Services.Account.IsLoggedIn)
-            {
-                _owned = [];
-            }
-            SetEngines(_local, _owned);
         }
         finally
         {
             LoadingText = null;
             IsLoading = false;
+        }
+    }
+
+    private async Task SaveOwnedEnginesAsync(string accountID)
+    {
+        var snapshot = new OwnedEnginesSnapshot { AccountID = accountID, FetchedAt = DateTimeOffset.Now, Engines = [.. _owned] };
+        try
+        {
+            await Task.Run(() => OwnedEnginesCache.Save(snapshot));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // Only costs the instant start next time.
         }
     }
 
@@ -248,6 +267,7 @@ public partial class MainViewModel : ViewModelBase
             // The local session is deleted regardless; Epic will expire the tokens on its own.
         }
         FabLibraryCache.Delete();
+        OwnedEnginesCache.Delete();
         if (Interaction is not null)
             await Interaction.ForgetSignInAsync();
 

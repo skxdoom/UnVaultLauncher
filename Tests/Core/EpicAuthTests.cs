@@ -89,4 +89,37 @@ public class EpicAuthTests
             store.Delete();
         }
     }
+
+    [Fact]
+    public void Owned_engines_cache_round_trips_for_its_own_account_only()
+    {
+        string path = Path.Combine(Path.GetTempPath(), $"unvault-owned-engines-{Guid.NewGuid():N}.json");
+        try
+        {
+            OwnedEnginesCache.Save(new OwnedEnginesSnapshot
+            {
+                AccountID = "account1",
+                FetchedAt = new DateTimeOffset(2026, 10, 4, 12, 0, 0, TimeSpan.Zero),
+                Engines =
+                [
+                    new EpicAsset { AppName = "UE_5.8", Namespace = "ue", CatalogItemID = "item58", BuildVersion = "5.8.3-1000+++UE5+Release-5.8-Windows", LabelName = "Live" },
+                ],
+            }, path);
+
+            var engine = Assert.Single(OwnedEnginesCache.Load("ACCOUNT1", path)!.Engines);
+            Assert.Equal(("UE_5.8", "item58", "5.8.3-1000+++UE5+Release-5.8-Windows"), (engine.AppName, engine.CatalogItemID, engine.BuildVersion));
+            Assert.True(engine.IsEngine);
+
+            Assert.Null(OwnedEnginesCache.Load("someone-else", path));
+            File.WriteAllText(path, "{ damaged");
+            Assert.Null(OwnedEnginesCache.Load("account1", path));
+            OwnedEnginesCache.Delete(path);
+            Assert.False(File.Exists(path));
+            Assert.Null(OwnedEnginesCache.Load("account1", path));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
 }
