@@ -114,7 +114,7 @@ public partial class MainViewModel : ViewModelBase
     public async Task StartAsync()
     {
         await RefreshAsync();
-        if (IsSignedIn && !Fab.HasLoaded)
+        if (IsSignedIn && !Fab.HasLoaded && !Fab.IsLoading)
             await Fab.LoadAsync(includeLibrary: true);
     }
 
@@ -130,12 +130,16 @@ public partial class MainViewModel : ViewModelBase
     [RelayCommand]
     private void ShowEngines() => IsFabTab = false;
 
+    /// <summary>
+    /// Switches at once; the first visit starts loading the library, which shows its own progress. Not awaited: an async
+    /// command can't run again until it finishes, so the tab button stayed disabled for the whole first load.
+    /// </summary>
     [RelayCommand]
-    private async Task ShowFabAsync()
+    private void ShowFab()
     {
         IsFabTab = true;
-        if (!Fab.HasLoaded)
-            await Fab.LoadAsync(includeLibrary: true);
+        if (!Fab.HasLoaded && !Fab.IsLoading)
+            _ = Fab.LoadAsync(includeLibrary: true);
     }
 
     private async Task RefreshCoreAsync(bool includeOwned)

@@ -59,6 +59,24 @@ public class ScreenshotTests
     }
 
     [AvaloniaFact]
+    public void Tabs_stay_clickable_while_the_library_is_updating()
+    {
+        var viewModel = SampleMainViewModel();
+        viewModel.Fab.IsLoading = true; // the first load, still fetching from Fab
+        var window = Show(viewModel);
+        var library = window.GetVisualDescendants().OfType<Button>().Single(b => b.Command == viewModel.ShowFabCommand);
+
+        viewModel.ShowFabCommand.Execute(null);
+        viewModel.ShowEnginesCommand.Execute(null);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.True(viewModel.ShowFabCommand.CanExecute(null));
+        Assert.True(library.IsEffectivelyEnabled);
+        viewModel.ShowFabCommand.Execute(null);
+        Assert.True(viewModel.IsFabTab);
+    }
+
+    [AvaloniaFact]
     public void Library_shows_loading_progress_next_to_its_title()
     {
         var viewModel = SampleMainViewModel();
