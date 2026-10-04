@@ -9,11 +9,11 @@
         <Grid RowDefinitions="Auto,*,Auto">
 
             <!-- Picture, 16:9, with the type as a badge -->
-            <Border x:Name="Picture" Height="133" CornerRadius="10,10,0,0" ClipToBounds="True" Background="#222733">
+            <Border x:Name="Picture" Height="133" CornerRadius="10,10,0,0" ClipToBounds="True" Background="{StaticResource PictureBackgroundBrush}">
                 <Panel>
                     <TextBlock Text="{Binding KindLabel}" Classes="muted small" HorizontalAlignment="Center" VerticalAlignment="Center" />
                     <Image Source="{Binding Thumbnail}" Stretch="UniformToFill" />
-                    <Border Classes="chip" Background="#CC0E1014" Margin="8" HorizontalAlignment="Left" VerticalAlignment="Top">
+                    <Border Classes="chip" Background="#CC141414" Margin="8" HorizontalAlignment="Left" VerticalAlignment="Top">
                         <TextBlock Text="{Binding KindLabel}" />
                     </Border>
                     <Button Classes="update" Content="Update" Margin="8" HorizontalAlignment="Right" VerticalAlignment="Top"

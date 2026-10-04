@@ -9,14 +9,14 @@
     <Grid RowDefinitions="Auto,Auto,*">
 
         <StackPanel Spacing="12" Margin="24,20,24,0" MaxWidth="{StaticResource PageMaxWidth}">
-            <Grid ColumnDefinitions="*,Auto">
+            <Grid ColumnDefinitions="Auto,*,Auto">
                 <TextBlock Text="Library" FontSize="22" FontWeight="SemiBold" VerticalAlignment="Center" />
-                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-                    <ProgressBar IsIndeterminate="True" Width="120" IsVisible="{Binding IsLoading}" />
-                    <TextBlock Text="{Binding LoadingText}" Classes="muted" VerticalAlignment="Center"
-                               IsVisible="{Binding LoadingText, Converter={x:Static ObjectConverters.IsNotNull}}" />
-                    <TextBlock Text="{Binding Summary}" Classes="muted" VerticalAlignment="Center" />
-                </StackPanel>
+                <!-- Loading progress, next to the title (same place as on the Engines tab) -->
+                <DockPanel Grid.Column="1" Margin="20,0,12,0" VerticalAlignment="Center" IsVisible="{Binding IsLoading}">
+                    <ProgressBar DockPanel.Dock="Left" IsIndeterminate="True" Width="120" />
+                    <TextBlock Text="{Binding LoadingText}" Classes="muted" Margin="12,0,0,0" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                </DockPanel>
+                <TextBlock Grid.Column="2" Text="{Binding Summary}" Classes="muted" VerticalAlignment="Center" />
             </Grid>
 
             <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto">

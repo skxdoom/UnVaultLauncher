@@ -140,6 +140,7 @@ public partial class FabLibraryViewModel : ViewModelBase
     public async Task LoadAsync(bool includeLibrary)
     {
         IsLoading = true;
+        LoadingText = "Scanning downloads and installs…";
         try
         {
             string vaultDirectory = Owner.Settings.ResolveVaultCache().Path;

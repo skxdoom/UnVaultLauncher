@@ -73,13 +73,12 @@ public partial class MainViewModel : ViewModelBase
 
     public bool IsSignedOut => !IsSignedIn;
 
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(AccountInitial))]
-    public partial string DisplayName { get; set; } = "";
-
-    public string AccountInitial => DisplayName.Length > 0 ? DisplayName[..1].ToUpperInvariant() : "?";
+    [ObservableProperty] public partial string DisplayName { get; set; } = "";
 
     [ObservableProperty] public partial bool IsLoading { get; set; }
+
+    /// <summary>What a refresh is doing right now, shown next to the page title; null when idle.</summary>
+    [ObservableProperty] public partial string? LoadingText { get; set; }
 
     /// <summary>A problem worth telling the user about (failed sign-in, Epic unreachable…).</summary>
     [ObservableProperty]
@@ -135,11 +134,14 @@ public partial class MainViewModel : ViewModelBase
     private async Task RefreshCoreAsync(bool includeOwned)
     {
         IsLoading = true;
+        LoadingText = "Looking for installed engines…";
         try
         {
             _local = await Task.Run(EngineLibrary.ScanLocal);
             if (includeOwned && Services.Account.IsLoggedIn)
             {
+                int installed = _local.Where(l => l.Exists).Select(l => l.AppName).Distinct(StringComparer.OrdinalIgnoreCase).Count();
+                LoadingText = $"{installed:N0} installed  ·  checking Epic for versions and updates…";
                 try
                 {
                     _owned = (await Services.API.GetAssetsAsync()).Where(a => a.IsEngine).ToList();
@@ -163,13 +165,14 @@ public partial class MainViewModel : ViewModelBase
         }
         finally
         {
+            LoadingText = null;
             IsLoading = false;
         }
     }
 
     /// <summary>
     /// Rebuilds the engine cards: one per engine on this machine (plus EGL records whose files are gone), newest
-    /// major.minor first. Versions the account could install are offered through "Install engine…" instead.
+    /// major.minor first. Versions the account could install are offered through the + (install engine) button instead.
     /// </summary>
     internal void SetEngines(IEnumerable<LocalEngine> local, IEnumerable<EpicAsset> owned)
     {

@@ -4,17 +4,31 @@
              RequestedThemeVariant="Dark">
 
     <Application.Resources>
-        <SolidColorBrush x:Key="WindowBackgroundBrush">#0E1014</SolidColorBrush>
-        <SolidColorBrush x:Key="HeaderBackgroundBrush">#13161C</SolidColorBrush>
-        <SolidColorBrush x:Key="CardBackgroundBrush">#171A21</SolidColorBrush>
-        <SolidColorBrush x:Key="CardHoverBrush">#1C2029</SolidColorBrush>
-        <SolidColorBrush x:Key="CardBorderBrush">#262B35</SolidColorBrush>
-        <SolidColorBrush x:Key="MutedTextBrush">#8B93A1</SolidColorBrush>
-        <SolidColorBrush x:Key="AccentBrushUL">#4F8CFF</SolidColorBrush>
-        <SolidColorBrush x:Key="SuccessBrush">#34C77B</SolidColorBrush>
-        <SolidColorBrush x:Key="WarningBrush">#F2A93B</SolidColorBrush>
+        <!-- Neutral greys with a gold accent, in the spirit of the Epic Games Launcher; orange is kept for updates -->
+        <SolidColorBrush x:Key="WindowBackgroundBrush">#141414</SolidColorBrush>
+        <SolidColorBrush x:Key="HeaderBackgroundBrush">#191919</SolidColorBrush>
+        <SolidColorBrush x:Key="CardBackgroundBrush">#1C1C1C</SolidColorBrush>
+        <SolidColorBrush x:Key="CardHoverBrush">#222222</SolidColorBrush>
+        <SolidColorBrush x:Key="CardBorderBrush">#2B2B2B</SolidColorBrush>
+        <SolidColorBrush x:Key="PictureBackgroundBrush">#242424</SolidColorBrush>
+        <SolidColorBrush x:Key="MutedTextBrush">#9C9C9C</SolidColorBrush>
+        <SolidColorBrush x:Key="AccentBrushUL">#E8B341</SolidColorBrush>
+        <SolidColorBrush x:Key="OnAccentBrush">#17130A</SolidColorBrush>
+        <SolidColorBrush x:Key="SuccessBrush">#3CC47C</SolidColorBrush>
+        <SolidColorBrush x:Key="WarningBrush">#F7862F</SolidColorBrush>
         <SolidColorBrush x:Key="DangerBrush">#EF5B5B</SolidColorBrush>
         <SolidColorBrush x:Key="OverlayBrush">#B0000000</SolidColorBrush>
+
+        <!-- Fluent draws text and check marks on the accent in white; on gold they need to be dark -->
+        <StaticResource x:Key="AccentButtonForeground" ResourceKey="OnAccentBrush" />
+        <StaticResource x:Key="AccentButtonForegroundPointerOver" ResourceKey="OnAccentBrush" />
+        <StaticResource x:Key="AccentButtonForegroundPressed" ResourceKey="OnAccentBrush" />
+        <StaticResource x:Key="CheckBoxCheckGlyphForegroundChecked" ResourceKey="OnAccentBrush" />
+        <StaticResource x:Key="CheckBoxCheckGlyphForegroundCheckedPointerOver" ResourceKey="OnAccentBrush" />
+        <StaticResource x:Key="CheckBoxCheckGlyphForegroundCheckedPressed" ResourceKey="OnAccentBrush" />
+        <StaticResource x:Key="CheckBoxCheckGlyphForegroundIndeterminate" ResourceKey="OnAccentBrush" />
+        <StaticResource x:Key="CheckBoxCheckGlyphForegroundIndeterminatePointerOver" ResourceKey="OnAccentBrush" />
+        <StaticResource x:Key="CheckBoxCheckGlyphForegroundIndeterminatePressed" ResourceKey="OnAccentBrush" />
 
         <!-- Width of the page content (Engines and Library alike), centered in wider windows -->
         <x:Double x:Key="PageMaxWidth">1400</x:Double>
@@ -27,7 +41,7 @@
     <Application.Styles>
         <FluentTheme>
             <FluentTheme.Palettes>
-                <ColorPaletteResources x:Key="Dark" Accent="#FF4F8CFF" RegionColor="#FF0E1014" />
+                <ColorPaletteResources x:Key="Dark" Accent="#FFE9AE2E" RegionColor="#FF141414" />
             </FluentTheme.Palettes>
         </FluentTheme>
 
@@ -62,17 +76,17 @@
             <Setter Property="Width" Value="64" />
             <Setter Property="Height" Value="64" />
             <Setter Property="CornerRadius" Value="12" />
-            <Setter Property="Background" Value="#222733" />
+            <Setter Property="Background" Value="#262626" />
         </Style>
         <Style Selector="Border.tile.installed">
-            <Setter Property="Background" Value="#1D3461" />
+            <Setter Property="Background" Value="#2A4066" />
         </Style>
 
         <!-- Status chips -->
         <Style Selector="Border.chip">
             <Setter Property="CornerRadius" Value="999" />
             <Setter Property="Padding" Value="8,2" />
-            <Setter Property="Background" Value="#262B35" />
+            <Setter Property="Background" Value="#2A2A2A" />
             <Setter Property="VerticalAlignment" Value="Center" />
         </Style>
         <Style Selector="Border.chip > TextBlock">
@@ -81,30 +95,41 @@
             <Setter Property="Foreground" Value="{StaticResource MutedTextBrush}" />
         </Style>
         <Style Selector="Border.chip.success">
-            <Setter Property="Background" Value="#1A3A2A" />
+            <Setter Property="Background" Value="#17301F" />
         </Style>
         <Style Selector="Border.chip.success > TextBlock">
             <Setter Property="Foreground" Value="{StaticResource SuccessBrush}" />
         </Style>
         <Style Selector="Border.chip.warning">
-            <Setter Property="Background" Value="#3D2E14" />
+            <Setter Property="Background" Value="#3A2410" />
         </Style>
         <Style Selector="Border.chip.warning > TextBlock">
             <Setter Property="Foreground" Value="{StaticResource WarningBrush}" />
         </Style>
         <Style Selector="Border.chip.danger">
-            <Setter Property="Background" Value="#3D1A1A" />
+            <Setter Property="Background" Value="#3A1A1A" />
         </Style>
         <Style Selector="Border.chip.danger > TextBlock">
             <Setter Property="Foreground" Value="{StaticResource DangerBrush}" />
+        </Style>
+
+        <!-- Selected rows in lists (e.g. the engine to install into): a gold tint instead of Fluent's solid accent -->
+        <Style Selector="ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#3A3018" />
+        </Style>
+        <Style Selector="ListBoxItem:selected:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#45391C" />
+        </Style>
+        <Style Selector="ListBoxItem:selected:pressed /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#302814" />
         </Style>
 
         <!-- Banners -->
         <Style Selector="Border.banner">
             <Setter Property="CornerRadius" Value="8" />
             <Setter Property="Padding" Value="14,10" />
-            <Setter Property="Background" Value="#16243D" />
-            <Setter Property="BorderBrush" Value="#24406E" />
+            <Setter Property="Background" Value="#1F1F1F" />
+            <Setter Property="BorderBrush" Value="#333333" />
             <Setter Property="BorderThickness" Value="1" />
         </Style>
         <!-- A folder in a list (Settings > Project Folders), drawn like a read-only text box -->
@@ -120,8 +145,8 @@
             <Setter Property="VerticalAlignment" Value="Center" />
         </Style>
         <Style Selector="Border.banner.warning">
-            <Setter Property="Background" Value="#2E2410" />
-            <Setter Property="BorderBrush" Value="#5A4519" />
+            <Setter Property="Background" Value="#2D1F10" />
+            <Setter Property="BorderBrush" Value="#5C3A16" />
         </Style>
 
         <!-- Buttons -->
@@ -129,9 +154,17 @@
             <Setter Property="CornerRadius" Value="6" />
             <Setter Property="Padding" Value="14,7" />
         </Style>
+        <!-- Gold (and orange Update) buttons carry bold text -->
+        <Style Selector="Button.accent">
+            <Setter Property="FontWeight" Value="Bold" />
+        </Style>
         <Style Selector="Button.subtle">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />
+        </Style>
+        <!-- Disabled (e.g. Refresh while refreshing): only the content greys out, no box appears -->
+        <Style Selector="Button.subtle:disabled /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent" />
         </Style>
         <!-- Header tabs: the active one stays highlighted, also on hover -->
         <Style Selector="Button.tab">
@@ -140,26 +173,26 @@
             <Setter Property="Foreground" Value="{StaticResource MutedTextBrush}" />
         </Style>
         <Style Selector="Button.tab.active /template/ ContentPresenter#PART_ContentPresenter, Button.tab.active:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="#1D3461" />
+            <Setter Property="Background" Value="#2A2A2A" />
             <Setter Property="Foreground" Value="White" />
         </Style>
         <!-- The orange "Update" badge on a Library tile -->
         <Style Selector="Button.update">
             <Setter Property="Background" Value="{StaticResource WarningBrush}" />
-            <Setter Property="Foreground" Value="#1B1405" />
+            <Setter Property="Foreground" Value="#1C1005" />
             <Setter Property="FontSize" Value="11" />
-            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="FontWeight" Value="Bold" />
             <Setter Property="Padding" Value="9,2" />
             <Setter Property="CornerRadius" Value="10" />
             <Setter Property="Cursor" Value="Hand" />
         </Style>
         <Style Selector="Button.update:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="#F7BE63" />
-            <Setter Property="Foreground" Value="#1B1405" />
+            <Setter Property="Background" Value="#FA9F55" />
+            <Setter Property="Foreground" Value="#1C1005" />
         </Style>
         <Style Selector="Button.update:pressed /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="#E0962A" />
-            <Setter Property="Foreground" Value="#1B1405" />
+            <Setter Property="Background" Value="#E3741D" />
+            <Setter Property="Foreground" Value="#1C1005" />
         </Style>
         <Style Selector="Button.clear">
             <Setter Property="Padding" Value="7" />

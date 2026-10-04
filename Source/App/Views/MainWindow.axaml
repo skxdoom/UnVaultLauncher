@@ -35,16 +35,39 @@
                     </StackPanel>
 
                     <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                        <Button Classes="subtle" Command="{Binding RefreshCommand}" ToolTip.Tip="Refresh" IsEnabled="{Binding !IsLoading}">
-                            <TextBlock Text="⟳" FontSize="16" />
+                        <Button Classes="subtle" Command="{Binding RefreshCommand}" ToolTip.Tip="Refresh" IsEnabled="{Binding !IsLoading}" Padding="8">
+                            <!-- A clockwise arrow: a ring around (8,8) open at the top right, ending in an arrowhead -->
+                            <PathIcon Width="15" Height="15"
+                                      Data="F1 M13.95,8 A5.95,5.95 0 1 1 12.207,3.793 L11.217,4.783 A4.55,4.55 0 1 0 12.55,8 A0.7,0.7 0 0 1 13.95,8 Z M13.4,6 L9.6,5.7 L13.1,2.2 Z" />
                         </Button>
                         <Button Classes="subtle" Content="Settings" Command="{Binding OpenSettingsCommand}" />
                         <Button Content="Sign in" Classes="accent" Command="{Binding SignInCommand}" IsVisible="{Binding IsSignedOut}" />
                         <Button Classes="subtle" IsVisible="{Binding IsSignedIn}" Padding="6,4">
                             <StackPanel Orientation="Horizontal" Spacing="8">
-                                <Border Width="28" Height="28" CornerRadius="14" Background="{StaticResource AccentBrushUL}">
-                                    <TextBlock Text="{Binding AccountInitial}" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="Bold" />
-                                </Border>
+                                <!-- Avatar: a grey circle with a head and shoulders cut out; one shape, so no edges overlap.
+                                     The shoulders stop inside the circle, leaving a grey band under them. -->
+                                <Path Width="28" Height="28" Fill="{StaticResource MutedTextBrush}">
+                                    <Path.Data>
+                                        <CombinedGeometry GeometryCombineMode="Exclude">
+                                            <CombinedGeometry.Geometry1>
+                                                <EllipseGeometry Rect="0,0,28,28" />
+                                            </CombinedGeometry.Geometry1>
+                                            <CombinedGeometry.Geometry2>
+                                                <GeometryGroup FillRule="NonZero">
+                                                    <EllipseGeometry Center="14,11.3" RadiusX="4.7" RadiusY="4.7" />
+                                                    <CombinedGeometry GeometryCombineMode="Intersect">
+                                                        <CombinedGeometry.Geometry1>
+                                                            <EllipseGeometry Center="14,25.2" RadiusX="9" RadiusY="7.5" />
+                                                        </CombinedGeometry.Geometry1>
+                                                        <CombinedGeometry.Geometry2>
+                                                            <EllipseGeometry Rect="2.5,2.5,23,23" />
+                                                        </CombinedGeometry.Geometry2>
+                                                    </CombinedGeometry>
+                                                </GeometryGroup>
+                                            </CombinedGeometry.Geometry2>
+                                        </CombinedGeometry>
+                                    </Path.Data>
+                                </Path>
                                 <TextBlock Text="{Binding DisplayName}" VerticalAlignment="Center" />
                             </StackPanel>
                             <Button.Flyout>
@@ -76,15 +99,23 @@
                         </Grid>
                     </Border>
 
-                    <Grid ColumnDefinitions="*,Auto,Auto">
+                    <Grid ColumnDefinitions="Auto,*,Auto">
                         <TextBlock Text="Unreal Engine" FontSize="22" FontWeight="SemiBold" VerticalAlignment="Center" />
-                        <ProgressBar Grid.Column="1" IsIndeterminate="True" Width="120" Margin="0,0,12,0" IsVisible="{Binding IsLoading}" />
-                        <Button Grid.Column="2" Content="Install engine…" Classes="accent" Command="{Binding InstallEngineCommand}" />
+                        <!-- Refresh progress, next to the title -->
+                        <DockPanel Grid.Column="1" Margin="20,0,12,0" VerticalAlignment="Center" IsVisible="{Binding IsLoading}">
+                            <ProgressBar DockPanel.Dock="Left" IsIndeterminate="True" Width="120" />
+                            <TextBlock Text="{Binding LoadingText}" Classes="muted" Margin="12,0,0,0" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                        </DockPanel>
+                        <Button Grid.Column="2" Classes="accent" Command="{Binding InstallEngineCommand}" Padding="10"
+                                ToolTip.Tip="Install engine" AutomationProperties.Name="Install engine">
+                            <!-- A bold plus: two bars crossing in the middle of a 16 px grid -->
+                            <PathIcon Width="14" Height="14" Data="M6.7,2 H9.3 V6.7 H14 V9.3 H9.3 V14 H6.7 V9.3 H2 V6.7 H6.7 Z" />
+                        </Button>
                     </Grid>
 
                     <StackPanel IsVisible="{Binding HasNoEngines}" Margin="0,32" Spacing="6" HorizontalAlignment="Center">
                         <TextBlock Text="No engines installed yet." FontSize="16" HorizontalAlignment="Center" />
-                        <TextBlock Text="Use Install engine… to pick a version and only the components you need." Classes="muted" HorizontalAlignment="Center" />
+                        <TextBlock Text="Click + to pick a version and only the components you need." Classes="muted" HorizontalAlignment="Center" />
                     </StackPanel>
 
                     <ItemsControl ItemsSource="{Binding Engines}">

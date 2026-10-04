@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Presenters;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
@@ -33,12 +34,43 @@ public class ScreenshotTests
         var viewModel = SampleMainViewModel();
         var window = Show(viewModel);
 
-        // Only what's on disk (plus the stale EGL record), newest major.minor first; the rest is under "Install engine…".
+        // Only what's on disk (plus the stale EGL record), newest major.minor first; the rest is under the + (install engine) button.
         Assert.Equal(["UE_5.8", "UE_5.7", "UE_5.6", "UE_5.5", "UE_4.27"], viewModel.Engines.Select(e => e.AppName));
         Assert.True(viewModel.Engines[0].IsStale);
         Assert.True(viewModel.Engines.Single(e => e.AppName == "UE_5.5").HasUpdate);
         Assert.Equal(["UE_5.8", "UE_5.4", "UE_4.26"], viewModel.InstallableEngines.Select(e => e.AppName));
         Save(window, "engines.png");
+    }
+
+    [AvaloniaFact]
+    public void Refresh_icon_greys_out_while_refreshing()
+    {
+        var viewModel = SampleMainViewModel();
+        viewModel.IsLoading = true;
+        viewModel.LoadingText = "5 installed  ·  checking Epic for versions and updates…";
+        var window = Show(viewModel);
+
+        // The icon is drawn (no font glyph) in its button's text color, so it follows the disabled look too.
+        var refresh = window.GetVisualDescendants().OfType<Button>().Single(b => ToolTip.GetTip(b) as string == "Refresh");
+        var icon = refresh.GetVisualDescendants().OfType<PathIcon>().Single();
+        Assert.False(refresh.IsEffectivelyEnabled);
+        Assert.Same(icon.FindAncestorOfType<ContentPresenter>()!.Foreground, icon.Foreground);
+        Save(window, "header-refreshing.png");
+    }
+
+    [AvaloniaFact]
+    public void Library_shows_loading_progress_next_to_its_title()
+    {
+        var viewModel = SampleMainViewModel();
+        viewModel.IsFabTab = true;
+        SampleFab(viewModel);
+        viewModel.Fab.IsLoading = true;
+        viewModel.Fab.LoadingText = "Updating… 1,000 read";
+        var window = Show(viewModel);
+
+        var text = window.GetVisualDescendants().OfType<TextBlock>().Single(t => t.Text == "Updating… 1,000 read");
+        Assert.True(text.IsEffectivelyVisible);
+        Save(window, "fab-library-loading.png");
     }
 
     [AvaloniaFact]
