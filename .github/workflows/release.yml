@@ -1,0 +1,70 @@
+# Builds UnVaultLauncher.exe from a version tag and puts it in a draft release, for a person to check and publish.
+# Release: set <Version> in Directory.Build.props, commit, then push a matching tag (e.g. v0.3.0).
+# Run it by hand (Actions > Release > Run workflow) for a dry run: build and tests only, no release.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write      # create the draft release
+      id-token: write      # sign the build provenance
+      attestations: write  # store it with the repository
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - name: Check the tag matches the version
+        if: github.event_name == 'push'
+        shell: pwsh
+        run: |
+          $version = (Select-Xml -Path Directory.Build.props -XPath '//Version').Node.InnerText
+          if ($env:GITHUB_REF_NAME -ne "v$version") {
+              throw "Tag $env:GITHUB_REF_NAME doesn't match <Version>$version</Version> in Directory.Build.props."
+          }
+          "VERSION=$version" >> $env:GITHUB_ENV
+
+      - name: Test
+        run: dotnet test UnVault.sln -c Release
+
+      - name: Publish
+        run: dotnet publish Source/App -p:PublishProfile=win-x64
+
+      - name: Release notes
+        if: github.event_name == 'push'
+        shell: pwsh
+        run: |
+          $hash = (Get-FileHash UnVaultLauncher.exe -Algorithm SHA256).Hash.ToLowerInvariant()
+          @"
+          SHA-256: ``$hash``
+
+          To check that the exe was built by this repository's release workflow:
+
+              gh attestation verify UnVaultLauncher.exe --repo $env:GITHUB_REPOSITORY
+
+          The exe isn't code-signed yet, so Windows may warn about an unknown publisher on first run: choose More info, then Run anyway.
+          "@ | Out-File notes.md -Encoding utf8
+
+      # A signed record that the exe came from this workflow and commit (checked with gh attestation verify).
+      - uses: actions/attest@v4
+        if: github.event_name == 'push'
+        with:
+          subject-path: UnVaultLauncher.exe
+
+      - name: Create the draft release
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >
+          gh release create "$env:GITHUB_REF_NAME" UnVaultLauncher.exe
+          --draft --verify-tag --title "UnVault Launcher $env:VERSION" --notes-file notes.md

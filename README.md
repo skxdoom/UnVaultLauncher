@@ -7,6 +7,10 @@ You sign in with your Epic account inside the app.
 - **Library**: install plugins into engines, add asset packs to projects, create projects from complete-project items, and keep downloads in the Vault Cache.
 - **Works alongside the Epic Games Launcher**: picks up the engines and plugins it installed, and shares its Vault Cache and project folders.
 
+## Download
+
+Get `UnVaultLauncher.exe` from [Releases](https://github.com/skxdoom/UnVaultLauncher/releases/latest). It's a single file with nothing to install, for 64-bit Windows 10 or 11.
+
 ## Security and privacy
 
 - UnVault Launcher uses Epic's unofficial launcher API, as other third-party launchers do.
@@ -28,7 +32,7 @@ This puts `UnVaultLauncher.exe` in the repository root. `Source/CLI` builds `UnV
 
 ## Transparency
 
-This is mostly a vibe-coded project. Why? Because I was desperate. The Epic Games Launcher has a lot of issues, and for more than a year they've been directly affecting my work, stopping me from downloading engine versions and the assets and plugins I own, including ones I developed and published myself. I'm tired of trying to fix it. There are other third-party launchers, but they often lack features I need.
+This is mostly a vibe-coded project. Why? Because I was desperate. The Epic Games Launcher has a lot of issues, and for more than a year they've been directly affecting my work, blocking me from downloading engine versions and the assets and plugins I own, including ones I developed and published myself. I'm tired of trying to fix it. There are other third-party launchers, but they often lack features I need.
 
 ## Disclaimer
 
