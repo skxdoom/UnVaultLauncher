@@ -484,3 +484,5 @@ $RECYCLE.BIN/
 # UnVault Launcher: dev tools stay local; the published exe is a build output
 /Tools/
 /UnVaultLauncher.exe
+# The release build's settings (no secrets in it); the template above ignores every .pubxml
+!/Source/App/Properties/PublishProfiles/win-x64.pubxml

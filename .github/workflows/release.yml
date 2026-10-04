@@ -1,12 +1,15 @@
-# Builds UnVaultLauncher.exe from a version tag and puts it in a draft release, for a person to check and publish.
-# Release: set <Version> in Directory.Build.props, commit, then push a matching tag (e.g. v0.3.0).
-# Run it by hand (Actions > Release > Run workflow) for a dry run: build and tests only, no release.
+# Builds UnVaultLauncher.exe and puts it in a draft release, for a person to check and publish.
+# Release: set <Version> in Directory.Build.props, push, then Actions > Release > Run workflow.
+# The draft keeps the commit it was built from; GitHub tags that commit (e.g. v0.3.1) when the release is published.
 name: Release
 
 on:
-  push:
-    tags: ['v*']
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Only build and test, without making a release
+        type: boolean
+        default: false
 
 jobs:
   release:
@@ -24,24 +27,39 @@ jobs:
         with:
           global-json-file: global.json
 
-      - name: Check the tag matches the version
-        if: github.event_name == 'push'
+      - name: Version
         shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DRY_RUN: ${{ inputs.dry_run }}
         run: |
           $version = (Select-Xml -Path Directory.Build.props -XPath '//Version').Node.InnerText
-          if ($env:GITHUB_REF_NAME -ne "v$version") {
-              throw "Tag $env:GITHUB_REF_NAME doesn't match <Version>$version</Version> in Directory.Build.props."
-          }
+          $tag = "v$version"
           "VERSION=$version" >> $env:GITHUB_ENV
+          "TAG=$tag" >> $env:GITHUB_ENV
+          # Each version is released once: a second run would make a duplicate draft or point at another commit.
+          $releases = gh api "repos/$env:GITHUB_REPOSITORY/releases" --paginate --jq '.[].tag_name'
+          git ls-remote --exit-code --tags origin "refs/tags/$tag" | Out-Null
+          if ($LASTEXITCODE -eq 0 -or $releases -contains $tag) {
+              $problem = "$tag already has a release or a tag. Raise <Version> in Directory.Build.props, or delete the old draft or tag on GitHub."
+              if ($env:DRY_RUN -eq 'true') { Write-Warning $problem } else { throw $problem }
+          }
+          $global:LASTEXITCODE = 0
+          "$tag from commit $env:GITHUB_SHA"
 
       - name: Test
         run: dotnet test UnVault.sln -c Release
 
       - name: Publish
-        run: dotnet publish Source/App -p:PublishProfile=win-x64
+        shell: pwsh
+        run: |
+          dotnet publish Source/App -p:PublishProfile=win-x64
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          # A missing profile is only a warning to dotnet publish; it then builds something else, without the exe.
+          if (-not (Test-Path UnVaultLauncher.exe)) { throw "The publish didn't produce UnVaultLauncher.exe; see its warnings above." }
 
       - name: Release notes
-        if: github.event_name == 'push'
+        if: ${{ !inputs.dry_run }}
         shell: pwsh
         run: |
           $hash = (Get-FileHash UnVaultLauncher.exe -Algorithm SHA256).Hash.ToLowerInvariant()
@@ -57,14 +75,14 @@ jobs:
 
       # A signed record that the exe came from this workflow and commit (checked with gh attestation verify).
       - uses: actions/attest@v4
-        if: github.event_name == 'push'
+        if: ${{ !inputs.dry_run }}
         with:
           subject-path: UnVaultLauncher.exe
 
       - name: Create the draft release
-        if: github.event_name == 'push'
+        if: ${{ !inputs.dry_run }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: >
-          gh release create "$env:GITHUB_REF_NAME" UnVaultLauncher.exe
-          --draft --verify-tag --title "UnVault Launcher $env:VERSION" --notes-file notes.md
+          gh release create "$env:TAG" UnVaultLauncher.exe --draft --target "$env:GITHUB_SHA"
+          --title "UnVault Launcher $env:VERSION" --notes-file notes.md

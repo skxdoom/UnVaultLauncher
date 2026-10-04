@@ -5,7 +5,7 @@
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
     <!-- The product version, shared by every project: exe file properties, the app's header, the CLI's version option. -->
-    <Version>0.3.0</Version>
+    <Version>0.3.1</Version>
     <Copyright>(c) 2026 Dmitry Karpukhin</Copyright>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <!-- All build output (bin, obj, publish) goes to Bin\ next to this file, keeping Source\ and Tests\ free of it. -->
