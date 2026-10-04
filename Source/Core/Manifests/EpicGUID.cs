@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using System.Globalization;
+using System.Text;
 
 namespace Unvault.Core.Manifests;
 
@@ -24,6 +25,16 @@ public readonly record struct EpicGUID(uint A, uint B, uint C, uint D)
             uint.Parse(hex.AsSpan(8, 8), NumberStyles.HexNumber),
             uint.Parse(hex.AsSpan(16, 8), NumberStyles.HexNumber),
             uint.Parse(hex.AsSpan(24, 8), NumberStyles.HexNumber));
+    }
+
+    /// <summary>The same, from UTF-8 text (e.g. straight out of a JSON manifest, without making a string first).</summary>
+    public static EpicGUID Parse(ReadOnlySpan<byte> utf8Hex)
+    {
+        if (utf8Hex.Length != 32)
+            throw new FormatException($"Expected 32 hex characters, got '{Encoding.UTF8.GetString(utf8Hex)}'.");
+        return new EpicGUID(Hex(utf8Hex[..8]), Hex(utf8Hex[8..16]), Hex(utf8Hex[16..24]), Hex(utf8Hex[24..]));
+
+        static uint Hex(ReadOnlySpan<byte> part) => uint.Parse(part, NumberStyles.HexNumber, CultureInfo.InvariantCulture);
     }
 
     /// <summary>The 16 bytes as stored on disk (four little-endian uint32s).</summary>

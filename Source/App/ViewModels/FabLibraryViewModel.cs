@@ -154,7 +154,7 @@ public partial class FabLibraryViewModel : ViewModelBase
             }
             else if (includeLibrary || _library is null)
             {
-                // Fab takes several seconds to list a big library, so show the copy from last time meanwhile.
+                // Fab is slow to list a big library, so show the copy from last time meanwhile.
                 if (_library is null && await Task.Run(() => FabLibraryCache.Load(accountID)) is { } saved)
                 {
                     _library = saved.Items;

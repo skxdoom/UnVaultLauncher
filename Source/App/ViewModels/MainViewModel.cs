@@ -96,6 +96,13 @@ public partial class MainViewModel : ViewModelBase
 
     public bool HasDialog => Dialog is not null;
 
+    partial void OnDialogChanged(ViewModelBase? oldValue, ViewModelBase? newValue)
+    {
+        // These read build manifests (an engine's is large); give that memory back once they're closed.
+        if (oldValue is ComponentPickerViewModel or FabActionViewModel)
+            MemoryRelief.Release();
+    }
+
     /// <summary>Shown next to the name in the header, e.g. "v0.1.0".</summary>
     public string VersionText { get; } = "v" + ProductInfo.Version;
 
@@ -144,7 +151,7 @@ public partial class MainViewModel : ViewModelBase
             else if (_owned.Count == 0 && await Task.Run(() => OwnedEnginesCache.Load(accountID)) is { } saved)
                 _owned = saved.Engines; // Epic's list from last time, so update badges and installable versions are there at once
 
-            // The installed engines show right away: the scan takes milliseconds, Epic's list several seconds.
+            // The installed engines show right away; the local scan is quick, Epic's list is not.
             SetEngines(_local, _owned);
 
             if (includeOwned && accountID is not null)

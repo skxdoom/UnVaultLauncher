@@ -8,11 +8,10 @@ namespace Unvault.App.Services;
 
 /// <summary>
 /// Preview images for the Fab tiles. Asks the image CDNs for copies sized to the tiles at the display's scaling
-/// (a 2560 px original can be ~450 KB; a 240 px copy is ~10 KB), keeps them on disk per item, decodes off the UI
+/// (the originals are many times bigger than a tile shows), keeps them on disk per item, decodes off the UI
 /// thread, and holds only the most recently shown pictures in memory.
-/// Kept per item rather than per link because Fab sends a different gallery picture as "featured" from one library
-/// fetch to the next (about half of them changed within a day): keyed by link, every refresh re-downloaded half the
-/// pictures and left the old files behind. A picture is fetched again after <see cref="MaxAge"/>, so a seller's new
+/// Kept per item rather than per link because Fab sends a different gallery picture as "featured" for many items from
+/// one library fetch to the next: keyed by link, every refresh re-downloaded those pictures and left the old files behind. A picture is fetched again after <see cref="MaxAge"/>, so a seller's new
 /// picture shows up eventually, and pictures not used for that long are deleted.
 /// Best effort throughout: a picture that can't be had just leaves the placeholder.
 /// </summary>

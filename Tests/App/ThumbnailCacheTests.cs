@@ -56,7 +56,6 @@ public sealed class ThumbnailCacheTests : IDisposable
         Assert.True(results.Count(r => r is not null) > urls.Count / 2, $"Only {results.Count(r => r is not null)} of {urls.Count} thumbnails loaded.");
     }
 
-    // Measured: a 2560 px Fab original was 451 KB, the 400 px copy 18 KB.
     [Theory]
     [InlineData("https://media.fab.com/image_previews/gallery_images/81cf/bae6.jpg", "https://media.fab.com/cdn-cgi/image/width=240/image_previews/gallery_images/81cf/bae6.jpg")]
     [InlineData("https://cdn1.epicgames.com/ue/product/Featured/SampleItem_featured-894x488-0000.png", "https://cdn1.epicgames.com/ue/product/Featured/SampleItem_featured-894x488-0000.png?resize=1&w=240")]
@@ -79,7 +78,7 @@ public sealed class ThumbnailCacheTests : IDisposable
         Assert.Equal(width, cache.Width);
     }
 
-    /// <summary>Seen live: Fab sent another "featured" picture for about half the library a day later.</summary>
+    /// <summary>Fab sends another "featured" picture for many items from one library fetch to the next.</summary>
     [AvaloniaFact]
     public async Task Pictures_are_kept_per_item_so_a_rotated_link_is_not_downloaded_again()
     {

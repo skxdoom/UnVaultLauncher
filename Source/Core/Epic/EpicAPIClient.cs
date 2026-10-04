@@ -44,7 +44,7 @@ public sealed partial class EpicAPIClient(HttpClient http, EpicAccount account)
 
         // Launcher manifest URLs may be signed, but chunks are fetched from the plain CloudDir.
         var sources = build.Manifests.Select(m => new ChunkSource(m.GetBaseURL())).Distinct().ToList();
-        return new DownloadedManifest(Manifest.Parse(data), data, sources, build.Secrets ?? []);
+        return new DownloadedManifest(await ParseAsync(data, cancellationToken), data, sources, build.Secrets ?? []);
     }
 
     /// <summary>Fetches the first URL that returns a file matching the expected SHA-1, using/filling the manifest cache.</summary>
@@ -56,7 +56,7 @@ public sealed partial class EpicAPIClient(HttpClient http, EpicAccount account)
         if (cacheable && File.Exists(cachePath))
         {
             byte[] cached = await File.ReadAllBytesAsync(cachePath, cancellationToken);
-            if (HashMatches(cached, expectedSHA1))
+            if (await Task.Run(() => HashMatches(cached, expectedSHA1), cancellationToken))
                 return cached;
         }
 
@@ -67,7 +67,7 @@ public sealed partial class EpicAPIClient(HttpClient http, EpicAccount account)
             {
                 // CDN request: no auth header; signed URLs carry their own query parameters.
                 byte[] data = await http.GetByteArrayAsync(url, cancellationToken);
-                if (!HashMatches(data, expectedSHA1))
+                if (!await Task.Run(() => HashMatches(data, expectedSHA1), cancellationToken))
                 {
                     errors.Add($"{StripQuery(url)}: hash mismatch");
                     continue;
@@ -125,6 +125,13 @@ public sealed partial class EpicAPIClient(HttpClient http, EpicAccount account)
             }
         }
     }
+
+    /// <summary>
+    /// An engine's manifest lists every file of the engine, so parsing it isn't instant, and callers are often the UI:
+    /// it happens on the thread pool. Hashing too (see <see cref="DownloadVerifiedAsync"/>).
+    /// </summary>
+    private static Task<Manifest> ParseAsync(byte[] data, CancellationToken cancellationToken) =>
+        Task.Run(() => Manifest.Parse(data), cancellationToken);
 
     private static bool HashMatches(byte[] data, string? expectedHex) =>
         string.IsNullOrEmpty(expectedHex) || Convert.ToHexString(SHA1.HashData(data)).Equals(expectedHex, StringComparison.OrdinalIgnoreCase);

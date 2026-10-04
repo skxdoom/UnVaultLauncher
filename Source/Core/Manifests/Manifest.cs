@@ -110,7 +110,7 @@ public sealed class Manifest
     {
         private readonly BinaryReader _r = new(stream, Encoding.Latin1);
 
-        // Install tags and similar strings repeat across tens of thousands of files.
+        // Install tags and similar strings repeat across many files.
         private readonly Dictionary<string, string> _stringPool = new(StringComparer.Ordinal);
 
         public ManifestMeta ReadMeta()

@@ -1,3 +1,4 @@
+using System.Text;
 using Unvault.Core.Manifests;
 
 namespace Unvault.Core.Tests;
@@ -27,11 +28,70 @@ public class JSONBlobTests
     [InlineData("014", 14ul)]
     [InlineData("000000000000", 0ul)]
     public void BlobToNumber_is_little_endian_decimal_bytes(string blob, ulong expected) =>
-        Assert.Equal(expected, JSONManifestParser.BlobToNumber(blob));
+        Assert.Equal(expected, JSONManifestParser.BlobToNumber(Encoding.ASCII.GetBytes(blob)));
 
     [Fact]
     public void BlobToBytes_decodes_each_triplet() =>
-        Assert.Equal(new byte[] { 27, 0, 255 }, JSONManifestParser.BlobToBytes("027000255"));
+        Assert.Equal(new byte[] { 27, 0, 255 }, JSONManifestParser.BlobToBytes("027000255"u8));
+
+    [Theory]
+    [InlineData("256")]
+    [InlineData("02a")]
+    public void Blob_with_a_bad_triplet_is_a_format_error(string blob) =>
+        Assert.Throws<ManifestFormatException>(() => JSONManifestParser.BlobToBytes(Encoding.ASCII.GetBytes(blob)));
+
+    [Fact]
+    public void JSON_manifest_reads_every_field_in_any_order()
+    {
+        // Chunk lists before the file list, unknown fields, a prerequisite list and custom fields: all as EGL may write them.
+        string json = """
+            {
+              "ChunkHashList": { "00000000000000000000000000000001": "016000000000000000" },
+              "DataGroupList": { "00000000000000000000000000000001": "007" },
+              "ChunkShaList": { "00000000000000000000000000000001": "0102030405060708090A0B0C0D0E0F1011121314" },
+              "ChunkFilesizeList": { "00000000000000000000000000000001": "100001000000000000" },
+              "SomethingNew": { "nested": [1, 2, { "deeper": true }] },
+              "ManifestFileVersion": "013000000000",
+              "AppNameString": "UE_4.27",
+              "BuildVersionString": "4.27.2-1+++UE4+Release-4.27-Windows",
+              "PrereqIds": [ "ABC" ],
+              "FileManifestList": [
+                {
+                  "Filename": "Engine/Binaries/Win64/Editor.exe",
+                  "FileHash": "001002003004005006007008009010011012013014015016017018019020",
+                  "FileChunkParts": [ { "Guid": "00000000000000000000000000000001", "Offset": "016000000000", "Size": "032000000000" } ],
+                  "InstallTags": [ "Win64", "Win64" ],
+                  "bIsReadOnly": true,
+                  "bIsUnixExecutable": false
+                },
+                { "Filename": "Readme.txt", "FileHash": "000000000000000000000000000000000000000000000000000000000000", "FileChunkParts": [] }
+              ],
+              "CustomFields": { "Key": "Value" }
+            }
+            """;
+
+        var manifest = Manifest.Parse(Encoding.UTF8.GetBytes(json));
+
+        Assert.Equal(("UE_4.27", "4.27.2-1+++UE4+Release-4.27-Windows", 13u), (manifest.Meta.AppName, manifest.Meta.BuildVersion, manifest.FeatureLevel));
+        Assert.Equal(["ABC"], manifest.Meta.PrereqIDs);
+        Assert.Equal("Value", manifest.CustomFields["Key"]);
+
+        var chunk = Assert.Single(manifest.Chunks);
+        Assert.Equal((16ul, (byte)7, 100L + 256), (chunk.Hash, chunk.GroupNum, chunk.FileSize));
+        Assert.Equal(Enumerable.Range(1, 20).Select(i => (byte)i), chunk.SHA1);
+        Assert.Equal(1024u * 1024, chunk.WindowSize);
+
+        var exe = manifest.Files[0];
+        Assert.Equal(new ChunkPart(EpicGUID.Parse("00000000000000000000000000000001"), 16, 32), Assert.Single(exe.ChunkParts));
+        Assert.Equal((32L, FileFlags.ReadOnly), (exe.FileSize, exe.Flags));
+        Assert.Equal(Enumerable.Range(1, 20).Select(i => (byte)i), exe.SHA1);
+        Assert.Same(exe.InstallTags[0], exe.InstallTags[1]); // repeated tags share one string
+        Assert.Equal(("Readme.txt", 0L), (manifest.Files[1].Filename, manifest.Files[1].FileSize));
+    }
+
+    [Fact]
+    public void JSON_manifest_cut_off_midway_is_a_format_error() =>
+        Assert.Throws<ManifestFormatException>(() => Manifest.Parse(Encoding.UTF8.GetBytes("""{ "AppNameString": "UE_4.27", "FileManifestList": [ { "Filename": "a" """)));
 }
 
 public class ChunkPathTests

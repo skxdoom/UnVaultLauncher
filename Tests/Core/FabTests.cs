@@ -132,7 +132,7 @@ public sealed class FabTests : IDisposable
     [Fact]
     public void Library_entries_for_the_same_asset_are_merged()
     {
-        // Seen live: 12 of 941 entries came back twice, far apart, some with a newer picture on one copy.
+        // Fab lists some products twice, far apart in the list, sometimes with a newer picture on one copy.
         FabLibraryItem Entry(string assetID, string seller, string picture, DateTimeOffset uploaded, params FabProjectVersion[] versions) => new()
         {
             AssetID = assetID, AssetNamespace = FabKinds.FabNamespace, Title = "Garden Pack", Seller = seller,

@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Unvault.App.Services;
 using Unvault.Core.Epic;
 using Unvault.Core.Install;
 using Unvault.Core.Manifests;
@@ -180,8 +181,11 @@ public partial class ComponentPickerViewModel : ViewModelBase
             var source = await _fetch(option.Asset, CancellationToken.None);
             if (request != _versionRequest)
                 return;
+            var previous = _source;
             _source = source;
             await ShowManifestAsync(source.Manifest, new HashSet<string>(StringComparer.Ordinal), request);
+            if (previous is not null)
+                MemoryRelief.Release(); // the manifest of the version shown before is no longer needed
         }
         catch (Exception ex)
         {

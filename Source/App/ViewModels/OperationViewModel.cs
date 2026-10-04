@@ -2,6 +2,7 @@ using System.Diagnostics;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Unvault.App.Services;
 using Unvault.Core.Install;
 using Unvault.Core.Util;
 
@@ -18,7 +19,9 @@ public partial class OperationViewModel : ViewModelBase
     public delegate Task<string?> Work(OperationViewModel operation, InstallStatus status, CancellationToken cancellationToken);
 
     private readonly MainViewModel _owner;
-    private readonly Work _work;
+
+    /// <summary>Kept for retry; dropped once done, since it can hold an engine's whole manifest.</summary>
+    private Work? _work;
     private readonly DispatcherTimer _timer;
     private readonly Stopwatch _speedClock = new();
     private CancellationTokenSource? _cancellation;
@@ -90,6 +93,8 @@ public partial class OperationViewModel : ViewModelBase
 
     public async Task RunAsync()
     {
+        if (_work is not { } work)
+            return;
         _cancellation = new CancellationTokenSource();
         _status = new InstallStatus();
         _lastBytes = 0;
@@ -103,9 +108,10 @@ public partial class OperationViewModel : ViewModelBase
 
         try
         {
-            Message = await Task.Run(() => _work(this, _status, _cancellation.Token));
+            Message = await Task.Run(() => work(this, _status, _cancellation.Token));
             State = OperationState.Completed;
             Phase = "Done";
+            _work = null; // nothing to retry
         }
         catch (OperationCanceledException)
         {
@@ -127,6 +133,7 @@ public partial class OperationViewModel : ViewModelBase
             _owner.SetBusy(this, false);
             _cancellation.Dispose();
             _cancellation = null;
+            MemoryRelief.Release();
         }
 
         if (State == OperationState.Completed)
@@ -142,8 +149,10 @@ public partial class OperationViewModel : ViewModelBase
     [RelayCommand]
     private void Dismiss()
     {
-        if (!IsRunning)
-            _owner.Operations.Remove(this);
+        if (IsRunning)
+            return;
+        _owner.Operations.Remove(this);
+        MemoryRelief.Release(); // a failed install kept its manifest for retry
     }
 
     [RelayCommand]

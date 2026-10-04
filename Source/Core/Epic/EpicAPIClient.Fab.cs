@@ -10,8 +10,8 @@ public sealed partial class EpicAPIClient
     private const int FabAttempts = 4;
 
     /// <summary>
-    /// Pages are fetched one after another (each needs the previous cursor), and Fab pays ~0.5 s per request on
-    /// top of ~9 ms per item. Measured on a 930-item library: 100 per page took 20 s over 23 pages, 1000 took 9 s.
+    /// Pages are fetched one after another (each needs the previous cursor), and every request has a fixed cost on
+    /// Fab's side on top of the time per item, so a big library loads fastest in a few large pages.
     /// </summary>
     private const int FabLibraryPageSize = 1000;
 
@@ -115,6 +115,6 @@ public sealed partial class EpicAPIClient
             points.Select(p => p.ManifestURL), info.ManifestHash, $"{info.ArtifactID}_{info.ManifestHash}", cancellationToken);
 
         var sources = points.Select(p => ChunkSource.FromSignedManifestURL(p.ManifestURL)).ToList();
-        return new DownloadedManifest(Manifest.Parse(data), data, sources, new Dictionary<string, string>());
+        return new DownloadedManifest(await ParseAsync(data, cancellationToken), data, sources, new Dictionary<string, string>());
     }
 }

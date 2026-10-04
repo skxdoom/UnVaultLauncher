@@ -22,7 +22,7 @@ public sealed record LocalEngine(string AppName, string Directory, string BuildV
 {
     public bool Exists => Kind != LocalInstallKind.StaleEGLRecord;
 
-    /// <summary>Loads the full install (manifest, components). Slow-ish: parses a manifest of up to ~100 MB.</summary>
+    /// <summary>Loads the full install (manifest, components). Slower: parses the engine's whole manifest.</summary>
     public ExistingInstall? Load() => Kind switch
     {
         LocalInstallKind.Unvault or LocalInstallKind.AdoptedFromEGL => InstallLocator.Find(null, Directory),
