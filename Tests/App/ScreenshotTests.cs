@@ -108,7 +108,7 @@ public class ScreenshotTests
             State = OperationState.Completed,
             Phase = "Done",
             Message = "3 of 198 112 files are missing or damaged.",
-            FollowUpText = "Repair 3 files",
+            FollowUpText = "Repair",
         });
 
         Save(Show(viewModel), "engines-downloads.png");
@@ -159,10 +159,13 @@ public class ScreenshotTests
         var install = new ExistingInstall("UE_5.5", @"E:\Epic Games\UE_5.5", manifest, "", installed, [], "Epic Games Launcher install",
             EGLItem: new Core.EGL.EGLItem { AppName = "UE_5.5" });
         await picker.ShowInstallAsync(install);
+        WaitFor(() => picker.SummaryText == "No changes");
+        Assert.Equal("Apply", picker.ConfirmText);
         picker.DebugOptions.Single().IsSelected = false;
 
         Assert.NotNull(picker.Note); // EGL-only installs get the "EGL may bring components back" note
         WaitFor(() => picker.SummaryText.StartsWith("Frees"));
+        Assert.Equal("Apply", picker.ConfirmText); // the button keeps its name; the summary says what changes
 
         Save(window, "modify-picker.png");
     }
@@ -183,7 +186,7 @@ public class ScreenshotTests
         Assert.Equal(@"Automatic: C:\Users\Me\Documents\Unreal Projects", settings.ProjectFoldersAutomatic);
         Save(window, "settings.png");
 
-        // "Use for new projects" moves a folder first; removing every folder means automatic again.
+        // "Use for New Projects" moves a folder first; removing every folder means automatic again.
         settings.ProjectFolders[1].MakeDefaultCommand.Execute(null);
         Assert.Equal([@"E:\Unreal Projects", @"D:\Projects\Unreal"], settings.ProjectFolders.Select(f => f.Path));
         Assert.True(settings.ProjectFolders[0].IsDefault);
@@ -225,7 +228,7 @@ public class ScreenshotTests
         Assert.True(blockout.HasUpdate);
         Assert.Equal(["UE_5.7"], blockout.OutdatedDownloads.Select(v => v.EngineAppName));
         Assert.Equal(["UE_5.7"], blockout.OutdatedInstalls.Select(i => i.EngineAppName));
-        Assert.Equal((1, true, "Update available (1)"), (fab.UpdateCount, viewModel.HasLibraryUpdates, fab.UpdatesFilterText));
+        Assert.Equal((1, true, "Update Available (1)"), (fab.UpdateCount, viewModel.HasLibraryUpdates, fab.UpdatesFilterText));
         fab.UpdatesOnly = true;
         Assert.Equal(["Greybox Tools"], fab.Items.Select(i => i.Title));
         fab.UpdatesOnly = false;

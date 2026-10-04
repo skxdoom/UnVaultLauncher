@@ -80,7 +80,7 @@ public partial class FabLibraryViewModel : ViewModelBase
     [NotifyPropertyChangedFor(nameof(UpdatesFilterText))]
     public partial int UpdateCount { get; private set; }
 
-    public string UpdatesFilterText => UpdateCount > 0 ? $"Update available ({UpdateCount:N0})" : "Update available";
+    public string UpdatesFilterText => UpdateCount > 0 ? $"Update Available ({UpdateCount:N0})" : "Update Available";
     [ObservableProperty] public partial bool IsLoading { get; set; }
     [ObservableProperty] public partial string? LoadingText { get; set; }
     [ObservableProperty] public partial string Summary { get; set; } = "";

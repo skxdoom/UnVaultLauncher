@@ -2,7 +2,7 @@ namespace Unvault.Core.Manifests;
 
 public enum ComponentGroup { Content, Debugging, TargetPlatform, Other }
 
-/// <summary>Human names for install tags, matching the Epic Games Launcher's install options.</summary>
+/// <summary>Human names for install tags: the Epic Games Launcher's install options, capitalized like the app's other options.</summary>
 public static class ComponentNames
 {
     private static readonly Dictionary<string, string> Names = new(StringComparer.Ordinal)
@@ -11,7 +11,7 @@ public static class ComponentNames
         ["templates"] = "Templates and Feature Packs",
         ["engine_source"] = "Engine Source",
         ["metahuman_content"] = "MetaHuman Content",
-        ["editor_symbols"] = "Editor symbols for debugging",
+        ["editor_symbols"] = "Editor Symbols for Debugging",
         ["platform_Android"] = "Android",
         ["platform_IOS"] = "iOS",
         ["platform_Linux"] = "Linux",

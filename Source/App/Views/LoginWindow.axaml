@@ -19,7 +19,7 @@
             <TextBlock x:Name="FallbackReason" Classes="muted small" TextWrapping="Wrap" />
             <TextBlock TextWrapping="Wrap"
                        Text="1. Open Epic's sign-in page and sign in. If you're already signed in there, it skips straight to step 2." />
-            <Button Content="Open sign-in page" Classes="accent" Click="OnOpenBrowserClick" />
+            <Button Content="Open Sign-In Page" Classes="accent" Click="OnOpenBrowserClick" />
             <TextBlock TextWrapping="Wrap"
                        Text="2. The page then shows a short text containing &quot;authorizationCode&quot;. Copy all of it and paste it here:" />
             <TextBox x:Name="CodeBox" PlaceholderText="Paste here" AcceptsReturn="False" />
@@ -27,7 +27,7 @@
                        Text="Epic warns not to share this code with third parties. Unvault Launcher runs on your PC and sends it only to Epic." />
             <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
                 <Button Content="Cancel" Click="OnCancelClick" />
-                <Button Content="Sign in" Classes="accent" Click="OnSubmitCodeClick" />
+                <Button Content="Sign In" Classes="accent" Click="OnSubmitCodeClick" />
             </StackPanel>
         </StackPanel>
     </Grid>

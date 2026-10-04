@@ -51,7 +51,7 @@ public partial class EngineCardViewModel : ViewModelBase
 
     public string? OriginText => Local?.Kind switch
     {
-        LocalInstallKind.Unvault => "Managed by Unvault Launcher",
+        LocalInstallKind.Unvault => "Installed by Unvault Launcher",
         LocalInstallKind.AdoptedFromEGL => "Installed by Epic Games Launcher, managed by Unvault Launcher",
         LocalInstallKind.EGL => "Installed by Epic Games Launcher",
         _ => null,

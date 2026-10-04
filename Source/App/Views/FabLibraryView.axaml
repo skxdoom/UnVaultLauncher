@@ -33,7 +33,7 @@
                 </TextBox>
                 <ComboBox Grid.Column="1" Margin="8,0,0,0" MinWidth="130" ItemsSource="{Binding KindOptions}" SelectedIndex="{Binding KindIndex}" />
                 <ComboBox Grid.Column="2" Margin="8,0,0,0" MinWidth="130" ItemsSource="{Binding EngineOptions}" SelectedItem="{Binding EngineOption}" />
-                <CheckBox Grid.Column="3" Margin="12,0,0,0" Content="Downloaded only" IsChecked="{Binding DownloadedOnly}" />
+                <CheckBox Grid.Column="3" Margin="12,0,0,0" Content="Downloaded Only" IsChecked="{Binding DownloadedOnly}" />
                 <CheckBox Grid.Column="4" Margin="12,0,0,0" Content="{Binding UpdatesFilterText}" IsChecked="{Binding UpdatesOnly}" />
             </Grid>
         </StackPanel>
@@ -43,7 +43,7 @@
                 <Grid ColumnDefinitions="*,Auto">
                     <TextBlock TextWrapping="Wrap" VerticalAlignment="Center"
                                Text="Showing what's already in your Vault Cache. Sign in to see your whole library and download more." />
-                    <Button Grid.Column="1" Content="Sign in" Classes="accent" Margin="12,0,0,0" Command="{Binding Owner.SignInCommand}" />
+                    <Button Grid.Column="1" Content="Sign In" Classes="accent" Margin="12,0,0,0" Command="{Binding Owner.SignInCommand}" />
                 </Grid>
             </Border>
             <Border Classes="banner warning" IsVisible="{Binding HasError}">

@@ -125,7 +125,8 @@ public partial class ComponentPickerViewModel : ViewModelBase
     [NotifyCanExecuteChangedFor(nameof(ConfirmCommand))]
     public partial bool CanConfirm { get; set; }
 
-    [ObservableProperty] public partial string ConfirmText { get; set; } = "Install";
+    /// <summary>The same whatever is ticked: what the choice does is in the summary beside it.</summary>
+    public string ConfirmText => IsModify ? "Apply" : "Install";
 
     partial void OnDirectoryChanged(string value) => Recalculate();
 
@@ -282,7 +283,7 @@ public partial class ComponentPickerViewModel : ViewModelBase
 
     private void ComputeTotals(int request, HashSet<string> tags, string directory)
     {
-        string summary, confirm, freeSpace;
+        string summary, freeSpace;
         bool canConfirm;
         string? warning = null;
         long free = FreeBytes(directory);
@@ -296,7 +297,6 @@ public partial class ComponentPickerViewModel : ViewModelBase
                     plan.ToRemove.Count > 0 ? $"Frees {ByteSize.Format(plan.BytesFreed)}" : null,
                     plan.ToAdd is { } add ? $"Downloads {ByteSize.Format(add.DownloadBytes)} (+{ByteSize.Format(add.InstallBytes)} on disk)" : null,
                 }.Where(s => s is not null));
-            confirm = plan.IsEmpty ? "Apply" : "Apply changes";
             canConfirm = !plan.IsEmpty;
             if (plan.ToAdd is { } adding && free >= 0 && free < adding.InstallBytes)
                 warning = "Not enough free space for the added components.";
@@ -305,7 +305,6 @@ public partial class ComponentPickerViewModel : ViewModelBase
         {
             var size = _manifest!.MeasureSelection(tags);
             summary = $"Download {ByteSize.Format(size.DownloadBytes)}  ·  {ByteSize.Format(size.InstallBytes)} on disk";
-            confirm = "Install";
             canConfirm = !string.IsNullOrWhiteSpace(directory);
             if (free >= 0 && free < size.InstallBytes)
                 warning = "Not enough free space on that drive.";
@@ -318,7 +317,6 @@ public partial class ComponentPickerViewModel : ViewModelBase
             if (request != _recalculation)
                 return;
             SummaryText = summary;
-            ConfirmText = confirm;
             FreeSpaceText = freeSpace;
             CanConfirm = canConfirm;
             Warning = warning;

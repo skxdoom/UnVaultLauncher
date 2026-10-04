@@ -379,7 +379,7 @@ public partial class MainViewModel : ViewModelBase
             if (bad.Count == 0)
                 return $"All {files.Count:N0} files are OK.";
 
-            operation.OfferFollowUp($"Repair {bad.Count:N0} files", () => StartRepair(engine, install, bad));
+            operation.OfferFollowUp("Repair", () => StartRepair(engine, install, bad)); // the message beside it says how many
             return $"{bad.Count:N0} of {files.Count:N0} files are missing or damaged.";
         }, engine.AppName));
     }

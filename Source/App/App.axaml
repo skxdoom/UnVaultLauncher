@@ -4,7 +4,7 @@
              RequestedThemeVariant="Dark">
 
     <Application.Resources>
-        <!-- Neutral greys with a gold accent, in the spirit of the Epic Games Launcher; orange is kept for updates -->
+        <!-- Neutral greys with the logo's blue as the accent; orange is kept for updates, which should catch the eye -->
         <SolidColorBrush x:Key="WindowBackgroundBrush">#141414</SolidColorBrush>
         <SolidColorBrush x:Key="HeaderBackgroundBrush">#191919</SolidColorBrush>
         <SolidColorBrush x:Key="CardBackgroundBrush">#1C1C1C</SolidColorBrush>
@@ -12,14 +12,16 @@
         <SolidColorBrush x:Key="CardBorderBrush">#2B2B2B</SolidColorBrush>
         <SolidColorBrush x:Key="PictureBackgroundBrush">#242424</SolidColorBrush>
         <SolidColorBrush x:Key="MutedTextBrush">#9C9C9C</SolidColorBrush>
-        <SolidColorBrush x:Key="AccentBrushUL">#E8B341</SolidColorBrush>
-        <SolidColorBrush x:Key="OnAccentBrush">#17130A</SolidColorBrush>
+        <SolidColorBrush x:Key="AccentBrushUL">#3E70D8</SolidColorBrush>
+        <!-- Links: the logo's lighter blue, readable as text on the dark background -->
+        <SolidColorBrush x:Key="AccentTextBrush">#6B9BF2</SolidColorBrush>
+        <SolidColorBrush x:Key="OnAccentBrush">#FFFFFF</SolidColorBrush>
         <SolidColorBrush x:Key="SuccessBrush">#3CC47C</SolidColorBrush>
         <SolidColorBrush x:Key="WarningBrush">#F7862F</SolidColorBrush>
         <SolidColorBrush x:Key="DangerBrush">#EF5B5B</SolidColorBrush>
         <SolidColorBrush x:Key="OverlayBrush">#B0000000</SolidColorBrush>
 
-        <!-- Fluent draws text and check marks on the accent in white; on gold they need to be dark -->
+        <!-- Text and check marks on the accent -->
         <StaticResource x:Key="AccentButtonForeground" ResourceKey="OnAccentBrush" />
         <StaticResource x:Key="AccentButtonForegroundPointerOver" ResourceKey="OnAccentBrush" />
         <StaticResource x:Key="AccentButtonForegroundPressed" ResourceKey="OnAccentBrush" />
@@ -41,7 +43,7 @@
     <Application.Styles>
         <FluentTheme>
             <FluentTheme.Palettes>
-                <ColorPaletteResources x:Key="Dark" Accent="#FFE9AE2E" RegionColor="#FF141414" />
+                <ColorPaletteResources x:Key="Dark" Accent="#FF3E70D8" RegionColor="#FF141414" />
             </FluentTheme.Palettes>
         </FluentTheme>
 
@@ -71,15 +73,14 @@
             <Setter Property="Background" Value="{StaticResource CardHoverBrush}" />
         </Style>
 
-        <!-- Version tile on engine cards -->
-        <Style Selector="Border.tile">
-            <Setter Property="Width" Value="64" />
-            <Setter Property="Height" Value="64" />
-            <Setter Property="CornerRadius" Value="12" />
-            <Setter Property="Background" Value="#262626" />
+        <!-- The bar along an engine card's left edge: blue when installed, grey when the files are gone -->
+        <Style Selector="Border.edge">
+            <Setter Property="Width" Value="3" />
+            <Setter Property="HorizontalAlignment" Value="Left" />
+            <Setter Property="Background" Value="#3A3A3A" />
         </Style>
-        <Style Selector="Border.tile.installed">
-            <Setter Property="Background" Value="#2A4066" />
+        <Style Selector="Border.edge.installed">
+            <Setter Property="Background" Value="{StaticResource AccentBrushUL}" />
         </Style>
 
         <!-- Status chips -->
@@ -113,15 +114,15 @@
             <Setter Property="Foreground" Value="{StaticResource DangerBrush}" />
         </Style>
 
-        <!-- Selected rows in lists (e.g. the engine to install into): a gold tint instead of Fluent's solid accent -->
+        <!-- Selected rows in lists (e.g. the engine to install into): a blue tint instead of Fluent's solid accent -->
         <Style Selector="ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="#3A3018" />
+            <Setter Property="Background" Value="#1E2D4A" />
         </Style>
         <Style Selector="ListBoxItem:selected:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="#45391C" />
+            <Setter Property="Background" Value="#253757" />
         </Style>
         <Style Selector="ListBoxItem:selected:pressed /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="#302814" />
+            <Setter Property="Background" Value="#1A263E" />
         </Style>
 
         <!-- Banners -->
@@ -154,10 +155,6 @@
             <Setter Property="CornerRadius" Value="6" />
             <Setter Property="Padding" Value="14,7" />
         </Style>
-        <!-- Gold (and orange Update) buttons carry bold text -->
-        <Style Selector="Button.accent">
-            <Setter Property="FontWeight" Value="Bold" />
-        </Style>
         <Style Selector="Button.subtle">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />
@@ -181,7 +178,7 @@
             <Setter Property="Background" Value="{StaticResource WarningBrush}" />
             <Setter Property="Foreground" Value="#1C1005" />
             <Setter Property="FontSize" Value="11" />
-            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="FontWeight" Value="SemiBold" />
             <Setter Property="Padding" Value="9,2" />
             <Setter Property="CornerRadius" Value="10" />
             <Setter Property="Cursor" Value="Hand" />
@@ -213,7 +210,7 @@
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="Padding" Value="0" />
-            <Setter Property="Foreground" Value="{StaticResource AccentBrushUL}" />
+            <Setter Property="Foreground" Value="{StaticResource AccentTextBrush}" />
         </Style>
     </Application.Styles>
 </Application>

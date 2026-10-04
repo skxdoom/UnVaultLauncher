@@ -65,7 +65,7 @@
 
                         <TextBlock Text="CONTENT" Classes="section" />
                         <Grid ColumnDefinitions="*,Auto" Margin="0,1">
-                            <CheckBox IsChecked="True" IsEnabled="False" Content="Core components (required)" />
+                            <CheckBox IsChecked="True" IsEnabled="False" Content="Core Components (Required)" />
                             <TextBlock Grid.Column="1" Text="{Binding CoreSizeText}" VerticalAlignment="Center" />
                         </Grid>
                         <ItemsControl ItemsSource="{Binding ContentOptions}" ItemTemplate="{StaticResource OptionTemplate}" />

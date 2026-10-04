@@ -42,7 +42,7 @@
                                         <Border Grid.Column="1" Classes="chip" Margin="8,0,0,0" VerticalAlignment="Center" IsVisible="{Binding IsDefault}">
                                             <TextBlock Text="new projects" />
                                         </Border>
-                                        <Button Grid.Column="1" Classes="link" Content="Use for new projects" Margin="8,0,0,0" VerticalAlignment="Center"
+                                        <Button Grid.Column="1" Classes="link" Content="Use for New Projects" Margin="8,0,0,0" VerticalAlignment="Center"
                                                 Command="{Binding MakeDefaultCommand}" IsVisible="{Binding !IsDefault}" />
                                         <Button Grid.Column="2" Classes="clear" Margin="4,0,-6,0" Command="{Binding RemoveCommand}" ToolTip.Tip="Remove">
                                             <Path Data="M0,0 L9,9 M9,0 L0,9" Stroke="{StaticResource MutedTextBrush}" StrokeThickness="1.6" StrokeLineCap="Round" />
@@ -52,7 +52,7 @@
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
-                    <Button Content="Add folder…" Margin="0,2,0,0" Command="{Binding AddProjectFolderCommand}" />
+                    <Button Content="Add Folder…" Margin="0,2,0,0" Command="{Binding AddProjectFolderCommand}" />
                     <TextBlock Text="{Binding ProjectFoldersHint}" Classes="muted small" TextWrapping="Wrap" Margin="0,6,0,0" />
 
                     <TextBlock Text="DOWNLOADS" Classes="section" />

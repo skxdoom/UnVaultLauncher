@@ -53,8 +53,8 @@ public partial class FabActionViewModel : ViewModelBase
         ConfirmText = mode switch
         {
             FabActionMode.InstallPlugin => "Install",
-            FabActionMode.AddToProject => "Add to project",
-            FabActionMode.CreateProject => "Create project",
+            FabActionMode.AddToProject => "Add to Project",
+            FabActionMode.CreateProject => "Create Project",
             FabActionMode.RemovePlugin => "Remove",
             _ => "Download",
         };

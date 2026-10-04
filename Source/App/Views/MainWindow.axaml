@@ -41,7 +41,7 @@
                                       Data="F1 M13.95,8 A5.95,5.95 0 1 1 12.207,3.793 L11.217,4.783 A4.55,4.55 0 1 0 12.55,8 A0.7,0.7 0 0 1 13.95,8 Z M13.4,6 L9.6,5.7 L13.1,2.2 Z" />
                         </Button>
                         <Button Classes="subtle" Content="Settings" Command="{Binding OpenSettingsCommand}" />
-                        <Button Content="Sign in" Classes="accent" Command="{Binding SignInCommand}" IsVisible="{Binding IsSignedOut}" />
+                        <Button Content="Sign In" Classes="accent" Command="{Binding SignInCommand}" IsVisible="{Binding IsSignedOut}" />
                         <Button Classes="subtle" IsVisible="{Binding IsSignedIn}" Padding="6,4">
                             <StackPanel Orientation="Horizontal" Spacing="8">
                                 <!-- Avatar: a grey circle with a head and shoulders cut out; one shape, so no edges overlap.
@@ -72,7 +72,7 @@
                             </StackPanel>
                             <Button.Flyout>
                                 <MenuFlyout>
-                                    <MenuItem Header="Sign out" Command="{Binding SignOutCommand}" />
+                                    <MenuItem Header="Sign Out" Command="{Binding SignOutCommand}" />
                                 </MenuFlyout>
                             </Button.Flyout>
                         </Button>
@@ -95,7 +95,7 @@
                         <Grid ColumnDefinitions="*,Auto">
                             <TextBlock TextWrapping="Wrap" VerticalAlignment="Center"
                                        Text="Sign in to see every engine version your account can install. Installed engines can be modified and verified without signing in." />
-                            <Button Grid.Column="1" Content="Sign in" Classes="accent" Margin="12,0,0,0" Command="{Binding SignInCommand}" />
+                            <Button Grid.Column="1" Content="Sign In" Classes="accent" Margin="12,0,0,0" Command="{Binding SignInCommand}" />
                         </Grid>
                     </Border>
 
@@ -107,7 +107,7 @@
                             <TextBlock Text="{Binding LoadingText}" Classes="muted" Margin="12,0,0,0" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
                         </DockPanel>
                         <Button Grid.Column="2" Classes="accent" Command="{Binding InstallEngineCommand}" Padding="10"
-                                ToolTip.Tip="Install engine" AutomationProperties.Name="Install engine">
+                                ToolTip.Tip="Install Engine" AutomationProperties.Name="Install Engine">
                             <!-- A bold plus: two bars crossing in the middle of a 16 px grid -->
                             <PathIcon Width="14" Height="14" Data="M6.7,2 H9.3 V6.7 H14 V9.3 H9.3 V14 H6.7 V9.3 H2 V6.7 H6.7 Z" />
                         </Button>
