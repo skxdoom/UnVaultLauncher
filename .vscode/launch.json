@@ -1,0 +1,11 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Unvault Launcher",
+      "type": "dotnet",
+      "request": "launch",
+      "projectPath": "${workspaceFolder}/Source/App/Unvault.App.csproj"
+    }
+  ]
+}

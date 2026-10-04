@@ -1,0 +1,28 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Build",
+      "type": "process",
+      "command": "dotnet",
+      "args": ["build", "Unvault.sln", "-p:GenerateFullPaths=true", "-clp:NoSummary"],
+      "group": { "kind": "build", "isDefault": true },
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "Test",
+      "type": "process",
+      "command": "dotnet",
+      "args": ["test", "Unvault.sln", "-p:GenerateFullPaths=true", "-clp:NoSummary"],
+      "group": { "kind": "test", "isDefault": true },
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "Publish",
+      "type": "process",
+      "command": "dotnet",
+      "args": ["publish", "Source/App", "-p:PublishProfile=win-x64", "-p:GenerateFullPaths=true", "-clp:NoSummary"],
+      "problemMatcher": "$msCompile"
+    }
+  ]
+}

@@ -9,6 +9,7 @@ You sign in with your Epic account inside the app.
 
 ## Security and privacy
 
+- Unvault Launcher uses Epic's unofficial launcher API, as other third-party launchers do.
 - You sign in on Epic's own page. Unvault Launcher never sees your password, only a one-time code it exchanges with Epic.
 - Your session is stored encrypted for your Windows account and sent only to Epic. Signing out also ends it on Epic's side.
 - Downloads go over HTTPS, and engine and Fab files are checked against the hashes in Epic's manifests.
@@ -25,11 +26,10 @@ dotnet publish Source/App -p:PublishProfile=win-x64
 
 This puts `UnvaultLauncher.exe` in the repository root. `Source/CLI` builds `UnvaultLauncher-CLI.exe`, the same features on the command line.
 
-## Disclaimer
-
-Not affiliated with or endorsed by Epic Games. Unreal Engine, Epic Games and Fab are trademarks of Epic Games, Inc. 
-Unvault Launcher uses Epic's unofficial launcher API, as other third-party launchers do.
-
 ## Transparency
 
 This is mostly a vibe-coded project. Why? Because I was desperate. The Epic Games Launcher has a lot of issues, and for more than a year they've been directly affecting my work, stopping me from downloading engine versions and the assets and plugins I own, including ones I developed and published myself. I'm tired of trying to fix it. There are other third-party launchers, but they often lack features I need.
+
+## Disclaimer
+
+Not affiliated with or endorsed by Epic Games. Unreal Engine, Epic Games and Fab are trademarks of Epic Games, Inc. 
