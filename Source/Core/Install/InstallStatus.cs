@@ -1,4 +1,4 @@
-namespace Unvault.Core.Install;
+namespace UnVault.Core.Install;
 
 /// <summary>Live counters for an install or verify run. Safe to read from a UI thread while it runs.</summary>
 public sealed class InstallStatus

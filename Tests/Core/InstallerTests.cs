@@ -2,13 +2,13 @@ using System.Buffers.Binary;
 using System.IO.Compression;
 using System.Net;
 using System.Security.Cryptography;
-using Unvault.Core.Chunks;
-using Unvault.Core.Epic;
-using Unvault.Core.Fab;
-using Unvault.Core.Install;
-using Unvault.Core.Manifests;
+using UnVault.Core.Chunks;
+using UnVault.Core.Epic;
+using UnVault.Core.Fab;
+using UnVault.Core.Install;
+using UnVault.Core.Manifests;
 
-namespace Unvault.Core.Tests;
+namespace UnVault.Core.Tests;
 
 /// <summary>Builds .chunk files the way Epic's CDN serves them, for decoder and installer tests.</summary>
 internal static class ChunkFactory

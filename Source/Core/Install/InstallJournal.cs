@@ -1,6 +1,6 @@
-using Unvault.Core.Manifests;
+using UnVault.Core.Manifests;
 
-namespace Unvault.Core.Install;
+namespace UnVault.Core.Install;
 
 /// <summary>
 /// Records finished chunks in {state folder}\{planID}.journal, one GUID per line (default state folder:

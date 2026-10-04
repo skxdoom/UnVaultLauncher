@@ -1,7 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:vm="using:Unvault.App.ViewModels"
-             x:Class="Unvault.App.Views.ConfirmView"
+             xmlns:vm="using:UnVault.App.ViewModels"
+             x:Class="UnVault.App.Views.ConfirmView"
              x:DataType="vm:ConfirmViewModel"
              Width="480">
 

@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace Unvault.Core.Manifests;
+namespace UnVault.Core.Manifests;
 
 /// <summary>
 /// Parser for the older JSON manifest format (used by e.g. UE 4.27). Numbers and hashes are stored

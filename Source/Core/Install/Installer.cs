@@ -1,8 +1,8 @@
 using System.Buffers;
-using Unvault.Core.Chunks;
-using Unvault.Core.Epic;
+using UnVault.Core.Chunks;
+using UnVault.Core.Epic;
 
-namespace Unvault.Core.Install;
+namespace UnVault.Core.Install;
 
 public sealed class InstallException(string message, Exception? inner = null) : Exception(message, inner);
 

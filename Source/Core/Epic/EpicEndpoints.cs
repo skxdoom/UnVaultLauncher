@@ -1,4 +1,4 @@
-namespace Unvault.Core.Epic;
+namespace UnVault.Core.Epic;
 
 /// <summary>
 /// Epic's launcher-facing services. None of this is a documented public API: it's what the Epic Games

@@ -1,4 +1,4 @@
-namespace Unvault.Core.Epic;
+namespace UnVault.Core.Epic;
 
 /// <summary>The signed-in account: keeps a valid access token around, refreshing it when needed.</summary>
 public sealed class EpicAccount(EpicAuthClient auth, SessionStore store)

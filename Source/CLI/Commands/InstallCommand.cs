@@ -1,11 +1,11 @@
 using System.ComponentModel;
 using Spectre.Console;
 using Spectre.Console.Cli;
-using Unvault.Core.Install;
-using Unvault.Core.Manifests;
-using Unvault.Core.Util;
+using UnVault.Core.Install;
+using UnVault.Core.Manifests;
+using UnVault.Core.Util;
 
-namespace Unvault.CLI.Commands;
+namespace UnVault.CLI.Commands;
 
 internal sealed class InstallCommand : EpicCommand<InstallCommand.Settings>
 {

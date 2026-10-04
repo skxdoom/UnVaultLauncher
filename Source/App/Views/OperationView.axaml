@@ -1,7 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:vm="using:Unvault.App.ViewModels"
-             x:Class="Unvault.App.Views.OperationView"
+             xmlns:vm="using:UnVault.App.ViewModels"
+             x:Class="UnVault.App.Views.OperationView"
              x:DataType="vm:OperationViewModel">
 
     <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto">

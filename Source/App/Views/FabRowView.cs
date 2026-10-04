@@ -1,8 +1,8 @@
 using Avalonia;
 using Avalonia.Controls;
-using Unvault.App.ViewModels;
+using UnVault.App.ViewModels;
 
-namespace Unvault.App.Views;
+namespace UnVault.App.Views;
 
 /// <summary>
 /// One row of the Fab grid. Tiles keep a fixed size; the space left over in the page's width is shared out between

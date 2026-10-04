@@ -1,7 +1,7 @@
 using Avalonia.Controls;
-using Unvault.App.ViewModels;
+using UnVault.App.ViewModels;
 
-namespace Unvault.App.Views;
+namespace UnVault.App.Views;
 
 public partial class FabLibraryView : UserControl
 {

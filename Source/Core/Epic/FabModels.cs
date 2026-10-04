@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Unvault.Core.Epic;
+namespace UnVault.Core.Epic;
 
 /// <summary>One page of GET fab.com/e/accounts/{accountId}/ue/library.</summary>
 internal sealed class FabLibraryPage

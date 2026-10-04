@@ -481,6 +481,6 @@ $RECYCLE.BIN/
 # Vim temporary swap files
 *.swp
 
-# Unvault Launcher: dev tools stay local; the published exe is a build output
+# UnVault Launcher: dev tools stay local; the published exe is a build output
 /Tools/
-/UnvaultLauncher.exe
+/UnVaultLauncher.exe

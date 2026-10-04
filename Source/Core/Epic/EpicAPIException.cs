@@ -1,7 +1,7 @@
 using System.Net;
 using System.Text.Json;
 
-namespace Unvault.Core.Epic;
+namespace UnVault.Core.Epic;
 
 public class EpicAPIException(string message, HttpStatusCode? statusCode = null, string errorCode = "")
     : Exception(message)

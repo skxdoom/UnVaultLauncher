@@ -1,9 +1,9 @@
 using System.Text.RegularExpressions;
-using Unvault.Core.EGL;
-using Unvault.Core.Epic;
-using Unvault.Core.Manifests;
+using UnVault.Core.EGL;
+using UnVault.Core.Epic;
+using UnVault.Core.Manifests;
 
-namespace Unvault.Core.Install;
+namespace UnVault.Core.Install;
 
 /// <summary>A build to install: its manifest and download locations, plus catalog identity for registration.</summary>
 public sealed record InstallSource(DownloadedManifest Downloaded, string CatalogNamespace, string CatalogItemID)

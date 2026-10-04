@@ -1,10 +1,10 @@
 using System.ComponentModel;
 using Spectre.Console;
 using Spectre.Console.Cli;
-using Unvault.Core.Install;
-using Unvault.Core.Util;
+using UnVault.Core.Install;
+using UnVault.Core.Util;
 
-namespace Unvault.CLI.Commands;
+namespace UnVault.CLI.Commands;
 
 internal sealed class ModifyCommand : EpicCommand<ModifyCommand.Settings>
 {
@@ -59,7 +59,7 @@ internal sealed class ModifyCommand : EpicCommand<ModifyCommand.Settings>
             AnsiConsole.MarkupLine($"[green]Add[/] {add.Files.Count:N0} files: {ByteSize.Format(add.InstallBytes)} on disk, {ByteSize.Format(add.DownloadBytes)} to download");
         if (install.IsEGLOnly)
             AnsiConsole.MarkupLine("[yellow]Note:[/] this engine was installed by the Epic Games Launcher. If EGL later verifies or updates it, " +
-                                   "EGL may bring back components removed here; manage it with Unvault Launcher from now on.");
+                                   "EGL may bring back components removed here; manage it with UnVault Launcher from now on.");
 
         if (!settings.Yes && !await AnsiConsole.ConfirmAsync("Apply these changes?", defaultValue: false, cancellationToken: cancellationToken))
             return 0;

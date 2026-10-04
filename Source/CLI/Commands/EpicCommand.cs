@@ -1,10 +1,10 @@
 using Spectre.Console;
 using Spectre.Console.Cli;
-using Unvault.Core.Epic;
-using Unvault.Core.Install;
-using Unvault.Core.Manifests;
+using UnVault.Core.Epic;
+using UnVault.Core.Install;
+using UnVault.Core.Manifests;
 
-namespace Unvault.CLI.Commands;
+namespace UnVault.CLI.Commands;
 
 /// <summary>Base for commands that talk to Epic: turns API failures into a readable one-line error.</summary>
 internal abstract class EpicCommand<TSettings> : AsyncCommand<TSettings> where TSettings : CommandSettings

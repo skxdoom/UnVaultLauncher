@@ -1,6 +1,6 @@
 using CommunityToolkit.Mvvm.Input;
 
-namespace Unvault.App.ViewModels;
+namespace UnVault.App.ViewModels;
 
 /// <summary>A yes/no question before something destructive (removing a plugin, deleting files).</summary>
 public partial class ConfirmViewModel(MainViewModel owner, string title, string message, string confirmText, Action onConfirm) : ViewModelBase

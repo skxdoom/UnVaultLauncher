@@ -1,7 +1,7 @@
 using System.Text;
-using Unvault.Core.Manifests;
+using UnVault.Core.Manifests;
 
-namespace Unvault.Core.Tests;
+namespace UnVault.Core.Tests;
 
 public class EpicGUIDTests
 {

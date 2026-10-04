@@ -2,10 +2,10 @@ using System.ComponentModel;
 using System.Diagnostics;
 using Spectre.Console;
 using Spectre.Console.Cli;
-using Unvault.Core.Manifests;
-using Unvault.Core.Util;
+using UnVault.Core.Manifests;
+using UnVault.Core.Util;
 
-namespace Unvault.CLI.Commands;
+namespace UnVault.CLI.Commands;
 
 internal sealed class InspectManifestCommand : Command<InspectManifestCommand.Settings>
 {

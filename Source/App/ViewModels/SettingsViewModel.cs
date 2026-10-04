@@ -2,12 +2,12 @@ using System.Collections.ObjectModel;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Unvault.Core;
-using Unvault.Core.EGL;
-using Unvault.Core.Util;
-using Unvault.Core.Vault;
+using UnVault.Core;
+using UnVault.Core.EGL;
+using UnVault.Core.Util;
+using UnVault.Core.Vault;
 
-namespace Unvault.App.ViewModels;
+namespace UnVault.App.ViewModels;
 
 /// <summary>One row of the project folder list in Settings.</summary>
 public partial class ProjectFolderItem : ViewModelBase
@@ -110,7 +110,7 @@ public partial class SettingsViewModel : ViewModelBase
                 var summary = VaultCache.Summarize(folder.Path);
                 text = summary.Count == 0
                     ? "No downloaded assets here yet."
-                    : $"{summary.Count} downloaded {(summary.Count == 1 ? "asset" : "assets")} ({ByteSize.Format(summary.TotalBytes)}). Unvault reuses them instead of downloading again.";
+                    : $"{summary.Count} downloaded {(summary.Count == 1 ? "asset" : "assets")} ({ByteSize.Format(summary.TotalBytes)}). UnVault reuses them instead of downloading again.";
             }
             string source = folder.Source == SettingSource.EpicGamesLauncher ? " Same folder the Epic Games Launcher uses." : "";
             Dispatcher.UIThread.Post(() =>

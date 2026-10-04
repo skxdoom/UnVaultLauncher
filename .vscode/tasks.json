@@ -5,7 +5,7 @@
       "label": "Build",
       "type": "process",
       "command": "dotnet",
-      "args": ["build", "Unvault.sln", "-p:GenerateFullPaths=true", "-clp:NoSummary"],
+      "args": ["build", "UnVault.sln", "-p:GenerateFullPaths=true", "-clp:NoSummary"],
       "group": { "kind": "build", "isDefault": true },
       "problemMatcher": "$msCompile"
     },
@@ -13,7 +13,7 @@
       "label": "Test",
       "type": "process",
       "command": "dotnet",
-      "args": ["test", "Unvault.sln", "-p:GenerateFullPaths=true", "-clp:NoSummary"],
+      "args": ["test", "UnVault.sln", "-p:GenerateFullPaths=true", "-clp:NoSummary"],
       "group": { "kind": "test", "isDefault": true },
       "problemMatcher": "$msCompile"
     },

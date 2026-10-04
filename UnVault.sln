@@ -5,17 +5,17 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Source", "Source", "{B8EFCA5F-814F-285C-A8CB-F00F14650265}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Unvault.App", "Source\App\Unvault.App.csproj", "{CEB33983-9E39-457B-A6F8-9C4632AAE524}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnVault.App", "Source\App\UnVault.App.csproj", "{CEB33983-9E39-457B-A6F8-9C4632AAE524}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Unvault.Core", "Source\Core\Unvault.Core.csproj", "{E6C6A47A-6737-4864-A2B7-9541C186BFD4}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnVault.Core", "Source\Core\UnVault.Core.csproj", "{E6C6A47A-6737-4864-A2B7-9541C186BFD4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Unvault.CLI", "Source\CLI\Unvault.CLI.csproj", "{2440FB80-1F7C-40A1-95E1-8F317C2F0A01}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnVault.CLI", "Source\CLI\UnVault.CLI.csproj", "{2440FB80-1F7C-40A1-95E1-8F317C2F0A01}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{0AB3BF05-4346-4AA6-1389-037BE0695223}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Unvault.App.Tests", "Tests\App\Unvault.App.Tests.csproj", "{EE316BED-BC87-4921-BECA-E4AEC32FA4DD}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnVault.App.Tests", "Tests\App\UnVault.App.Tests.csproj", "{EE316BED-BC87-4921-BECA-E4AEC32FA4DD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Unvault.Core.Tests", "Tests\Core\Unvault.Core.Tests.csproj", "{62D9F215-218C-41BF-8064-125232460746}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnVault.Core.Tests", "Tests\Core\UnVault.Core.Tests.csproj", "{62D9F215-218C-41BF-8064-125232460746}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

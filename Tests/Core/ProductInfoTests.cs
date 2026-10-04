@@ -1,6 +1,6 @@
 using System.Xml.Linq;
 
-namespace Unvault.Core.Tests;
+namespace UnVault.Core.Tests;
 
 public class ProductInfoTests
 {

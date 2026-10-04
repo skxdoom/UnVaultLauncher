@@ -1,8 +1,8 @@
-namespace Unvault.Core;
+namespace UnVault.Core;
 
 public static class AppPaths
 {
-    /// <summary>%LOCALAPPDATA%\UnvaultLauncher on Windows, ~/.local/share/UnvaultLauncher elsewhere.</summary>
+    /// <summary>%LOCALAPPDATA%\UnVaultLauncher on Windows, ~/.local/share/UnVaultLauncher elsewhere.</summary>
     public static string DataDirectory { get; } =
         ResolveDataDirectory(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
 
@@ -15,7 +15,7 @@ public static class AppPaths
     /// </summary>
     internal static string ResolveDataDirectory(string root)
     {
-        string current = Path.Combine(root, "UnvaultLauncher");
+        string current = Path.Combine(root, "UnVaultLauncher");
         string old = Path.Combine(root, "Unvault");
         if (!Directory.Exists(old))
             return current;

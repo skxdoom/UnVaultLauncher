@@ -2,13 +2,13 @@ using System.Collections.ObjectModel;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Unvault.App.Services;
-using Unvault.Core.Epic;
-using Unvault.Core.Install;
-using Unvault.Core.Manifests;
-using Unvault.Core.Util;
+using UnVault.App.Services;
+using UnVault.Core.Epic;
+using UnVault.Core.Install;
+using UnVault.Core.Manifests;
+using UnVault.Core.Util;
 
-namespace Unvault.App.ViewModels;
+namespace UnVault.App.ViewModels;
 
 /// <summary>A checkbox in the component picker.</summary>
 public partial class ComponentOptionViewModel(ComponentPickerViewModel picker, string tag, bool wasInstalled, string sizeText, string detailText) : ViewModelBase
@@ -211,7 +211,7 @@ public partial class ComponentPickerViewModel : ViewModelBase
     {
         _install = install;
         if (install.IsEGLOnly)
-            Note = "Installed by the Epic Games Launcher. After this change, let Unvault Launcher manage it: an EGL verify or update may bring removed components back.";
+            Note = "Installed by the Epic Games Launcher. After this change, let UnVault Launcher manage it: an EGL verify or update may bring removed components back.";
         return ShowManifestAsync(install.Manifest, install.InstallTags);
     }
 

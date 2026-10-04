@@ -1,6 +1,6 @@
-using Unvault.Core.Epic;
+using UnVault.Core.Epic;
 
-namespace Unvault.Core.Tests;
+namespace UnVault.Core.Tests;
 
 public class EpicAuthTests
 {

@@ -1,10 +1,10 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Unvault.Core.Epic;
-using Unvault.Core.Install;
-using Unvault.Core.Util;
+using UnVault.Core.Epic;
+using UnVault.Core.Install;
+using UnVault.Core.Util;
 
-namespace Unvault.App.ViewModels;
+namespace UnVault.App.ViewModels;
 
 /// <summary>One engine version in the library: installed, installable, or both.</summary>
 public partial class EngineCardViewModel : ViewModelBase
@@ -51,8 +51,8 @@ public partial class EngineCardViewModel : ViewModelBase
 
     public string? OriginText => Local?.Kind switch
     {
-        LocalInstallKind.Unvault => "Installed by Unvault Launcher",
-        LocalInstallKind.AdoptedFromEGL => "Installed by Epic Games Launcher, managed by Unvault Launcher",
+        LocalInstallKind.UnVault => "Installed by UnVault Launcher",
+        LocalInstallKind.AdoptedFromEGL => "Installed by Epic Games Launcher, managed by UnVault Launcher",
         LocalInstallKind.EGL => "Installed by Epic Games Launcher",
         _ => null,
     };

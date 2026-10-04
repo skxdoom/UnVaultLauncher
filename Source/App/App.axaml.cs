@@ -2,11 +2,11 @@ using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
-using Unvault.App.Services;
-using Unvault.App.ViewModels;
-using Unvault.App.Views;
+using UnVault.App.Services;
+using UnVault.App.ViewModels;
+using UnVault.App.Views;
 
-namespace Unvault.App;
+namespace UnVault.App;
 
 public partial class App : Application
 {

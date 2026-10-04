@@ -6,16 +6,16 @@ using Avalonia.Headless.XUnit;
 using Avalonia.Input;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
-using Unvault.App.Services;
-using Unvault.App.ViewModels;
-using Unvault.App.Views;
-using Unvault.Core.Epic;
-using Unvault.Core.Fab;
-using Unvault.Core.Install;
-using Unvault.Core.Manifests;
-using Unvault.Core.Vault;
+using UnVault.App.Services;
+using UnVault.App.ViewModels;
+using UnVault.App.Views;
+using UnVault.Core.Epic;
+using UnVault.Core.Fab;
+using UnVault.Core.Install;
+using UnVault.Core.Manifests;
+using UnVault.Core.Vault;
 
-namespace Unvault.App.Tests;
+namespace UnVault.App.Tests;
 
 /// <summary>
 /// Renders the main screens with sample data and saves PNGs (to %UNVAULT_SCREENSHOTS% or a temp folder),
@@ -455,7 +455,7 @@ public class ScreenshotTests
         var viewModel = new MainViewModel(new AppServices()) { IsSignedIn = true, DisplayName = "Test Account" };
         viewModel.SetEngines(
         [
-            new LocalEngine("UE_5.7", @"E:\Epic Games\UE_5.7", "5.7.4-51494982+++UE5+Release-5.7-Windows", 26 * GB + 300 * (GB / 1024), LocalInstallKind.Unvault),
+            new LocalEngine("UE_5.7", @"E:\Epic Games\UE_5.7", "5.7.4-51494982+++UE5+Release-5.7-Windows", 26 * GB + 300 * (GB / 1024), LocalInstallKind.UnVault),
             new LocalEngine("UE_5.6", @"E:\Epic Games\UE_5.6", "5.6.1-44394996+++UE5+Release-5.6-Windows", 25 * GB + 400 * (GB / 1024), LocalInstallKind.AdoptedFromEGL),
             new LocalEngine("UE_5.5", @"E:\Epic Games\UE_5.5", "5.5.3-39772772+++UE5+Release-5.5-Windows", 72 * GB + 200 * (GB / 1024), LocalInstallKind.EGL),
             new LocalEngine("UE_4.27", @"E:\Epic Games\UE_4.27", "4.27.2-18319896+++UE4+Release-4.27-Windows", 54 * GB, LocalInstallKind.EGL),

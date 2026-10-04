@@ -17,7 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Source\App\Unvault.App.csproj" />
+    <ProjectReference Include="..\..\Source\App\UnVault.App.csproj" />
   </ItemGroup>
 
 </Project>

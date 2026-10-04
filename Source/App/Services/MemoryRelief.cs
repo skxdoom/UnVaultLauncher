@@ -1,7 +1,7 @@
 using System.Runtime;
 using Avalonia.Threading;
 
-namespace Unvault.App.Services;
+namespace UnVault.App.Services;
 
 /// <summary>
 /// Hands memory back to Windows once the app lets go of something big, like an engine's manifest. An idle app

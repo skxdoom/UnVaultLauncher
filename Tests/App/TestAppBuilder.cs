@@ -1,9 +1,9 @@
 using Avalonia;
 using Avalonia.Headless;
 
-[assembly: AvaloniaTestApplication(typeof(Unvault.App.Tests.TestAppBuilder))]
+[assembly: AvaloniaTestApplication(typeof(UnVault.App.Tests.TestAppBuilder))]
 
-namespace Unvault.App.Tests;
+namespace UnVault.App.Tests;
 
 /// <summary>Runs the real app styles headlessly, rendering with Skia so frames can be captured as images.</summary>
 public class TestAppBuilder

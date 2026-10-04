@@ -1,7 +1,7 @@
 using System.Net.Http.Json;
-using Unvault.Core.Manifests;
+using UnVault.Core.Manifests;
 
-namespace Unvault.Core.Epic;
+namespace UnVault.Core.Epic;
 
 /// <summary>Fab (ex-Marketplace) library and downloads. Uses the same Epic launcher session; no fab.com cookies.</summary>
 public sealed partial class EpicAPIClient

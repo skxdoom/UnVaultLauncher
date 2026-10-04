@@ -1,8 +1,8 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:vm="using:Unvault.App.ViewModels"
-             xmlns:views="using:Unvault.App.Views"
-             x:Class="Unvault.App.Views.FabLibraryView"
+             xmlns:vm="using:UnVault.App.ViewModels"
+             xmlns:views="using:UnVault.App.Views"
+             x:Class="UnVault.App.Views.FabLibraryView"
              x:DataType="vm:FabLibraryViewModel">
 
     <!-- Header and grid share the page width with the Engines tab; the grid scrolls with its scroll bar at the window edge -->

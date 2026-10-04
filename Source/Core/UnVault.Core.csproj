@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <InternalsVisibleTo Include="Unvault.Core.Tests" />
+    <InternalsVisibleTo Include="UnVault.Core.Tests" />
   </ItemGroup>
 
   <ItemGroup>

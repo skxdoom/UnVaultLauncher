@@ -1,7 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:vm="using:Unvault.App.ViewModels"
-             x:Class="Unvault.App.Views.FabActionView"
+             xmlns:vm="using:UnVault.App.ViewModels"
+             x:Class="UnVault.App.Views.FabActionView"
              x:DataType="vm:FabActionViewModel"
              Width="640">
 

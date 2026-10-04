@@ -2,11 +2,11 @@ using System.Diagnostics;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Unvault.App.Services;
-using Unvault.Core.Install;
-using Unvault.Core.Util;
+using UnVault.App.Services;
+using UnVault.Core.Install;
+using UnVault.Core.Util;
 
-namespace Unvault.App.ViewModels;
+namespace UnVault.App.ViewModels;
 
 public enum OperationState { Running, Completed, Failed, Cancelled }
 

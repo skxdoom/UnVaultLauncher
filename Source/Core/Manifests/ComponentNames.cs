@@ -1,4 +1,4 @@
-namespace Unvault.Core.Manifests;
+namespace UnVault.Core.Manifests;
 
 public enum ComponentGroup { Content, Debugging, TargetPlatform, Other }
 

@@ -1,7 +1,7 @@
 using Spectre.Console.Cli;
-using Unvault.CLI;
-using Unvault.CLI.Commands;
-using Unvault.Core;
+using UnVault.CLI;
+using UnVault.CLI.Commands;
+using UnVault.Core;
 
 var app = new CommandApp();
 app.Configure(config =>

@@ -2,9 +2,9 @@ using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
 using Avalonia.Media.Imaging;
-using Unvault.Core;
+using UnVault.Core;
 
-namespace Unvault.App.Services;
+namespace UnVault.App.Services;
 
 /// <summary>
 /// Preview images for the Fab tiles. Asks the image CDNs for copies sized to the tiles at the display's scaling
@@ -37,7 +37,7 @@ public sealed class ThumbnailCache
     private readonly HashSet<string> _failed = new(StringComparer.Ordinal);
     private readonly SemaphoreSlim _downloads = new(6);
 
-    /// <param name="folder">Where pictures are kept; normally %LOCALAPPDATA%\UnvaultLauncher\thumbnails.</param>
+    /// <param name="folder">Where pictures are kept; normally %LOCALAPPDATA%\UnVaultLauncher\thumbnails.</param>
     public ThumbnailCache(HttpClient http, string? folder = null)
     {
         _http = http;

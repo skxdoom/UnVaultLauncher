@@ -1,7 +1,7 @@
 using System.Text.Json.Serialization;
-using Unvault.Core.Util;
+using UnVault.Core.Util;
 
-namespace Unvault.Core.Epic;
+namespace UnVault.Core.Epic;
 
 /// <summary>The engine versions the account could install, as Epic last listed them.</summary>
 public sealed class OwnedEnginesSnapshot
@@ -12,7 +12,7 @@ public sealed class OwnedEnginesSnapshot
 }
 
 /// <summary>
-/// %LOCALAPPDATA%\UnvaultLauncher\owned-engines.json. Epic is slow to list everything an account owns (every Fab
+/// %LOCALAPPDATA%\UnVaultLauncher\owned-engines.json. Epic is slow to list everything an account owns (every Fab
 /// plugin build too, not only the engines), so the Engines tab starts from the last list: update badges and
 /// installable versions show at once, then the fresh list replaces it. Versions and
 /// build names only; kept for one account at a time and deleted on sign-out.

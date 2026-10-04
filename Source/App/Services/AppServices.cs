@@ -1,7 +1,7 @@
 using System.Net.Http;
-using Unvault.Core.Epic;
+using UnVault.Core.Epic;
 
-namespace Unvault.App.Services;
+namespace UnVault.App.Services;
 
 /// <summary>Process-wide singletons: one HTTP client, the signed-in account, the API client.</summary>
 public sealed class AppServices

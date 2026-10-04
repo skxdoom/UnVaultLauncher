@@ -1,13 +1,13 @@
-using Unvault.Core;
-using Unvault.Core.Epic;
+using UnVault.Core;
+using UnVault.Core.Epic;
 
-namespace Unvault.CLI;
+namespace UnVault.CLI;
 
 /// <summary>Process-wide singletons for the CLI.</summary>
 internal static class Services
 {
     /// <summary>The command as typed (the exe's name), for help texts and hints.</summary>
-    public const string CommandName = "UnvaultLauncher-CLI";
+    public const string CommandName = "UnVaultLauncher-CLI";
 
     private static readonly Lazy<HttpClient> LazyHTTP = new(EpicHTTP.CreateClient);
     private static readonly Lazy<EpicAccount> LazyAccount = new(() => new EpicAccount(new EpicAuthClient(HTTP), SessionStore.Default));
@@ -18,6 +18,6 @@ internal static class Services
     public static EpicAccount Account => LazyAccount.Value;
     public static EpicAPIClient API => LazyAPI.Value;
 
-    /// <summary>Shared with the GUI: %LOCALAPPDATA%\UnvaultLauncher\settings.json.</summary>
+    /// <summary>Shared with the GUI: %LOCALAPPDATA%\UnVaultLauncher\settings.json.</summary>
     public static AppSettings Settings => LazySettings.Value;
 }

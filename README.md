@@ -1,4 +1,4 @@
-# Unvault Launcher
+# UnVault Launcher
 
 A lightweight, fast launcher for installing and managing Unreal Engine and Fab assets and plugins.
 You sign in with your Epic account inside the app.
@@ -9,8 +9,8 @@ You sign in with your Epic account inside the app.
 
 ## Security and privacy
 
-- Unvault Launcher uses Epic's unofficial launcher API, as other third-party launchers do.
-- You sign in on Epic's own page. Unvault Launcher never sees your password, only a one-time code it exchanges with Epic.
+- UnVault Launcher uses Epic's unofficial launcher API, as other third-party launchers do.
+- You sign in on Epic's own page. UnVault Launcher never sees your password, only a one-time code it exchanges with Epic.
 - Your session is stored encrypted for your Windows account and sent only to Epic. Signing out also ends it on Epic's side.
 - Downloads go over HTTPS, and engine and Fab files are checked against the hashes in Epic's manifests.
 - No telemetry, no admin rights, no background service. It only connects to Epic's and Fab's servers.
@@ -24,7 +24,7 @@ Needs the [.NET 10 SDK](https://dotnet.microsoft.com/download).
 dotnet publish Source/App -p:PublishProfile=win-x64
 ```
 
-This puts `UnvaultLauncher.exe` in the repository root. `Source/CLI` builds `UnvaultLauncher-CLI.exe`, the same features on the command line.
+This puts `UnVaultLauncher.exe` in the repository root. `Source/CLI` builds `UnVaultLauncher-CLI.exe`, the same features on the command line.
 
 ## Transparency
 

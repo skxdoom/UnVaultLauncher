@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Unvault.Core.EGL;
+namespace UnVault.Core.EGL;
 
 /// <summary>
 /// One entry of C:\ProgramData\Epic\UnrealEngineLauncher\LauncherInstalled.dat. UE tools

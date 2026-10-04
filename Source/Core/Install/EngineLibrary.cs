@@ -1,13 +1,13 @@
-using Unvault.Core.EGL;
+using UnVault.Core.EGL;
 
-namespace Unvault.Core.Install;
+namespace UnVault.Core.Install;
 
 public enum LocalInstallKind
 {
-    /// <summary>Installed by Unvault.</summary>
-    Unvault,
+    /// <summary>Installed by UnVault.</summary>
+    UnVault,
 
-    /// <summary>Installed by EGL, since managed by Unvault (has our record).</summary>
+    /// <summary>Installed by EGL, since managed by UnVault (has our record).</summary>
     AdoptedFromEGL,
 
     /// <summary>Installed by EGL; components are detected from files when needed.</summary>
@@ -25,7 +25,7 @@ public sealed record LocalEngine(string AppName, string Directory, string BuildV
     /// <summary>Loads the full install (manifest, components). Slower: parses the engine's whole manifest.</summary>
     public ExistingInstall? Load() => Kind switch
     {
-        LocalInstallKind.Unvault or LocalInstallKind.AdoptedFromEGL => InstallLocator.Find(null, Directory),
+        LocalInstallKind.UnVault or LocalInstallKind.AdoptedFromEGL => InstallLocator.Find(null, Directory),
         LocalInstallKind.EGL => InstallLocator.Find(AppName),
         _ => null,
     };
@@ -56,7 +56,7 @@ public static class EngineLibrary
                 continue;
             }
 
-            // Our record wins: EGL may still list a folder Unvault has since installed into (a stale record, re-used folder).
+            // Our record wins: EGL may still list a folder UnVault has since installed into (a stale record, re-used folder).
             byFolder[key] = InstallRecord.TryRead(item.InstallLocation) is { FileFilter: null } record
                 ? FromRecord(record, item.InstallLocation)
                 : new LocalEngine(item.AppName, item.InstallLocation, item.AppVersionString, item.InstallSize, LocalInstallKind.EGL);
@@ -70,7 +70,7 @@ public static class EngineLibrary
 
     private static LocalEngine FromRecord(InstallRecord record, string directory) =>
         new(record.AppName, directory, record.BuildVersion, record.InstallSize,
-            record.AdoptedFromEGL ? LocalInstallKind.AdoptedFromEGL : LocalInstallKind.Unvault);
+            record.AdoptedFromEGL ? LocalInstallKind.AdoptedFromEGL : LocalInstallKind.UnVault);
 
     public static bool IsEngineApp(string appName) => appName.StartsWith("UE_", StringComparison.Ordinal);
 

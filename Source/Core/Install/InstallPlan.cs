@@ -1,8 +1,8 @@
 using System.Security.Cryptography;
 using System.Text;
-using Unvault.Core.Manifests;
+using UnVault.Core.Manifests;
 
-namespace Unvault.Core.Install;
+namespace UnVault.Core.Install;
 
 /// <summary>Copy <see cref="Size"/> bytes from a chunk at <see cref="ChunkOffset"/> into a file at <see cref="FileOffset"/>.</summary>
 public readonly record struct ChunkWrite(int FileIndex, long FileOffset, uint ChunkOffset, uint Size);

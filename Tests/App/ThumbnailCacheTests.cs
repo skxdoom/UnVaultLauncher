@@ -1,8 +1,8 @@
 using System.Net;
 using Avalonia.Headless.XUnit;
-using Unvault.App.Services;
+using UnVault.App.Services;
 
-namespace Unvault.App.Tests;
+namespace UnVault.App.Tests;
 
 public sealed class ThumbnailCacheTests : IDisposable
 {
@@ -31,7 +31,9 @@ public sealed class ThumbnailCacheTests : IDisposable
     [AvaloniaFact]
     public async Task Loads_EGL_local_thumbnails_from_disk()
     {
-        string file = Path.Combine(_folder, "Thumb.png");
+        // In a download's own folder, as in a vault cache: files directly in the cache folder are old leftovers the
+        // cache deletes when it starts, so a picture there could be gone before it's read.
+        string file = Path.Combine(Directory.CreateDirectory(Path.Combine(_folder, "Download")).FullName, "Thumb.png");
         await File.WriteAllBytesAsync(file, TinyPNG);
 
         Assert.NotNull(await NewCache().GetAsync("local://" + file));

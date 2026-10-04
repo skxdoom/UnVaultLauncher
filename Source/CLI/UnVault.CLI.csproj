@@ -2,12 +2,12 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <AssemblyName>UnvaultLauncher-CLI</AssemblyName>
-    <RootNamespace>Unvault.CLI</RootNamespace>
+    <AssemblyName>UnVaultLauncher-CLI</AssemblyName>
+    <RootNamespace>UnVault.CLI</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Core\Unvault.Core.csproj" />
+    <ProjectReference Include="..\Core\UnVault.Core.csproj" />
   </ItemGroup>
 
   <ItemGroup>

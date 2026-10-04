@@ -1,11 +1,11 @@
 using System.ComponentModel;
 using Spectre.Console;
 using Spectre.Console.Cli;
-using Unvault.Core.EGL;
-using Unvault.Core.Epic;
-using Unvault.Core.Util;
+using UnVault.Core.EGL;
+using UnVault.Core.Epic;
+using UnVault.Core.Util;
 
-namespace Unvault.CLI.Commands;
+namespace UnVault.CLI.Commands;
 
 internal sealed class FabCommand : EpicCommand<FabCommand.Settings>
 {

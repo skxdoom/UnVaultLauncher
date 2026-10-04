@@ -1,6 +1,6 @@
 using Avalonia.Data.Converters;
 
-namespace Unvault.App.ViewModels;
+namespace UnVault.App.ViewModels;
 
 public static class Converters
 {

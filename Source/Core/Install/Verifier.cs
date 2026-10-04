@@ -1,9 +1,9 @@
 using System.Buffers;
 using System.Collections.Concurrent;
 using System.Security.Cryptography;
-using Unvault.Core.Manifests;
+using UnVault.Core.Manifests;
 
-namespace Unvault.Core.Install;
+namespace UnVault.Core.Install;
 
 public enum FileProblem { Missing, WrongSize, WrongHash }
 

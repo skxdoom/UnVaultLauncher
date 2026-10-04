@@ -1,18 +1,18 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <AssemblyName>UnvaultLauncher</AssemblyName>
-    <RootNamespace>Unvault.App</RootNamespace>
+    <AssemblyName>UnVaultLauncher</AssemblyName>
+    <RootNamespace>UnVault.App</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets\unvault.ico</ApplicationIcon>
-    <Product>Unvault Launcher</Product>
-    <AssemblyTitle>Unvault Launcher</AssemblyTitle>
+    <Product>UnVault Launcher</Product>
+    <AssemblyTitle>UnVault Launcher</AssemblyTitle>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
   </PropertyGroup>
 
   <ItemGroup>
     <AvaloniaResource Include="Assets\**" />
-    <InternalsVisibleTo Include="Unvault.App.Tests" />
+    <InternalsVisibleTo Include="UnVault.App.Tests" />
   </ItemGroup>
 
   <ItemGroup>
@@ -29,12 +29,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Core\Unvault.Core.csproj" />
+    <ProjectReference Include="..\Core\UnVault.Core.csproj" />
   </ItemGroup>
 
   <!-- Publish profiles can set CopyExeTo to put the finished exe somewhere handy (win-x64: the repository root). -->
   <Target Name="CopyPublishedExe" AfterTargets="Publish" Condition="'$(CopyExeTo)' != ''">
     <Copy SourceFiles="$(PublishDir)$(AssemblyName).exe" DestinationFolder="$(CopyExeTo)" />
-    <Message Importance="high" Text="Unvault Launcher -&gt; $([System.IO.Path]::GetFullPath('$(CopyExeTo)$(AssemblyName).exe'))" />
+    <Message Importance="high" Text="UnVault Launcher -&gt; $([System.IO.Path]::GetFullPath('$(CopyExeTo)$(AssemblyName).exe'))" />
   </Target>
 </Project>

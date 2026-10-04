@@ -1,7 +1,7 @@
-using Unvault.Core.EGL;
-using Unvault.Core.Vault;
+using UnVault.Core.EGL;
+using UnVault.Core.Vault;
 
-namespace Unvault.Core.Tests;
+namespace UnVault.Core.Tests;
 
 public sealed class SettingsTests : IDisposable
 {
@@ -63,7 +63,7 @@ public sealed class SettingsTests : IDisposable
 
         string resolved = AppPaths.ResolveDataDirectory(_dir);
 
-        Assert.Equal(Path.Combine(_dir, "UnvaultLauncher"), resolved);
+        Assert.Equal(Path.Combine(_dir, "UnVaultLauncher"), resolved);
         Assert.Equal("session", File.ReadAllText(Path.Combine(resolved, "session.dat")));
         Assert.True(Directory.Exists(Path.Combine(resolved, "thumbnails")));
         Assert.False(Directory.Exists(old));
@@ -75,7 +75,7 @@ public sealed class SettingsTests : IDisposable
     public void Data_folder_merges_when_both_names_exist()
     {
         // As found on a real machine: a stray new folder with older copies, the live data still in the old one.
-        string old = Path.Combine(_dir, "Unvault"), current = Path.Combine(_dir, "UnvaultLauncher");
+        string old = Path.Combine(_dir, "Unvault"), current = Path.Combine(_dir, "UnVaultLauncher");
         Directory.CreateDirectory(Path.Combine(old, "manifests"));
         Directory.CreateDirectory(Path.Combine(old, "WebView2", "EBWebView"));
         Directory.CreateDirectory(Path.Combine(current, "manifests"));

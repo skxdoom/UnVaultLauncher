@@ -1,12 +1,12 @@
 using System.Text;
-using Unvault.Core.Epic;
-using Unvault.Core.Fab;
-using Unvault.Core.Install;
-using Unvault.Core.Manifests;
-using Unvault.Core.Projects;
-using Unvault.Core.Vault;
+using UnVault.Core.Epic;
+using UnVault.Core.Fab;
+using UnVault.Core.Install;
+using UnVault.Core.Manifests;
+using UnVault.Core.Projects;
+using UnVault.Core.Vault;
 
-namespace Unvault.Core.Tests;
+namespace UnVault.Core.Tests;
 
 /// <summary>Writes Epic's JSON manifest format (numbers as little-endian decimal "blobs") for test content.</summary>
 internal static class JSONManifestBuilder

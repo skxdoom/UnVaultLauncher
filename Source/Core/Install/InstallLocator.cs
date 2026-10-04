@@ -1,10 +1,10 @@
 using System.Text.RegularExpressions;
-using Unvault.Core.EGL;
-using Unvault.Core.Epic;
-using Unvault.Core.Manifests;
-using Unvault.Core.Util;
+using UnVault.Core.EGL;
+using UnVault.Core.Epic;
+using UnVault.Core.Manifests;
+using UnVault.Core.Util;
 
-namespace Unvault.Core.Install;
+namespace UnVault.Core.Install;
 
 /// <summary>An existing install on disk, with everything needed to verify, repair or modify it.</summary>
 public sealed record ExistingInstall(
@@ -98,9 +98,9 @@ public static class InstallLocator
             return null;
 
         var sources = extraSources.Count > 0 ? extraSources : record.BaseURLs.Select(u => new ChunkSource(u)).ToList();
-        string origin = record.FileFilter is not null ? $"partial Unvault install: {record.FileFilter}"
-            : eglItem is not null ? "Unvault (adopted from Epic Games Launcher)"
-            : "Unvault install";
+        string origin = record.FileFilter is not null ? $"partial UnVault install: {record.FileFilter}"
+            : eglItem is not null ? "UnVault (adopted from Epic Games Launcher)"
+            : "UnVault install";
         return new ExistingInstall(record.AppName, folder, manifest, InstallRecord.ManifestPath(folder),
             record.InstallTags.ToHashSet(StringComparer.Ordinal), sources, origin, record, eglItem, ParseFilter(record.FileFilter));
     }

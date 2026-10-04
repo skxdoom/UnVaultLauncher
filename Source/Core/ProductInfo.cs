@@ -1,6 +1,6 @@
 using System.Reflection;
 
-namespace Unvault.Core;
+namespace UnVault.Core;
 
 public static class ProductInfo
 {

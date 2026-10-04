@@ -1,4 +1,4 @@
-namespace Unvault.Core.Manifests;
+namespace UnVault.Core.Manifests;
 
 /// <summary>What toggling one optional component would change on disk.</summary>
 public readonly record struct ComponentImpact(

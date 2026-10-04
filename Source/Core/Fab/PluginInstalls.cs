@@ -1,9 +1,9 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Unvault.Core.Install;
-using Unvault.Core.Manifests;
+using UnVault.Core.Install;
+using UnVault.Core.Manifests;
 
-namespace Unvault.Core.Fab;
+namespace UnVault.Core.Fab;
 
 /// <summary>A Fab plugin we installed into an engine, kept in {engine}\.unvault\plugins\{artifact}\ with its manifest.</summary>
 public sealed class PluginRecord
@@ -43,7 +43,7 @@ public static class PluginInstalls
         return record is null ? null : (record, Manifest.Load(manifestPath));
     }
 
-    /// <summary>Plugins Unvault installed into this engine (EGL-installed ones aren't listed here).</summary>
+    /// <summary>Plugins UnVault installed into this engine (EGL-installed ones aren't listed here).</summary>
     public static IReadOnlyList<PluginRecord> List(string engineDir)
     {
         string root = Path.Combine(InstallJournal.DirectoryFor(engineDir), "plugins");

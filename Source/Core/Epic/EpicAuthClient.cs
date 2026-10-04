@@ -4,7 +4,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
-namespace Unvault.Core.Epic;
+namespace UnVault.Core.Epic;
 
 /// <summary>Talks to Epic's OAuth token endpoint as the Epic Games Launcher client.</summary>
 public sealed partial class EpicAuthClient(HttpClient http)

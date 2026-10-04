@@ -1,7 +1,7 @@
 using System.Security.Cryptography;
 using System.Text.Json;
 
-namespace Unvault.Core.Epic;
+namespace UnVault.Core.Epic;
 
 /// <summary>
 /// Persists the Epic session. On Windows the file is encrypted with DPAPI for the current Windows user,

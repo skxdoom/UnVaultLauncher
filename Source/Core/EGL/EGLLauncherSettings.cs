@@ -1,4 +1,4 @@
-namespace Unvault.Core.EGL;
+namespace UnVault.Core.EGL;
 
 /// <summary>
 /// The Epic Games Launcher's own settings that matter to us, read from its GameUserSettings.ini

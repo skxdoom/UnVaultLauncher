@@ -16,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Source\Core\Unvault.Core.csproj" />
+    <ProjectReference Include="..\..\Source\Core\UnVault.Core.csproj" />
   </ItemGroup>
 
 </Project>

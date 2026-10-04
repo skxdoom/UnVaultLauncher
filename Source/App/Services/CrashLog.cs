@@ -1,8 +1,8 @@
-using Unvault.Core;
+using UnVault.Core;
 
-namespace Unvault.App.Services;
+namespace UnVault.App.Services;
 
-/// <summary>Unexpected errors go to %LOCALAPPDATA%\UnvaultLauncher\crash.log, so a problem can be diagnosed afterwards.</summary>
+/// <summary>Unexpected errors go to %LOCALAPPDATA%\UnVaultLauncher\crash.log, so a problem can be diagnosed afterwards.</summary>
 public static class CrashLog
 {
     public static string FilePath => Path.Combine(AppPaths.DataDirectory, "crash.log");

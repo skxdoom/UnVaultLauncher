@@ -4,9 +4,9 @@ using System.Net.Http.Json;
 using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
-using Unvault.Core.Manifests;
+using UnVault.Core.Manifests;
 
-namespace Unvault.Core.Epic;
+namespace UnVault.Core.Epic;
 
 /// <summary>Launcher API calls that need a signed-in account.</summary>
 public sealed partial class EpicAPIClient(HttpClient http, EpicAccount account)
@@ -32,7 +32,7 @@ public sealed partial class EpicAPIClient(HttpClient http, EpicAccount account)
 
     /// <summary>
     /// Downloads and parses a build's manifest, trying each CDN in turn. Verified against the SHA-1 from
-    /// the build info and cached under %LOCALAPPDATA%\UnvaultLauncher\manifests so repeat calls are instant.
+    /// the build info and cached under %LOCALAPPDATA%\UnVaultLauncher\manifests so repeat calls are instant.
     /// </summary>
     public async Task<DownloadedManifest> DownloadManifestAsync(EpicBuildInfo build, CancellationToken cancellationToken = default)
     {

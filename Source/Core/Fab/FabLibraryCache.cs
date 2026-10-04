@@ -1,8 +1,8 @@
 using System.Text.Json.Serialization;
-using Unvault.Core.Epic;
-using Unvault.Core.Util;
+using UnVault.Core.Epic;
+using UnVault.Core.Util;
 
-namespace Unvault.Core.Fab;
+namespace UnVault.Core.Fab;
 
 /// <summary>The account's Fab library as last fetched, so it can be shown at once while a fresh copy loads.</summary>
 public sealed class FabLibrarySnapshot
@@ -13,7 +13,7 @@ public sealed class FabLibrarySnapshot
 }
 
 /// <summary>
-/// %LOCALAPPDATA%\UnvaultLauncher\fab-library.json: titles, versions and picture links only (nothing secret), kept for one
+/// %LOCALAPPDATA%\UnVaultLauncher\fab-library.json: titles, versions and picture links only (nothing secret), kept for one
 /// account at a time and deleted on sign-out.
 /// </summary>
 public static class FabLibraryCache

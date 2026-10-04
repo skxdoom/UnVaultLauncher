@@ -1,7 +1,7 @@
 using System.Buffers.Binary;
 using System.Buffers.Text;
 
-namespace Unvault.Core.Manifests;
+namespace UnVault.Core.Manifests;
 
 /// <summary>Build-level metadata from the manifest's Meta section.</summary>
 public sealed class ManifestMeta

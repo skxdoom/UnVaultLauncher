@@ -1,9 +1,9 @@
 using System.Buffers.Binary;
 using System.IO.Compression;
 using System.Security.Cryptography;
-using Unvault.Core.Manifests;
+using UnVault.Core.Manifests;
 
-namespace Unvault.Core.Chunks;
+namespace UnVault.Core.Chunks;
 
 public sealed class ChunkFormatException(string message) : Exception(message);
 

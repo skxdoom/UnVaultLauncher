@@ -2,12 +2,12 @@ using System.Collections.ObjectModel;
 using System.Text;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Unvault.Core.Fab;
-using Unvault.Core.Install;
-using Unvault.Core.Projects;
-using Unvault.Core.Util;
+using UnVault.Core.Fab;
+using UnVault.Core.Install;
+using UnVault.Core.Projects;
+using UnVault.Core.Util;
 
-namespace Unvault.App.ViewModels;
+namespace UnVault.App.ViewModels;
 
 public enum FabActionMode { InstallPlugin, AddToProject, CreateProject, Download, RemovePlugin }
 
@@ -308,7 +308,7 @@ public partial class FabActionViewModel : ViewModelBase
         ? "EGL put this plugin among the engine's own folders, so there's no telling which files are its. Remove it with the Epic Games Launcher."
         : install.Source switch
     {
-        PluginSource.Unvault => "Deletes the files Unvault installed.",
+        PluginSource.UnVault => "Deletes the files UnVault installed.",
         PluginSource.EGL => "Installed by the Epic Games Launcher: deletes the plugin's folder and EGL's record of it.",
         _ => "Not registered with any launcher (copied in by hand or by another tool): deletes the plugin's folder.",
     } + " Projects that use the plugin won't find it any more.";

@@ -1,12 +1,12 @@
 using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Unvault.Core.Epic;
-using Unvault.Core.Fab;
-using Unvault.Core.Install;
-using Unvault.Core.Vault;
+using UnVault.Core.Epic;
+using UnVault.Core.Fab;
+using UnVault.Core.Install;
+using UnVault.Core.Vault;
 
-namespace Unvault.App.ViewModels;
+namespace UnVault.App.ViewModels;
 
 /// <summary>One engine version of a Fab item: its artifact, from the online library and/or the vault cache.</summary>
 public sealed record FabVersion(string EngineAppName, string ArtifactID, FabProjectVersion? Library, VaultEntry? Vault)
@@ -52,7 +52,7 @@ public partial class FabItemViewModel : ViewModelBase
         var latest = versions.Where(v => v.LatestBuild is not null).GroupBy(v => v.ArtifactID, StringComparer.OrdinalIgnoreCase)
             .ToDictionary(g => g.Key, g => g.First().LatestBuild, StringComparer.OrdinalIgnoreCase);
         OutdatedDownloads = [.. versions.Where(v => v.IsOutdated).GroupBy(v => v.ArtifactID, StringComparer.OrdinalIgnoreCase).Select(g => g.First())];
-        // Only installs Unvault can bring up to date: its own, or EGL's in their own Marketplace folder.
+        // Only installs UnVault can bring up to date: its own, or EGL's in their own Marketplace folder.
         OutdatedInstalls = [.. installs.Where(i => i.CanRemove && FabVersion.IsOlder(i.BuildVersion, latest.GetValueOrDefault(i.ArtifactID)))];
     }
 

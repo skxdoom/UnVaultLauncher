@@ -1,6 +1,6 @@
-using Unvault.Core.Manifests;
+using UnVault.Core.Manifests;
 
-namespace Unvault.Core.Epic;
+namespace UnVault.Core.Epic;
 
 /// <summary>
 /// A CDN directory (CloudDir) chunks can be fetched from. Fab's URLs are signed: the manifest URL's

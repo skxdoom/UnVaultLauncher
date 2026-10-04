@@ -1,8 +1,8 @@
-using Unvault.Core.Epic;
-using Unvault.Core.Manifests;
-using Unvault.Core.Vault;
+using UnVault.Core.Epic;
+using UnVault.Core.Manifests;
+using UnVault.Core.Vault;
 
-namespace Unvault.Core.Fab;
+namespace UnVault.Core.Fab;
 
 public enum FabItemKind { Plugin, AssetPack, Project, Unknown }
 

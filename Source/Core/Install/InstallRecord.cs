@@ -1,8 +1,8 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Unvault.Core.Manifests;
+using UnVault.Core.Manifests;
 
-namespace Unvault.Core.Install;
+namespace UnVault.Core.Install;
 
 /// <summary>
 /// What we installed into a folder, kept in {install}\.unvault\ next to a copy of the manifest,
@@ -19,7 +19,7 @@ public sealed class InstallRecord
     /// <summary>Bytes on disk for the installed selection.</summary>
     public long InstallSize { get; set; }
 
-    /// <summary>True when the files were installed by the Epic Games Launcher and Unvault took over managing them.</summary>
+    /// <summary>True when the files were installed by the Epic Games Launcher and UnVault took over managing them.</summary>
     public bool AdoptedFromEGL { get; set; }
 
     /// <summary>Set when only part of the build was installed (testing with --only).</summary>

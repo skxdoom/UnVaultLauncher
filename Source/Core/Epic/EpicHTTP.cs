@@ -1,6 +1,6 @@
 using System.Net;
 
-namespace Unvault.Core.Epic;
+namespace UnVault.Core.Epic;
 
 public static class EpicHTTP
 {

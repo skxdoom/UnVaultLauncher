@@ -1,10 +1,10 @@
-using Unvault.Core.EGL;
-using Unvault.Core.Epic;
-using Unvault.Core.Install;
-using Unvault.Core.Manifests;
-using Unvault.Core.Vault;
+using UnVault.Core.EGL;
+using UnVault.Core.Epic;
+using UnVault.Core.Install;
+using UnVault.Core.Manifests;
+using UnVault.Core.Vault;
 
-namespace Unvault.Core.Fab;
+namespace UnVault.Core.Fab;
 
 /// <summary>One downloadable build of a Fab item: the item plus the version for a particular engine.</summary>
 public sealed record FabArtifact(FabLibraryItem Item, FabProjectVersion Version)
@@ -98,7 +98,7 @@ public static class FabWorkflow
     }
 
     /// <summary>
-    /// Works out how to bring a plugin in an engine up to the build in <paramref name="source"/>. If Unvault installed it,
+    /// Works out how to bring a plugin in an engine up to the build in <paramref name="source"/>. If UnVault installed it,
     /// its kept manifest says what's there; if EGL did (no file list), the plugin's folder is checked against the new
     /// build on disk, with progress going to <paramref name="checking"/>.
     /// </summary>
@@ -136,7 +136,7 @@ public static class FabWorkflow
         await installer.InstallAsync(plan, engineDirectory, source.Downloaded.Sources, source.Downloaded.Secrets, status, cancellationToken,
             stateDirectory: PluginInstalls.StateDirectory(engineDirectory, artifact.ArtifactID));
 
-        // From now on Unvault has the file list, so later updates and removal are exact even if EGL installed it.
+        // From now on UnVault has the file list, so later updates and removal are exact even if EGL installed it.
         RecordPlugin(engineDirectory, new PluginRecord
         {
             ArtifactID = artifact.ArtifactID,

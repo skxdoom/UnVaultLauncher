@@ -1,6 +1,6 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        x:Class="Unvault.App.Views.LoginWindow"
+        x:Class="UnVault.App.Views.LoginWindow"
         Title="Sign in to Epic Games"
         Width="520" Height="760" MinWidth="420" MinHeight="560"
         WindowStartupLocation="CenterOwner"
@@ -24,7 +24,7 @@
                        Text="2. The page then shows a short text containing &quot;authorizationCode&quot;. Copy all of it and paste it here:" />
             <TextBox x:Name="CodeBox" PlaceholderText="Paste here" AcceptsReturn="False" />
             <TextBlock Classes="muted small" TextWrapping="Wrap"
-                       Text="Epic warns not to share this code with third parties. Unvault Launcher runs on your PC and sends it only to Epic." />
+                       Text="Epic warns not to share this code with third parties. UnVault Launcher runs on your PC and sends it only to Epic." />
             <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
                 <Button Content="Cancel" Click="OnCancelClick" />
                 <Button Content="Sign In" Classes="accent" Click="OnSubmitCodeClick" />

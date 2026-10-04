@@ -1,8 +1,8 @@
 using System.Collections.Concurrent;
 using Microsoft.Win32.SafeHandles;
-using Unvault.Core.Manifests;
+using UnVault.Core.Manifests;
 
-namespace Unvault.Core.Install;
+namespace UnVault.Core.Install;
 
 /// <summary>
 /// The files an install writes into. Chunk slices arrive in any order from parallel downloads, so

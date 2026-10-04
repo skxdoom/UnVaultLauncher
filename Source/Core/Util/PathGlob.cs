@@ -1,7 +1,7 @@
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace Unvault.Core.Util;
+namespace UnVault.Core.Util;
 
 /// <summary>Case-insensitive globs over manifest paths: <c>**</c> crosses folders, <c>*</c> and <c>?</c> don't.</summary>
 public static class PathGlob

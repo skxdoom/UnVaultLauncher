@@ -2,7 +2,7 @@ using System.Globalization;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
-namespace Unvault.Core.Projects;
+namespace UnVault.Core.Projects;
 
 /// <summary>An Unreal project on disk.</summary>
 public sealed record UnrealProject(string Name, string ProjectFile, string EngineAssociation, DateTime? LastOpened)

@@ -1,10 +1,10 @@
 using System.ComponentModel;
 using Spectre.Console;
 using Spectre.Console.Cli;
-using Unvault.Core.EGL;
-using Unvault.Core.Epic;
+using UnVault.Core.EGL;
+using UnVault.Core.Epic;
 
-namespace Unvault.CLI.Commands;
+namespace UnVault.CLI.Commands;
 
 internal sealed class OwnedCommand : EpicCommand<OwnedCommand.Settings>
 {

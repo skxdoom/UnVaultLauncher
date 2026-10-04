@@ -2,10 +2,10 @@ using System.ComponentModel;
 using System.Diagnostics;
 using Spectre.Console;
 using Spectre.Console.Cli;
-using Unvault.Core.Epic;
-using Unvault.Core.Fab;
+using UnVault.Core.Epic;
+using UnVault.Core.Fab;
 
-namespace Unvault.CLI.Commands;
+namespace UnVault.CLI.Commands;
 
 internal sealed class LoginCommand : EpicCommand<LoginCommand.Settings>
 {

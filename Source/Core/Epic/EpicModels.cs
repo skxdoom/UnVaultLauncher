@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Unvault.Core.Epic;
+namespace UnVault.Core.Epic;
 
 /// <summary>A signed-in Epic account session (EG1 tokens), as we persist it.</summary>
 public sealed record EpicAuthSession

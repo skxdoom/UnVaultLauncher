@@ -1,8 +1,8 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Unvault.Core.EGL;
+using UnVault.Core.EGL;
 
-namespace Unvault.Core;
+namespace UnVault.Core;
 
 /// <summary>Where a setting's effective value came from, for showing "auto (from …)" in the UI.</summary>
 public enum SettingSource { User, EpicGamesLauncher, ExistingInstalls, Default }
@@ -16,7 +16,7 @@ public readonly record struct ResolvedFolders(IReadOnlyList<string> Paths, Setti
 }
 
 /// <summary>
-/// User settings, saved as %LOCALAPPDATA%\UnvaultLauncher\settings.json. Folder settings left empty mean "automatic":
+/// User settings, saved as %LOCALAPPDATA%\UnVaultLauncher\settings.json. Folder settings left empty mean "automatic":
 /// use what the Epic Games Launcher is configured with, so both launchers share folders.
 /// </summary>
 public sealed class AppSettings

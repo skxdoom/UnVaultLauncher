@@ -1,9 +1,9 @@
 using System.Diagnostics;
 using Spectre.Console;
-using Unvault.Core.Install;
-using Unvault.Core.Util;
+using UnVault.Core.Install;
+using UnVault.Core.Util;
 
-namespace Unvault.CLI;
+namespace UnVault.CLI;
 
 /// <summary>Live progress bars for an install/verify task, polling its <see cref="InstallStatus"/>.</summary>
 internal static class ProgressDisplay

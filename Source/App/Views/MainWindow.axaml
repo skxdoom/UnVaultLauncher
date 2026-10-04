@@ -1,11 +1,11 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:vm="using:Unvault.App.ViewModels"
-        xmlns:views="using:Unvault.App.Views"
-        x:Class="Unvault.App.Views.MainWindow"
+        xmlns:vm="using:UnVault.App.ViewModels"
+        xmlns:views="using:UnVault.App.Views"
+        x:Class="UnVault.App.Views.MainWindow"
         x:DataType="vm:MainViewModel"
         Icon="/Assets/unvault.ico"
-        Title="Unvault Launcher"
+        Title="UnVault Launcher"
         Width="1100" Height="760" MinWidth="760" MinHeight="520"
         Background="{StaticResource WindowBackgroundBrush}">
 
@@ -18,7 +18,7 @@
                     <StackPanel Orientation="Horizontal" Spacing="24" VerticalAlignment="Center">
                         <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
                             <Image Source="/Assets/unvault-logo.png" Width="28" Height="28" />
-                            <TextBlock Text="Unvault" FontSize="18" FontWeight="Bold" VerticalAlignment="Center" />
+                            <TextBlock Text="UnVault" FontSize="18" FontWeight="Bold" VerticalAlignment="Center" />
                             <TextBlock Text="Launcher" FontSize="18" Classes="muted" VerticalAlignment="Center" Margin="-4,0,0,0" />
                             <TextBlock Text="{Binding VersionText}" Classes="muted small" VerticalAlignment="Center" Margin="-2,3,0,0" />
                         </StackPanel>

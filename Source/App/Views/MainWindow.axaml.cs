@@ -1,8 +1,8 @@
 using Avalonia.Controls;
 using Avalonia.Platform.Storage;
-using Unvault.App.Services;
+using UnVault.App.Services;
 
-namespace Unvault.App.Views;
+namespace UnVault.App.Views;
 
 public partial class MainWindow : Window, IUserInteraction
 {

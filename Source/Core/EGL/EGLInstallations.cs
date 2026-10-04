@@ -2,7 +2,7 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
-namespace Unvault.Core.EGL;
+namespace UnVault.Core.EGL;
 
 /// <summary>
 /// Reads what the Epic Games Launcher has installed on this machine, and maintains

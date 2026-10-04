@@ -1,9 +1,9 @@
 using System.Text;
-using Unvault.Core.EGL;
-using Unvault.Core.Install;
-using Unvault.Core.Manifests;
+using UnVault.Core.EGL;
+using UnVault.Core.Install;
+using UnVault.Core.Manifests;
 
-namespace Unvault.Core.Tests;
+namespace UnVault.Core.Tests;
 
 public sealed class LauncherInstalledTests : IDisposable
 {

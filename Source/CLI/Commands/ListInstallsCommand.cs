@@ -1,11 +1,11 @@
 ﻿using System.ComponentModel;
 using Spectre.Console;
 using Spectre.Console.Cli;
-using Unvault.Core.EGL;
-using Unvault.Core.Manifests;
-using Unvault.Core.Util;
+using UnVault.Core.EGL;
+using UnVault.Core.Manifests;
+using UnVault.Core.Util;
 
-namespace Unvault.CLI.Commands;
+namespace UnVault.CLI.Commands;
 
 internal sealed class ListInstallsCommand : Command<ListInstallsCommand.Settings>
 {

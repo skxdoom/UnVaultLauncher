@@ -1,4 +1,4 @@
-namespace Unvault.Core.Manifests;
+namespace UnVault.Core.Manifests;
 
 public readonly record struct InstallPlanSize(int FileCount, long InstallBytes, int ChunkCount, long DownloadBytes);
 

@@ -1,6 +1,6 @@
 using System.Globalization;
 
-namespace Unvault.Core.Util;
+namespace UnVault.Core.Util;
 
 public static class ByteSize
 {

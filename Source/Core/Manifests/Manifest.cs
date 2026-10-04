@@ -2,7 +2,7 @@ using System.IO.Compression;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace Unvault.Core.Manifests;
+namespace UnVault.Core.Manifests;
 
 public sealed class ManifestFormatException(string message) : Exception(message);
 

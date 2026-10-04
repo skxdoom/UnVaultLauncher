@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 
-namespace Unvault.Core.Util;
+namespace UnVault.Core.Util;
 
 /// <summary>
 /// A JSON file that keeps the last copy of something slow to fetch (e.g. the Fab library), so it can be shown at

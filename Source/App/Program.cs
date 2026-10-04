@@ -1,7 +1,7 @@
 ﻿using Avalonia;
 using System;
 
-namespace Unvault.App;
+namespace UnVault.App;
 
 sealed class Program
 {

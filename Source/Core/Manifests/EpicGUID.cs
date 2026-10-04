@@ -2,7 +2,7 @@ using System.Buffers.Binary;
 using System.Globalization;
 using System.Text;
 
-namespace Unvault.Core.Manifests;
+namespace UnVault.Core.Manifests;
 
 /// <summary>
 /// Epic's 128-bit GUID, stored as four little-endian uint32s (UE's FGuid).

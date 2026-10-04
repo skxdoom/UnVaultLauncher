@@ -4,15 +4,15 @@ using System.Text.RegularExpressions;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Microsoft.Web.WebView2.Core;
-using Unvault.Core;
-using Unvault.Core.Epic;
+using UnVault.Core;
+using UnVault.Core.Epic;
 
-namespace Unvault.App.Views;
+namespace UnVault.App.Views;
 
 /// <summary>
 /// Epic sign-in inside the app. On Windows an embedded WebView2 shows Epic's own page; when it reaches the
 /// page that hands out the authorization code, we read the code and close — nothing to copy. The browser
-/// profile is Unvault's own (separate from your normal browser), cleared on sign-out.
+/// profile is UnVault's own (separate from your normal browser), cleared on sign-out.
 /// </summary>
 public partial class LoginWindow : Window
 {

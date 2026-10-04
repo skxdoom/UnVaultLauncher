@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Unvault.Core.Vault;
+namespace UnVault.Core.Vault;
 
 /// <summary>
 /// One downloaded Fab/Marketplace artifact in a vault cache, as EGL stores it:

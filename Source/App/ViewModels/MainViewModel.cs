@@ -2,15 +2,15 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Unvault.App.Services;
-using Unvault.Core;
-using Unvault.Core.EGL;
-using Unvault.Core.Epic;
-using Unvault.Core.Fab;
-using Unvault.Core.Install;
-using Unvault.Core.Util;
+using UnVault.App.Services;
+using UnVault.Core;
+using UnVault.Core.EGL;
+using UnVault.Core.Epic;
+using UnVault.Core.Fab;
+using UnVault.Core.Install;
+using UnVault.Core.Util;
 
-namespace Unvault.App.ViewModels;
+namespace UnVault.App.ViewModels;
 
 public partial class MainViewModel : ViewModelBase
 {
@@ -37,7 +37,7 @@ public partial class MainViewModel : ViewModelBase
     public AppServices Services { get; }
     public IUserInteraction? Interaction { get; set; }
 
-    /// <summary>Shared with the CLI: %LOCALAPPDATA%\UnvaultLauncher\settings.json.</summary>
+    /// <summary>Shared with the CLI: %LOCALAPPDATA%\UnVaultLauncher\settings.json.</summary>
     public AppSettings Settings { get; } = AppSettings.Load();
 
     public FabLibraryViewModel Fab { get; }

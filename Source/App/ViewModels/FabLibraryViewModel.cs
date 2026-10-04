@@ -1,15 +1,15 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Unvault.Core.EGL;
-using Unvault.Core.Epic;
-using Unvault.Core.Fab;
-using Unvault.Core.Install;
-using Unvault.Core.Projects;
-using Unvault.Core.Util;
-using Unvault.Core.Vault;
+using UnVault.Core.EGL;
+using UnVault.Core.Epic;
+using UnVault.Core.Fab;
+using UnVault.Core.Install;
+using UnVault.Core.Projects;
+using UnVault.Core.Util;
+using UnVault.Core.Vault;
 
-namespace Unvault.App.ViewModels;
+namespace UnVault.App.ViewModels;
 
 /// <summary>One row of the Fab grid; <paramref name="Columns"/> is the page's, so a short last row keeps full-size tiles.</summary>
 public sealed record FabItemRow(IReadOnlyList<FabItemViewModel> Items, int Columns);
@@ -302,7 +302,7 @@ public partial class FabLibraryViewModel : ViewModelBase
 
     private void BuildRows() => Rows = Items.Chunk(_columns).Select(row => new FabItemRow(row, _columns)).ToList();
 
-    /// <summary>Plugins in the installed engines, whoever put them there: Unvault, EGL, or something else.</summary>
+    /// <summary>Plugins in the installed engines, whoever put them there: UnVault, EGL, or something else.</summary>
     private static IReadOnlyList<FabInstall> FindPluginInstalls(IReadOnlyList<LocalEngine> engines)
     {
         var launcherInstalled = EGLInstallations.ReadLauncherInstalled();

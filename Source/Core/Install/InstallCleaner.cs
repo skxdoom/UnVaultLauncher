@@ -1,6 +1,6 @@
-using Unvault.Core.Manifests;
+using UnVault.Core.Manifests;
 
-namespace Unvault.Core.Install;
+namespace UnVault.Core.Install;
 
 /// <summary>Removes files of deselected components from an install, then any folders left empty.</summary>
 public static class InstallCleaner
