@@ -109,13 +109,17 @@ public partial class FabItemViewModel : ViewModelBase
     public bool IsInLibrary => Library is not null;
     public bool HasFabPage => !string.IsNullOrEmpty(Library?.URL);
 
-    public string PrimaryText => Kind switch
+    /// <summary>What the tile's main button does for this kind of item.</summary>
+    public string ActionText => Kind switch
     {
         FabItemKind.Plugin => "Install to Engine",
         FabItemKind.AssetPack => "Add to Project",
         FabItemKind.Project => "Create Project",
         _ => "Download",
     };
+
+    /// <summary>The main button: Update while Fab has a newer build (as in the Epic Games Launcher), otherwise <see cref="ActionText"/>.</summary>
+    public string PrimaryText => HasUpdate ? "Update" : ActionText;
 
     [ObservableProperty] public partial Bitmap? Thumbnail { get; set; }
 
@@ -153,7 +157,17 @@ public partial class FabItemViewModel : ViewModelBase
         search.Length == 0 || SearchText.Contains(search, StringComparison.OrdinalIgnoreCase);
 
     [RelayCommand]
-    private void Primary() => _owner.OpenAction(this);
+    private void Primary()
+    {
+        if (HasUpdate)
+            _owner.OpenUpdate(this);
+        else
+            _owner.OpenAction(this);
+    }
+
+    /// <summary>The kind's own action, from the ⋯ menu while the main button is Update.</summary>
+    [RelayCommand]
+    private void Action() => _owner.OpenAction(this);
 
     [RelayCommand]
     private void Download() => _owner.OpenDownload(this);
@@ -175,9 +189,6 @@ public partial class FabItemViewModel : ViewModelBase
 
     [RelayCommand]
     private void Remove() => _owner.OpenRemove(this);
-
-    [RelayCommand]
-    private void Update() => _owner.OpenUpdate(this);
 
     /// <summary>["UE_4.27","UE_5.3","UE_5.4","UE_5.5"] → "4.27, 5.3–5.5".</summary>
     internal static string CompactVersions(IEnumerable<string> engineAppNames)

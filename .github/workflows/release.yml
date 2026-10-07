@@ -63,14 +63,14 @@ jobs:
         shell: pwsh
         run: |
           $hash = (Get-FileHash UnVaultLauncher.exe -Algorithm SHA256).Hash.ToLowerInvariant()
+          # The release's own story goes above this, written in the draft before publishing.
           @"
-          SHA-256: ``$hash``
+          ***
+          **Download** ``UnVaultLauncher.exe`` below: one file, nothing to install, for 64-bit Windows 10 or 11.
+          Not code-signed yet, so Windows may warn on first run: choose **More info**, then **Run anyway**.
 
-          To check that the exe was built by this repository's release workflow:
-
-              gh attestation verify UnVaultLauncher.exe --repo $env:GITHUB_REPOSITORY
-
-          The exe isn't code-signed yet, so Windows may warn about an unknown publisher on first run: choose More info, then Run anyway.
+          **SHA-256** ``$hash``
+          **Built by GitHub Actions from this repository.** To check: ``gh attestation verify UnVaultLauncher.exe --repo $env:GITHUB_REPOSITORY``
           "@ | Out-File notes.md -Encoding utf8
 
       # A signed record that the exe came from this workflow and commit (checked with gh attestation verify).

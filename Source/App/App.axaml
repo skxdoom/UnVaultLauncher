@@ -4,7 +4,7 @@
              RequestedThemeVariant="Dark">
 
     <Application.Resources>
-        <!-- Neutral greys with the logo's blue as the accent; orange is kept for updates, which should catch the eye -->
+        <!-- Neutral greys with the logo's blue as the accent; yellow is kept for updates, which should catch the eye -->
         <SolidColorBrush x:Key="WindowBackgroundBrush">#141414</SolidColorBrush>
         <SolidColorBrush x:Key="HeaderBackgroundBrush">#191919</SolidColorBrush>
         <SolidColorBrush x:Key="CardBackgroundBrush">#1C1C1C</SolidColorBrush>
@@ -17,7 +17,7 @@
         <SolidColorBrush x:Key="AccentTextBrush">#6B9BF2</SolidColorBrush>
         <SolidColorBrush x:Key="OnAccentBrush">#FFFFFF</SolidColorBrush>
         <SolidColorBrush x:Key="SuccessBrush">#3CC47C</SolidColorBrush>
-        <SolidColorBrush x:Key="WarningBrush">#F7862F</SolidColorBrush>
+        <SolidColorBrush x:Key="WarningBrush">#E2A616</SolidColorBrush>
         <SolidColorBrush x:Key="DangerBrush">#EF5B5B</SolidColorBrush>
         <SolidColorBrush x:Key="OverlayBrush">#B0000000</SolidColorBrush>
 
@@ -102,7 +102,7 @@
             <Setter Property="Foreground" Value="{StaticResource SuccessBrush}" />
         </Style>
         <Style Selector="Border.chip.warning">
-            <Setter Property="Background" Value="#3A2410" />
+            <Setter Property="Background" Value="#3A2E10" />
         </Style>
         <Style Selector="Border.chip.warning > TextBlock">
             <Setter Property="Foreground" Value="{StaticResource WarningBrush}" />
@@ -146,8 +146,8 @@
             <Setter Property="VerticalAlignment" Value="Center" />
         </Style>
         <Style Selector="Border.banner.warning">
-            <Setter Property="Background" Value="#2D1F10" />
-            <Setter Property="BorderBrush" Value="#5C3A16" />
+            <Setter Property="Background" Value="#2D2610" />
+            <Setter Property="BorderBrush" Value="#5C4C16" />
         </Style>
 
         <!-- Buttons -->
@@ -173,23 +173,18 @@
             <Setter Property="Background" Value="#2A2A2A" />
             <Setter Property="Foreground" Value="White" />
         </Style>
-        <!-- The orange "Update" badge on a Library tile -->
+        <!-- Yellow Update: replaces a Library tile's main button while Fab has a newer build -->
         <Style Selector="Button.update">
             <Setter Property="Background" Value="{StaticResource WarningBrush}" />
-            <Setter Property="Foreground" Value="#1C1005" />
-            <Setter Property="FontSize" Value="11" />
-            <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="Padding" Value="9,2" />
-            <Setter Property="CornerRadius" Value="10" />
-            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="#1A1405" />
         </Style>
         <Style Selector="Button.update:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="#FA9F55" />
-            <Setter Property="Foreground" Value="#1C1005" />
+            <Setter Property="Background" Value="#EDB83E" />
+            <Setter Property="Foreground" Value="#1A1405" />
         </Style>
         <Style Selector="Button.update:pressed /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="#E3741D" />
-            <Setter Property="Foreground" Value="#1C1005" />
+            <Setter Property="Background" Value="#C9930F" />
+            <Setter Property="Foreground" Value="#1A1405" />
         </Style>
         <Style Selector="Button.clear">
             <Setter Property="Padding" Value="7" />

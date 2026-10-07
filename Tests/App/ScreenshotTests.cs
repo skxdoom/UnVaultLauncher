@@ -224,8 +224,12 @@ public class ScreenshotTests
         WaitFor(() => fab.Items.Single(i => i.Title.StartsWith("Modular Warehouse")).Thumbnail is not null); // local:// picture loaded
         Save(window, "fab-library.png");
 
-        // Greybox Tools has a newer build on Fab than its 5.7 download and its 5.7 install: an Update badge, the dot on the tab.
+        // Greybox Tools has a newer build on Fab than its 5.7 download and its 5.7 install: its main button becomes Update
+        // (its usual action moves to the ⋯ menu), and the Library tab gets a dot.
         Assert.True(blockout.HasUpdate);
+        Assert.Equal(("Update", "Install to Engine"), (blockout.PrimaryText, blockout.ActionText));
+        var edge = fab.Items.Single(i => i.Title == "Edge Smoother");
+        Assert.Equal(("Install to Engine", false), (edge.PrimaryText, edge.HasUpdate));
         Assert.Equal(["UE_5.7"], blockout.OutdatedDownloads.Select(v => v.EngineAppName));
         Assert.Equal(["UE_5.7"], blockout.OutdatedInstalls.Select(i => i.EngineAppName));
         Assert.Equal((1, true, "Update Available (1)"), (fab.UpdateCount, viewModel.HasLibraryUpdates, fab.UpdatesFilterText));

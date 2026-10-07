@@ -34,6 +34,13 @@ This puts `UnVaultLauncher.exe` in the repository root. `Source/CLI` builds `UnV
 
 This is mostly a vibe-coded project. Why? Because I was desperate. The Epic Games Launcher has a lot of issues, and for more than a year they've been directly affecting my work, blocking me from downloading engine versions and the assets and plugins I own, including ones I developed and published myself. I'm tired of trying to fix it. There are other third-party launchers, but they often lack features I need.
 
+## Thanks
+
+Epic's launcher API isn't publicly documented. UnVault Launcher builds on what these projects worked out:
+
+- [Legendary](https://github.com/legendary-gl/legendary): sign-in, the launcher's download API and the manifest format
+- [egs-api-rs](https://github.com/AchetaGames/egs-api-rs): the Fab library and its downloads
+
 ## Disclaimer
 
 Not affiliated with or endorsed by Epic Games. Unreal Engine, Epic Games and Fab are trademarks of Epic Games, Inc. 

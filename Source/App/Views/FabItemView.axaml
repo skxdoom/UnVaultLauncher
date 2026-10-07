@@ -16,8 +16,6 @@
                     <Border Classes="chip" Background="#CC141414" Margin="8" HorizontalAlignment="Left" VerticalAlignment="Top">
                         <TextBlock Text="{Binding KindLabel}" />
                     </Border>
-                    <Button Classes="update" Content="Update" Margin="8" HorizontalAlignment="Right" VerticalAlignment="Top"
-                            Command="{Binding UpdateCommand}" IsVisible="{Binding HasUpdate}" IsEnabled="{Binding IsIdle}" ToolTip.Tip="{Binding UpdateText}" />
                 </Panel>
             </Border>
 
@@ -46,12 +44,14 @@
             </StackPanel>
 
             <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="12,8,12,12">
-                <Button Content="{Binding PrimaryText}" Classes="accent" Command="{Binding PrimaryCommand}" IsEnabled="{Binding IsIdle}"
+                <!-- Yellow Update while Fab has a newer build; the item's usual action is then in the ⋯ menu -->
+                <Button Content="{Binding PrimaryText}" Classes.accent="{Binding !HasUpdate}" Classes.update="{Binding HasUpdate}"
+                        Command="{Binding PrimaryCommand}" IsEnabled="{Binding IsIdle}" ToolTip.Tip="{Binding UpdateText}"
                         HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
                 <Button Grid.Column="1" Content="⋯" Margin="6,0,0,0" ToolTip.Tip="More">
                     <Button.Flyout>
                         <MenuFlyout>
-                            <MenuItem Header="Update" Command="{Binding UpdateCommand}" IsEnabled="{Binding HasUpdate}" />
+                            <MenuItem Header="{Binding ActionText}" Command="{Binding ActionCommand}" IsVisible="{Binding HasUpdate}" IsEnabled="{Binding IsIdle}" />
                             <MenuItem Header="Download to Vault Cache" Command="{Binding DownloadCommand}" IsEnabled="{Binding IsInLibrary}" />
                             <MenuItem Header="Show in Folder" Command="{Binding ShowInFolderCommand}" IsEnabled="{Binding HasFolder}" />
                             <MenuItem Header="Open on Fab" Command="{Binding OpenFabPageCommand}" IsEnabled="{Binding HasFabPage}" />
