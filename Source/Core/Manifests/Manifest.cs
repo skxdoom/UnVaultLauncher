@@ -26,6 +26,9 @@ public sealed class Manifest
     private const byte StoredCompressed = 0x1;
     private const byte StoredEncrypted = 0x2;
 
+    /// <summary>The header fields every format version has (newer ones add more, which headerSize skips).</summary>
+    private const int MinHeaderSize = 41;
+
     private Dictionary<EpicGUID, ChunkInfo>? _chunksByGUID;
 
     /// <summary>Format version from the file header.</summary>
@@ -55,7 +58,7 @@ public sealed class Manifest
         using var headerStream = new MemoryStream(data, writable: false);
         using var header = new BinaryReader(headerStream);
 
-        if (header.ReadUInt32() != Magic)
+        if (data.Length < MinHeaderSize || header.ReadUInt32() != Magic)
             throw new ManifestFormatException("Not an Epic manifest (bad magic).");
 
         uint headerSize = header.ReadUInt32();
@@ -71,13 +74,24 @@ public sealed class Manifest
         if ((storedAs & StoredEncrypted) != 0)
             throw new ManifestFormatException($"This manifest (format v{version}) has encrypted file names; decrypting them isn't implemented yet.");
 
+        bool compressed = (storedAs & StoredCompressed) != 0;
+        if (headerSize < MinHeaderSize || (long)headerSize + (compressed ? sizeCompressed : sizeUncompressed) > data.Length || sizeUncompressed > Array.MaxLength)
+            throw new ManifestFormatException("The manifest is cut off or damaged: its header doesn't match its size.");
+
         byte[] body;
-        if ((storedAs & StoredCompressed) != 0)
+        if (compressed)
         {
-            using var compressed = new MemoryStream(data, (int)headerSize, (int)sizeCompressed, writable: false);
-            using var zlib = new ZLibStream(compressed, CompressionMode.Decompress);
-            body = new byte[sizeUncompressed];
-            zlib.ReadExactly(body);
+            try
+            {
+                using var stored = new MemoryStream(data, (int)headerSize, (int)sizeCompressed, writable: false);
+                using var zlib = new ZLibStream(stored, CompressionMode.Decompress);
+                body = new byte[sizeUncompressed];
+                zlib.ReadExactly(body);
+            }
+            catch (Exception ex) when (ex is InvalidDataException or EndOfStreamException)
+            {
+                throw new ManifestFormatException("The manifest's compressed body is damaged.");
+            }
         }
         else
         {
@@ -90,19 +104,27 @@ public sealed class Manifest
         using var bodyStream = new MemoryStream(body, writable: false);
         var reader = new SectionReader(bodyStream);
 
-        var meta = reader.ReadMeta();
-        var chunks = reader.ReadChunkDataList(meta.FeatureLevel);
-        var files = reader.ReadFileManifestList();
-        var customFields = reader.ReadCustomFields();
-
-        return new Manifest
+        try
         {
-            Version = version,
-            Meta = meta,
-            Chunks = chunks,
-            Files = files,
-            CustomFields = customFields,
-        };
+            var meta = reader.ReadMeta();
+            var chunks = reader.ReadChunkDataList(meta.FeatureLevel);
+            var files = reader.ReadFileManifestList();
+            var customFields = reader.ReadCustomFields();
+
+            return new Manifest
+            {
+                Version = version,
+                Meta = meta,
+                Chunks = chunks,
+                Files = files,
+                CustomFields = customFields,
+            };
+        }
+        catch (Exception ex) when (ex is EndOfStreamException or OverflowException)
+        {
+            // The hash matched, so this isn't damage: a layout this reader doesn't know.
+            throw new ManifestFormatException($"This manifest (format v{version}) is laid out in a way UnVault can't read.");
+        }
     }
 
     /// <summary>Reads the manifest body sections. Struct-of-arrays layout: each field is stored for all elements before the next field.</summary>

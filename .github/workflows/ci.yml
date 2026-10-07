@@ -1,0 +1,37 @@
+# Builds and tests every push to main and every pull request, so a broken build or a failing test shows on the commit.
+name: CI
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['**.md']
+  pull_request:
+    paths-ignore: ['**.md']
+
+# A newer push makes a run still going for the same branch pointless.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      # The build has no warnings; failing on new ones keeps it that way.
+      - name: Build
+        run: dotnet build UnVault.sln -c Release -warnaserror
+
+      - name: Test
+        run: dotnet test UnVault.sln -c Release --no-build
