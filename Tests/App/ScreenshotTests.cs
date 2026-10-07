@@ -182,16 +182,21 @@ public class ScreenshotTests
         var window = Show(viewModel);
 
         WaitFor(() => settings.VaultSummary.Length > 0);
-        Assert.True(settings.HasEGLVaultCache);
+        Assert.Equal($"Automatic: {vault}", settings.VaultPlaceholder); // EGL's, with nothing set here
         Assert.Equal([true, false], settings.ProjectFolders.Select(f => f.IsDefault));
         Assert.Equal(@"Automatic: C:\Users\Me\Documents\Unreal Projects", settings.ProjectFoldersAutomatic);
         Save(window, "settings.png");
 
-        // "Use for New Projects" moves a folder first; removing every folder means automatic again.
-        settings.ProjectFolders[1].MakeDefaultCommand.Execute(null);
-        Assert.Equal([@"E:\Unreal Projects", @"D:\Projects\Unreal"], settings.ProjectFolders.Select(f => f.Path));
-        Assert.True(settings.ProjectFolders[0].IsDefault);
+        // A folder's radio button makes it the default, in place; removing the default hands it to the first one left,
+        // and removing every folder means automatic again.
+        var radios = window.GetVisualDescendants().OfType<RadioButton>().ToList();
+        Assert.Equal([true, false], radios.Select(r => r.IsChecked == true));
+        radios[1].IsChecked = true;
+        Assert.Equal([false, true], settings.ProjectFolders.Select(f => f.IsDefault));
+        Assert.Equal([@"D:\Projects\Unreal", @"E:\Unreal Projects"], settings.ProjectFolders.Select(f => f.Path));
+        Assert.False(radios[0].IsChecked);
         settings.ProjectFolders[1].RemoveCommand.Execute(null);
+        Assert.True(settings.ProjectFolders[0].IsDefault);
         settings.ProjectFolders[0].RemoveCommand.Execute(null);
         Assert.True(settings.HasNoProjectFolders);
         Dispatcher.UIThread.RunJobs();

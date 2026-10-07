@@ -55,6 +55,18 @@ public sealed class SettingsTests : IDisposable
     }
 
     [Fact]
+    public void Without_any_setting_the_Vault_Cache_is_EGLs_default()
+    {
+        var vault = new AppSettings().ResolveVaultCache(EGLLauncherSettings.Empty);
+
+        // Unless an earlier version's own default folder is in use and EGL's doesn't exist.
+        string ownFolder = Path.Combine(AppPaths.DataDirectory, "VaultCache");
+        bool keepsOwn = !Directory.Exists(AppSettings.EGLDefaultVaultCache) && Directory.Exists(ownFolder);
+        Assert.Equal(keepsOwn ? ownFolder : AppSettings.EGLDefaultVaultCache, vault.Path);
+        Assert.EndsWith(@"\Epic\EpicGamesLauncher\VaultCache", AppSettings.EGLDefaultVaultCache);
+    }
+
+    [Fact]
     public void Data_folder_moves_from_its_old_name_once()
     {
         string old = Path.Combine(_dir, "Unvault");

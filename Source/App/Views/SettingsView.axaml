@@ -25,9 +25,6 @@
                         <Button Grid.Column="1" Content="Browse…" Margin="8,0,0,0" Command="{Binding BrowseVaultCacheCommand}" />
                     </Grid>
                     <TextBlock Text="{Binding VaultSummary}" Classes="muted small" TextWrapping="Wrap" Margin="0,6,0,0" />
-                    <Button Classes="link" Margin="0,6,0,0" Command="{Binding UseEGLVaultCacheCommand}" IsVisible="{Binding HasEGLVaultCache}">
-                        <TextBlock Text="{Binding EGLVaultCache, StringFormat='Use the Epic Games Launcher’s: {0}'}" TextTrimming="CharacterEllipsis" />
-                    </Button>
 
                     <TextBlock Text="PROJECT FOLDERS" Classes="section" />
                     <Border Classes="folder" IsVisible="{Binding HasNoProjectFolders}">
@@ -38,12 +35,13 @@
                             <DataTemplate DataType="vm:ProjectFolderItem">
                                 <Border Classes="folder">
                                     <Grid ColumnDefinitions="*,Auto,Auto">
-                                        <TextBlock Text="{Binding Path}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Path}" VerticalAlignment="Center" />
+                                        <!-- The default folder is where new projects are created -->
+                                        <RadioButton IsChecked="{Binding IsDefault}" ToolTip.Tip="{Binding Path}" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Path}" TextTrimming="CharacterEllipsis" />
+                                        </RadioButton>
                                         <Border Grid.Column="1" Classes="chip" Margin="8,0,0,0" VerticalAlignment="Center" IsVisible="{Binding IsDefault}">
-                                            <TextBlock Text="New projects" />
+                                            <TextBlock Text="Default" />
                                         </Border>
-                                        <Button Grid.Column="1" Classes="link" Content="Use for New Projects" Margin="8,0,0,0" VerticalAlignment="Center"
-                                                Command="{Binding MakeDefaultCommand}" IsVisible="{Binding !IsDefault}" />
                                         <Button Grid.Column="2" Classes="clear" Margin="4,0,-6,0" Command="{Binding RemoveCommand}" ToolTip.Tip="Remove">
                                             <Path Data="M0,0 L9,9 M9,0 L0,9" Stroke="{StaticResource MutedTextBrush}" StrokeThickness="1.6" StrokeLineCap="Round" />
                                         </Button>

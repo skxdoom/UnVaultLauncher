@@ -87,13 +87,20 @@ public sealed class AppSettings
             return new(VaultCacheDirectory, SettingSource.User);
         if (egl.ActiveVaultCache is { } eglVault)
             return new(eglVault, SettingSource.EpicGamesLauncher);
+        if (Directory.Exists(EGLDefaultVaultCache))
+            return new(EGLDefaultVaultCache, SettingSource.EpicGamesLauncher);
 
-        string eglDefault = Path.Combine(EGLInstallations.ProgramDataEpic, "EpicGamesLauncher", "VaultCache");
-        if (Directory.Exists(eglDefault))
-            return new(eglDefault, SettingSource.EpicGamesLauncher);
+        // Earlier versions defaulted to a folder of their own; downloads already there are kept in use.
+        string ownFolder = Path.Combine(AppPaths.DataDirectory, "VaultCache");
+        if (Directory.Exists(ownFolder))
+            return new(ownFolder, SettingSource.Default);
 
-        return new(Path.Combine(AppPaths.DataDirectory, "VaultCache"), SettingSource.Default);
+        // EGL's default even before it exists, so an Epic Games Launcher installed later finds the same downloads.
+        return new(EGLDefaultVaultCache, SettingSource.Default);
     }
+
+    /// <summary>Where the Epic Games Launcher keeps Fab downloads unless told otherwise.</summary>
+    public static string EGLDefaultVaultCache => Path.Combine(EGLInstallations.ProgramDataEpic, "EpicGamesLauncher", "VaultCache");
 
     public ResolvedFolders ResolveProjectFolders() => ResolveProjectFolders(EGLLauncherSettings.Read());
 

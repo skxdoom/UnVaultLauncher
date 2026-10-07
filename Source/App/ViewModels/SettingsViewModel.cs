@@ -12,19 +12,26 @@ namespace UnVault.App.ViewModels;
 /// <summary>One row of the project folder list in Settings.</summary>
 public partial class ProjectFolderItem : ViewModelBase
 {
-    public ProjectFolderItem(string path, Action<ProjectFolderItem> remove, Action<ProjectFolderItem> makeDefault)
+    private readonly Action<ProjectFolderItem> _madeDefault;
+
+    public ProjectFolderItem(string path, Action<ProjectFolderItem> remove, Action<ProjectFolderItem> madeDefault)
     {
         Path = path;
+        _madeDefault = madeDefault;
         RemoveCommand = new RelayCommand(() => remove(this));
-        MakeDefaultCommand = new RelayCommand(() => makeDefault(this));
     }
 
     public string Path { get; }
     public IRelayCommand RemoveCommand { get; }
-    public IRelayCommand MakeDefaultCommand { get; }
 
-    /// <summary>The first folder: new projects are created here.</summary>
+    /// <summary>New projects are created here (the row's radio button); exactly one folder is the default.</summary>
     [ObservableProperty] public partial bool IsDefault { get; set; }
+
+    partial void OnIsDefaultChanged(bool value)
+    {
+        if (value)
+            _madeDefault(this);
+    }
 }
 
 /// <summary>The settings dialog. Empty folder fields mean "automatic" (follow the Epic Games Launcher's setup).</summary>
@@ -45,10 +52,9 @@ public partial class SettingsViewModel : ViewModelBase
         EngineRootPlaceholder = $"Automatic: {engineRoot.Path}";
         EngineRootHint = Describe(engineRoot.Source, "New engines go into a subfolder here, e.g. UE_5.8.");
         VaultPlaceholder = $"Automatic: {vault.Path}";
-        EGLVaultCache = egl.ActiveVaultCache;
         var projects = automatic.ResolveProjectFolders(egl);
         ProjectFoldersAutomatic = "Automatic: " + string.Join(", ", projects.Paths);
-        ProjectFoldersHint = "When adding assets, the projects in these folders are offered (besides the ones the editor opened recently); new projects are created in the first one. "
+        ProjectFoldersHint = "When adding assets, the projects in these folders are offered (besides the ones the editor opened recently); new projects are created in the default one. "
             + (projects.Source == SettingSource.EpicGamesLauncher ? "Leave empty to use the Epic Games Launcher's project folders." : @"Leave empty for Documents\Unreal Projects.");
 
         var current = owner.Settings;
@@ -56,8 +62,9 @@ public partial class SettingsViewModel : ViewModelBase
         VaultCacheDirectory = current.VaultCacheDirectory ?? "";
         ProjectFolders.CollectionChanged += (_, _) =>
         {
-            for (int i = 0; i < ProjectFolders.Count; i++)
-                ProjectFolders[i].IsDefault = i == 0;
+            // Saved with the default first; when it's removed, the first one left takes over.
+            if (ProjectFolders.Count > 0 && !ProjectFolders.Any(f => f.IsDefault))
+                ProjectFolders[0].IsDefault = true;
             OnPropertyChanged(nameof(HasNoProjectFolders));
         };
         foreach (string folder in current.ProjectDirectories ?? [])
@@ -69,10 +76,6 @@ public partial class SettingsViewModel : ViewModelBase
     public string EngineRootPlaceholder { get; }
     public string EngineRootHint { get; }
     public string VaultPlaceholder { get; }
-
-    /// <summary>The VaultCache the Epic Games Launcher is set to, if any — offered as a one-click choice.</summary>
-    public string? EGLVaultCache { get; }
-    public bool HasEGLVaultCache => EGLVaultCache is not null;
 
     /// <summary>Folders searched for projects; the first is where new projects go. Empty = automatic.</summary>
     public ObservableCollection<ProjectFolderItem> ProjectFolders { get; } = [];
@@ -144,14 +147,11 @@ public partial class SettingsViewModel : ViewModelBase
     }
 
     private void AddProjectFolder(string path) =>
-        ProjectFolders.Add(new ProjectFolderItem(path, item => ProjectFolders.Remove(item), item => ProjectFolders.Move(ProjectFolders.IndexOf(item), 0)));
-
-    [RelayCommand]
-    private void UseEGLVaultCache()
-    {
-        if (EGLVaultCache is not null)
-            VaultCacheDirectory = EGLVaultCache;
-    }
+        ProjectFolders.Add(new ProjectFolderItem(path, item => ProjectFolders.Remove(item), item =>
+        {
+            foreach (var other in ProjectFolders.Where(f => f != item))
+                other.IsDefault = false;
+        }));
 
     [RelayCommand]
     private void Cancel() => _owner.CloseDialog();
@@ -161,7 +161,9 @@ public partial class SettingsViewModel : ViewModelBase
     {
         string? engineRoot = Normalize(EngineInstallRoot);
         string? vault = Normalize(VaultCacheDirectory);
-        var projectFolders = ProjectFolders.Select(f => Normalize(f.Path)).OfType<string>().Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        // The default goes first, as that's where AppSettings creates new projects; the rest keep their order.
+        var projectFolders = ProjectFolders.OrderByDescending(f => f.IsDefault).Select(f => Normalize(f.Path)).OfType<string>()
+            .Distinct(StringComparer.OrdinalIgnoreCase).ToList();
         foreach (string? folder in projectFolders.Prepend(vault).Prepend(engineRoot))
         {
             if (folder is not null && !Path.IsPathFullyQualified(folder))
