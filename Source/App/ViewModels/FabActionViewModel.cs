@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Text;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -17,6 +18,9 @@ public sealed class FabTargetViewModel(string title, string subtitle, string? ba
     public string Title { get; } = title;
     public string Subtitle { get; } = subtitle;
     public string? Badge { get; } = badge;
+
+    /// <summary>Why the badge says what it does (its tooltip).</summary>
+    public string? BadgeTip { get; init; }
     public FabVersion? Version { get; } = version;
     public bool IsAvailable { get; } = isAvailable;
     public LocalEngine? Engine { get; } = engine;
@@ -70,9 +74,25 @@ public partial class FabActionViewModel : ViewModelBase
     public bool ShowsVersionChoice => Mode is FabActionMode.CreateProject or FabActionMode.Download;
     public bool ShowsProjectLocation => Mode == FabActionMode.CreateProject;
     public bool CanBrowseProject => Mode == FabActionMode.AddToProject;
+    public bool ShowsProjectSearch => Mode == FabActionMode.AddToProject;
     public string TargetsHeading => Mode == FabActionMode.AddToProject ? "PROJECT" : "ENGINE";
 
     public ObservableCollection<FabTargetViewModel> Targets { get; } = [];
+
+    /// <summary>Add to Project: every project found, by name; <see cref="Targets"/> lists the ones matching the search.</summary>
+    private readonly List<FabTargetViewModel> _projects = [];
+
+    /// <summary>Engines built from source on this PC, which projects name by ID instead of version.</summary>
+    private IReadOnlyDictionary<string, CustomEngine> _customEngines = new Dictionary<string, CustomEngine>();
+
+    /// <summary>Names as people read them: case doesn't matter, and "Project2" comes before "Project10".</summary>
+    private static readonly StringComparer ByName =
+        StringComparer.Create(CultureInfo.CurrentCulture, CompareOptions.IgnoreCase | CompareOptions.NumericOrdering);
+
+    /// <summary>Narrows the project list by name (not folder: projects usually share one, like "Unreal Projects").</summary>
+    [ObservableProperty] public partial string ProjectSearch { get; set; } = "";
+
+    partial void OnProjectSearchChanged(string value) => FilterProjects();
     public ObservableCollection<FabVersionOption> VersionChoices { get; } = [];
 
     [ObservableProperty] public partial bool IsLoading { get; set; }
@@ -141,9 +161,9 @@ public partial class FabActionViewModel : ViewModelBase
         {
             var version = BestVersion(_item.Versions.Where(v => SameEngine(v.EngineAppName, engine.AppName)));
             bool installed = _item.Installs.Any(i => SamePath(i.EngineDirectory, engine.Directory));
-            string? badge = installed ? "installed"
-                : version is null ? "no version for this engine"
-                : !CanGet(version) ? "sign in to download"
+            string? badge = installed ? "Installed"
+                : version is null ? "No version for this engine"
+                : !CanGet(version) ? "Sign in to download"
                 : null;
             Targets.Add(new FabTargetViewModel($"Unreal Engine {engine.AppName[3..]}", engine.Directory, badge, version,
                 isAvailable: badge is null, engine, project: null));
@@ -159,11 +179,11 @@ public partial class FabActionViewModel : ViewModelBase
         for (int i = 0; i < installs.Count; i++)
         {
             var install = installs[i];
-            string? badge = !install.CanRemove ? "remove with EGL"
+            string? badge = !install.CanRemove ? "Remove with EGL"
                 : install.Source switch
                 {
-                    PluginSource.EGL => "installed by EGL",
-                    PluginSource.Unlisted => "unregistered",
+                    PluginSource.EGL => "Installed by EGL",
+                    PluginSource.Unlisted => "Unregistered",
                     _ => null,
                 };
             string where = !install.CanRemove ? "Installed by EGL outside Engine\\Plugins\\Marketplace"
@@ -178,42 +198,91 @@ public partial class FabActionViewModel : ViewModelBase
 
     private async Task LoadProjectsAsync()
     {
-        var projects = await Task.Run(() => ProjectLocator.FindProjects(_library.Owner.Settings.ResolveProjectFolders().Paths));
-        foreach (var project in projects)
-            Targets.Add(ProjectTarget(project));
-        SelectedTarget = Targets.FirstOrDefault(t => t.IsAvailable);
-        EmptyText = Targets.Count == 0 ? "No projects found. Use \"Choose a .uproject…\" to pick one." : null;
+        var (projects, customEngines) = await Task.Run(() =>
+            (ProjectLocator.FindProjects(_library.Owner.Settings.ResolveProjectFolders().Paths), CustomEngines.Registered()));
+        ShowProjects(projects, customEngines);
     }
+
+    /// <summary>Lists the projects by name. Separate from loading so tests can supply projects and engines.</summary>
+    internal void ShowProjects(IEnumerable<UnrealProject> projects, IReadOnlyDictionary<string, CustomEngine>? customEngines = null)
+    {
+        _customEngines = customEngines ?? new Dictionary<string, CustomEngine>();
+        _projects.Clear();
+        _projects.AddRange(projects.OrderBy(p => p.Name, ByName).Select(ProjectTarget));
+        FilterProjects(); // nothing preselected: the project is the user's pick
+    }
+
+    private void FilterProjects()
+    {
+        string search = ProjectSearch.Trim();
+        var selected = SelectedTarget;
+        Targets.Clear(); // also clears the list's selection, restored below if that project is still listed
+        foreach (var target in _projects.Where(t => t.Title.Contains(search, StringComparison.OrdinalIgnoreCase)))
+            Targets.Add(target);
+        SelectedTarget = selected is not null && Targets.Contains(selected) ? selected : null;
+        EmptyText = _projects.Count == 0 ? "No projects found. Use \"Choose a .uproject…\" to pick one."
+            : Targets.Count == 0 ? "No projects match the search."
+            : null;
+    }
+
+    [RelayCommand]
+    private void ClearProjectSearch() => ProjectSearch = "";
 
     private FabTargetViewModel ProjectTarget(UnrealProject project)
     {
-        string engine = project.EngineAppName ?? "";
+        // Launcher engines go by version ("5.7"); custom ones by an ID, looked up among the engines built on this PC.
+        string? engine = project.EngineAppName;
+        string engineName = $"UE {project.EngineAssociation}";
+        if (engine is null)
+        {
+            var custom = CustomEngines.Find(_customEngines, project.EngineAssociation);
+            engine = custom?.Version is { } customVersion ? "UE_" + customVersion : null;
+            engineName = engine is null ? "Custom Engine" : $"Custom Engine {Short(engine)}";
+            if (engine is null)
+            {
+                // No telling which version it could open, and assets saved by a newer engine don't open in an older one.
+                string why = custom is null
+                    ? "This project's custom engine isn't registered on this PC, so there's no telling which version of this item would open in it."
+                    : $"Couldn't read the version of the custom engine in {custom.Directory}, so there's no telling which version of this item would open in it.";
+                return new FabTargetViewModel(project.Name, $"{engineName}  ·  {project.Directory}",
+                    custom is null ? "Engine version not installed" : "Engine version unknown", version: null, isAvailable: false, engine: null, project)
+                {
+                    BadgeTip = why,
+                };
+            }
+        }
+
+        // The version made for this engine, else the newest one made for an older engine: newer engines open older assets.
+        var engineVersion = EngineLibrary.ParseVersion(engine);
         var usable = _item.Versions.Where(CanGet).ToList();
-        FabVersion? version;
-        string? badge = null;
+        var version = BestVersion(usable.Where(v => SameEngine(v.EngineAppName, engine)))
+            ?? usable.Where(v => EngineLibrary.ParseVersion(v.EngineAppName) <= engineVersion)
+                .OrderByDescending(v => EngineLibrary.ParseVersion(v.EngineAppName)).FirstOrDefault();
 
-        if (project.EngineAppName is null)
+        string? badge = null, tip = null;
+        if (version is not null && !SameEngine(version.EngineAppName, engine))
         {
-            // Source builds associate by GUID; offer the newest version.
-            version = usable.OrderByDescending(v => EngineLibrary.ParseVersion(v.EngineAppName)).FirstOrDefault();
-            badge = version is null ? null : $"custom engine: uses the {Short(version.EngineAppName)} version";
+            badge = $"Last available from UE {Short(version.EngineAppName)}";
+            tip = $"This item has no {Short(engine)} version, so its {Short(version.EngineAppName)} version can be added.";
         }
-        else
+        else if (version is null && !SignedIn && _item.Versions.Any(v => EngineLibrary.ParseVersion(v.EngineAppName) <= engineVersion))
         {
-            version = BestVersion(usable.Where(v => SameEngine(v.EngineAppName, engine)))
-                ?? usable.Where(v => EngineLibrary.ParseVersion(v.EngineAppName) <= EngineLibrary.ParseVersion(engine))
-                    .OrderByDescending(v => EngineLibrary.ParseVersion(v.EngineAppName)).FirstOrDefault();
-            if (version is not null && !SameEngine(version.EngineAppName, engine))
-                badge = $"uses the {Short(version.EngineAppName)} version";
+            badge = "Sign in to download";
+            tip = "A version that fits this project isn't in your Vault Cache yet.";
+        }
+        else if (version is null)
+        {
+            // Every version is made for a newer engine, and an engine can't open assets saved by a newer one.
+            string? oldest = _item.Versions.Select(v => v.EngineAppName).Where(EngineLibrary.IsEngineApp).MinBy(EngineLibrary.ParseVersion);
+            badge = "Unsupported engine version";
+            tip = oldest is null ? "This item is made for a newer engine version." : $"This item is made for a newer {Short(oldest)} engine version.";
         }
 
-        if (version is null)
-            badge = _item.Versions.Any(v => EngineLibrary.ParseVersion(v.EngineAppName) <= EngineLibrary.ParseVersion(engine)) && !SignedIn
-                ? "sign in to download" : "no compatible version";
-
-        string opened = project.LastOpened is { } time ? $"  ·  opened {time.ToLocalTime():d}" : "";
-        return new FabTargetViewModel(project.Name, $"UE {project.EngineAssociation}  ·  {project.Directory}{opened}", badge, version,
-            isAvailable: version is not null, engine: null, project);
+        return new FabTargetViewModel(project.Name, $"{engineName}  ·  {project.Directory}", badge, version,
+            isAvailable: version is not null, engine: null, project)
+        {
+            BadgeTip = tip,
+        };
     }
 
     private void LoadVersions(bool onlyDownloadable)
@@ -246,10 +315,14 @@ public partial class FabActionViewModel : ViewModelBase
         string? file = await _library.Owner.Interaction.PickFileAsync("Choose a project", null, "Unreal project", "*.uproject");
         if (file is null || ProjectLocator.Read(file) is not { } project)
             return;
+        // The project just picked goes first, whatever its name, and shows even if the search wouldn't find it.
         var target = ProjectTarget(project);
-        Targets.Insert(0, target);
+        _projects.Insert(0, target);
+        if (ProjectSearch.Length > 0)
+            ProjectSearch = "";
+        else
+            FilterProjects();
         SelectedTarget = target;
-        EmptyText = null;
     }
 
     [RelayCommand]

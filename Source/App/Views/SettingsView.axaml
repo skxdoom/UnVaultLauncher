@@ -40,7 +40,7 @@
                                     <Grid ColumnDefinitions="*,Auto,Auto">
                                         <TextBlock Text="{Binding Path}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Path}" VerticalAlignment="Center" />
                                         <Border Grid.Column="1" Classes="chip" Margin="8,0,0,0" VerticalAlignment="Center" IsVisible="{Binding IsDefault}">
-                                            <TextBlock Text="new projects" />
+                                            <TextBlock Text="New projects" />
                                         </Border>
                                         <Button Grid.Column="1" Classes="link" Content="Use for New Projects" Margin="8,0,0,0" VerticalAlignment="Center"
                                                 Command="{Binding MakeDefaultCommand}" IsVisible="{Binding !IsDefault}" />

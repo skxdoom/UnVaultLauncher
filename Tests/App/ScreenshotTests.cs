@@ -13,6 +13,7 @@ using UnVault.Core.Epic;
 using UnVault.Core.Fab;
 using UnVault.Core.Install;
 using UnVault.Core.Manifests;
+using UnVault.Core.Projects;
 using UnVault.Core.Vault;
 
 namespace UnVault.App.Tests;
@@ -366,7 +367,7 @@ public class ScreenshotTests
 
         // Every engine that has it, newest first, whoever installed it.
         Assert.Equal(["Unreal Engine 5.7", "Unreal Engine 4.27"], dialog.Targets.Select(t => t.Title));
-        Assert.Equal(["installed by EGL", "unregistered"], dialog.Targets.Select(t => t.Badge));
+        Assert.Equal(["Installed by EGL", "Unregistered"], dialog.Targets.Select(t => t.Badge));
         Assert.Equal("Unreal Engine 5.7", dialog.SelectedTarget?.Title);
         Assert.StartsWith("Installed by the Epic Games Launcher", dialog.Note);
         Assert.True(dialog.ConfirmCommand.CanExecute(null));
@@ -389,10 +390,75 @@ public class ScreenshotTests
         await dialog.LoadAsync();
 
         // 5.7 already has it; 5.6 can use the downloaded copy; 4.27 has a version; 5.5 and 5.8 depend on what's listed.
-        Assert.Equal("installed", dialog.Targets.Single(t => t.Title.EndsWith("5.7")).Badge);
+        Assert.Equal("Installed", dialog.Targets.Single(t => t.Title.EndsWith("5.7")).Badge);
         Assert.Equal("Unreal Engine 5.6", dialog.SelectedTarget?.Title);
         Assert.StartsWith("Already in your Vault Cache", dialog.Note);
         Save(window, "fab-install-plugin.png");
+    }
+
+    [AvaloniaFact]
+    public void Add_to_project_lists_projects_by_name_with_a_search()
+    {
+        var viewModel = SampleMainViewModel();
+        viewModel.IsFabTab = true;
+        SampleFab(viewModel);
+        var item = viewModel.Fab.Items.Single(i => i.Title == "Street Vehicles"); // for UE 5.3–5.7
+        var dialog = new FabActionViewModel(viewModel.Fab, item, FabActionMode.AddToProject);
+        viewModel.Dialog = dialog;
+        var window = Show(viewModel);
+
+        static UnrealProject Project(string name, string engine, int daysAgo) =>
+            new(name, $@"D:\Projects\{name}\{name}.uproject", engine, daysAgo < 0 ? null : DateTime.UtcNow.AddDays(-daysAgo));
+        const string Html5Engine = "{5C3B2A10-0000-4000-8000-000000000001}", MissingEngine = "{5C3B2A10-0000-4000-8000-000000000002}";
+        dialog.ShowProjects(
+        [
+            Project("Ridgeback", "5.8", daysAgo: 2),
+            Project("Project10", "5.6", daysAgo: 30),
+            Project("arena_test", "5.7", daysAgo: -1),
+            Project("Project2", "5.5", daysAgo: 1),
+            Project("OldTown", "4.26", daysAgo: 0),
+            Project("Html5Port", Html5Engine, daysAgo: 3),
+            Project("Prototype", MissingEngine, daysAgo: 4),
+        ],
+        new Dictionary<string, CustomEngine>(StringComparer.OrdinalIgnoreCase)
+        {
+            [Html5Engine.Trim('{', '}')] = new(Html5Engine, @"E:\Engines\Html5", "5.4"),
+        });
+
+        // By name (case aside, numbers in order), and nothing chosen until the user picks a project.
+        Assert.Equal(["arena_test", "Html5Port", "OldTown", "Project2", "Project10", "Prototype", "Ridgeback"], dialog.Targets.Select(t => t.Title));
+        Assert.Null(dialog.SelectedTarget);
+        Assert.False(dialog.ConfirmCommand.CanExecute(null));
+        FabTargetViewModel Row(string name) => dialog.Targets.Single(t => t.Title == name);
+        Assert.Equal(@"UE 5.5  ·  D:\Projects\Project2", Row("Project2").Subtitle); // no "opened" date
+        Assert.Null(Row("Project2").Badge);
+
+        // A custom engine by its version, like any other; one that isn't on this PC can't be chosen.
+        Assert.Equal((@"Custom Engine 5.4  ·  D:\Projects\Html5Port", null, true), (Row("Html5Port").Subtitle, Row("Html5Port").Badge, Row("Html5Port").IsAvailable));
+        Assert.Equal((@"Custom Engine  ·  D:\Projects\Prototype", "Engine version not installed", false), (Row("Prototype").Subtitle, Row("Prototype").Badge, Row("Prototype").IsAvailable));
+        Assert.NotNull(Row("Prototype").BadgeTip);
+
+        // No 5.8 version: the 5.7 one goes into a 5.8 project. Nothing for 4.26, as every version is newer.
+        Assert.Equal(("Last available from UE 5.7", "This item has no 5.8 version, so its 5.7 version can be added.", true),
+            (Row("Ridgeback").Badge, Row("Ridgeback").BadgeTip, Row("Ridgeback").IsAvailable));
+        Assert.Equal(("Unsupported engine version", "This item is made for a newer 5.3 engine version.", false),
+            (Row("OldTown").Badge, Row("OldTown").BadgeTip, Row("OldTown").IsAvailable));
+        Save(window, "fab-add-to-project.png");
+        dialog.SelectedTarget = Row("Project2");
+        Assert.True(dialog.ConfirmCommand.CanExecute(null));
+
+        // The search narrows by name. It keeps the user's pick while it's listed, and never picks one itself.
+        dialog.ProjectSearch = "project";
+        Assert.Equal(["Project2", "Project10"], dialog.Targets.Select(t => t.Title));
+        Assert.Equal("Project2", dialog.SelectedTarget?.Title);
+        dialog.ProjectSearch = "ridge";
+        Assert.Equal("Ridgeback", Assert.Single(dialog.Targets).Title);
+        Assert.Null(dialog.SelectedTarget);
+        dialog.ProjectSearch = "nothing like it";
+        Assert.Empty(dialog.Targets);
+        Assert.Equal("No projects match the search.", dialog.EmptyText);
+        dialog.ClearProjectSearchCommand.Execute(null);
+        Assert.Equal(7, dialog.Targets.Count);
     }
 
     /// <summary>A small Fab library with vault copies on disk, so "downloaded" states are real.</summary>

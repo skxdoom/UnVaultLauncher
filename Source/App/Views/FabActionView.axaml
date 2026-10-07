@@ -23,6 +23,17 @@
                         <Button Grid.Column="1" Classes="link" Content="Choose a .uproject…" Margin="0,16,0,6"
                                 Command="{Binding BrowseProjectFileCommand}" IsVisible="{Binding CanBrowseProject}" />
                     </Grid>
+                    <TextBox Text="{Binding ProjectSearch}" PlaceholderText="Search projects" Margin="0,0,0,8" IsVisible="{Binding ShowsProjectSearch}">
+                        <TextBox.KeyBindings>
+                            <KeyBinding Gesture="Escape" Command="{Binding ClearProjectSearchCommand}" />
+                        </TextBox.KeyBindings>
+                        <TextBox.InnerRightContent>
+                            <Button Classes="clear" Command="{Binding ClearProjectSearchCommand}" ToolTip.Tip="Clear search (Esc)"
+                                    IsVisible="{Binding ProjectSearch, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                <Path Data="M0,0 L9,9 M9,0 L0,9" Stroke="{StaticResource MutedTextBrush}" StrokeThickness="1.6" StrokeLineCap="Round" />
+                            </Button>
+                        </TextBox.InnerRightContent>
+                    </TextBox>
 
                     <!-- Version + folder (create project, download) -->
                     <StackPanel IsVisible="{Binding ShowsVersionChoice}">
@@ -55,7 +66,7 @@
                                     <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
                                     <TextBlock Text="{Binding Subtitle}" Classes="muted small" TextTrimming="CharacterEllipsis" />
                                 </StackPanel>
-                                <Border Grid.Column="1" Classes="chip" VerticalAlignment="Center" Margin="8,0,0,0"
+                                <Border Grid.Column="1" Classes="chip" VerticalAlignment="Center" Margin="8,0,0,0" ToolTip.Tip="{Binding BadgeTip}"
                                         IsVisible="{Binding Badge, Converter={x:Static ObjectConverters.IsNotNull}}">
                                     <TextBlock Text="{Binding Badge}" />
                                 </Border>

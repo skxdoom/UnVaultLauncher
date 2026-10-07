@@ -405,6 +405,27 @@ public sealed class FabTests : IDisposable
         Assert.Equal("UE_5.5", projects[1].EngineAppName);
     }
 
+    [Fact]
+    public void Custom_engines_are_known_by_ID_and_versioned_from_their_folder()
+    {
+        string engine = Path.Combine(_dir, "MyEngine");
+        Directory.CreateDirectory(Path.Combine(engine, "Engine", "Build"));
+        File.WriteAllText(Path.Combine(engine, "Engine", "Build", "Build.version"),
+            """{ "MajorVersion": 4, "MinorVersion": 27, "PatchVersion": 2, "Changelist": 0, "BranchName": "++UE4+Release-4.27" }""");
+
+        Assert.Equal("4.27", CustomEngines.ReadVersion(engine));
+        Assert.Null(CustomEngines.ReadVersion(Path.Combine(_dir, "NoEngineHere")));
+
+        // Projects write the ID with braces; the registry may or may not.
+        var engines = new Dictionary<string, CustomEngine>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["5C3B2A10-0000-4000-8000-000000000001"] = new("{5C3B2A10-0000-4000-8000-000000000001}", engine, "4.27"),
+        };
+        Assert.Equal("4.27", CustomEngines.Find(engines, "{5c3b2a10-0000-4000-8000-000000000001}")?.Version);
+        Assert.Null(CustomEngines.Find(engines, "{5C3B2A10-0000-4000-8000-000000000002}"));
+        Assert.Null(CustomEngines.Find(engines, ""));
+    }
+
     private VaultEntry MakeVaultEntry(string artifact, string title, string build, params (string Name, int Size)[] files)
     {
         var entry = new VaultEntry { ArtifactID = artifact, Title = title, Build = build, Directory = Path.Combine(_dir, "Vault", artifact) };
