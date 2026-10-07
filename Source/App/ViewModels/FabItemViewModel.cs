@@ -82,6 +82,9 @@ public partial class FabItemViewModel : ViewModelBase
     public bool IsInstalled => Installs.Count > 0;
     public string? InstalledText => IsInstalled ? "Installed: " + CompactVersions(Installs.Select(i => i.EngineAppName)) : null;
 
+    /// <summary>Only plugins go into engines; an installed item of unknown kind can still be removed.</summary>
+    public bool ShowsRemove => Kind == FabItemKind.Plugin || IsInstalled;
+
     /// <summary>Vault Cache copies with a newer build on Fab (one per artifact).</summary>
     public IReadOnlyList<FabVersion> OutdatedDownloads { get; }
 

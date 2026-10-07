@@ -55,7 +55,7 @@
                             <MenuItem Header="Download to Vault Cache" Command="{Binding DownloadCommand}" IsEnabled="{Binding IsInLibrary}" />
                             <MenuItem Header="Show in Folder" Command="{Binding ShowInFolderCommand}" IsEnabled="{Binding HasFolder}" />
                             <MenuItem Header="Open on Fab" Command="{Binding OpenFabPageCommand}" IsEnabled="{Binding HasFabPage}" />
-                            <MenuItem Header="Remove from Engine" Command="{Binding RemoveCommand}" IsEnabled="{Binding IsInstalled}" />
+                            <MenuItem Header="Remove from Engine" Command="{Binding RemoveCommand}" IsVisible="{Binding ShowsRemove}" IsEnabled="{Binding IsInstalled}" />
                         </MenuFlyout>
                     </Button.Flyout>
                 </Button>

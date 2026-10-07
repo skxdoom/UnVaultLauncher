@@ -5,7 +5,7 @@
              x:DataType="vm:SettingsViewModel"
              Width="620">
 
-    <Border Classes="card" Padding="0" BoxShadow="0 12 40 0 #80000000">
+    <Border Classes="card dialog">
         <Grid RowDefinitions="Auto,*,Auto" MaxHeight="700">
 
             <TextBlock Text="Settings" FontSize="20" FontWeight="SemiBold" Margin="24,20,24,4" />

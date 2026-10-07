@@ -69,8 +69,14 @@
             <Setter Property="CornerRadius" Value="10" />
             <Setter Property="Padding" Value="16" />
         </Style>
-        <Style Selector="Border.card:pointerover">
+        <Style Selector="Border.card:not(.dialog):pointerover">
             <Setter Property="Background" Value="{StaticResource CardHoverBrush}" />
+        </Style>
+
+        <!-- Dialogs: a card floating over the window. It stays still under the pointer, as it's not something to pick. -->
+        <Style Selector="Border.card.dialog">
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="BoxShadow" Value="0 12 40 0 #80000000" />
         </Style>
 
         <!-- The bar along an engine card's left edge: blue when installed, grey when the files are gone -->

@@ -179,13 +179,8 @@ public partial class FabActionViewModel : ViewModelBase
         for (int i = 0; i < installs.Count; i++)
         {
             var install = installs[i];
-            string? badge = !install.CanRemove ? "Remove with EGL"
-                : install.Source switch
-                {
-                    PluginSource.EGL => "Installed by EGL",
-                    PluginSource.Unlisted => "Unregistered",
-                    _ => null,
-                };
+            // Removing works the same whoever installed it, so the note below says that; a badge only says why a row is off.
+            string? badge = install.CanRemove ? null : "Remove with EGL";
             string where = !install.CanRemove ? "Installed by EGL outside Engine\\Plugins\\Marketplace"
                 : sizes[i] > 0 ? $"{install.Folder}  ·  {ByteSize.Format(sizes[i])}"
                 : install.Folder;
@@ -368,22 +363,28 @@ public partial class FabActionViewModel : ViewModelBase
         }
     }
 
-    private string DescribeSource(FabVersion version) =>
+    /// <summary>Null when there's nothing to add: a plugin that isn't downloaded yet just downloads into the engine.</summary>
+    private string? DescribeSource(FabVersion version) =>
         version.IsOutdated
             ? Mode == FabActionMode.InstallPlugin
                 ? "Your Vault Cache copy is an older build, so Fab's latest downloads straight into the engine."
                 : "Your Vault Cache copy is an older build: it's updated first, downloading only the files that changed."
         : version.IsDownloaded ? $"Already in your Vault Cache ({Short(version.EngineAppName)} version): nothing to download."
-        : Mode == FabActionMode.InstallPlugin ? "Downloads straight into the engine."
-        : "Downloads into your Vault Cache first, so it can be reused later.";
+        : Mode switch
+        {
+            FabActionMode.InstallPlugin => null,
+            FabActionMode.AddToProject => "Downloads into your Vault Cache and adds it to the project.",
+            FabActionMode.CreateProject => "Downloads into your Vault Cache and creates the project.",
+            _ => "Downloads into your Vault Cache, ready to add to projects.",
+        };
 
     private static string DescribeRemoval(FabInstall install) => !install.CanRemove
         ? "EGL put this plugin among the engine's own folders, so there's no telling which files are its. Remove it with the Epic Games Launcher."
         : install.Source switch
     {
-        PluginSource.UnVault => "Deletes the files UnVault installed.",
-        PluginSource.EGL => "Installed by the Epic Games Launcher: deletes the plugin's folder and EGL's record of it.",
-        _ => "Not registered with any launcher (copied in by hand or by another tool): deletes the plugin's folder.",
+        PluginSource.UnVault => "Deletes the plugin installed by UnVault Launcher.",
+        PluginSource.EGL => "Deletes the plugin installed by the Epic Games Launcher.",
+        _ => "Deletes the plugin copied in by hand or by another tool.",
     } + " Projects that use the plugin won't find it any more.";
 
     /// <summary>Prefer a downloaded copy (no network) over one that has to be fetched.</summary>

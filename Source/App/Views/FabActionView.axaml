@@ -5,7 +5,7 @@
              x:DataType="vm:FabActionViewModel"
              Width="640">
 
-    <Border Classes="card" Padding="0" BoxShadow="0 12 40 0 #80000000">
+    <Border Classes="card dialog">
         <Grid RowDefinitions="Auto,*,Auto" MaxHeight="620">
 
             <StackPanel Margin="24,20,24,4" Spacing="2">

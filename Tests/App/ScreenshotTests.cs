@@ -231,6 +231,8 @@ public class ScreenshotTests
         Assert.Equal(("Update", "Install to Engine"), (blockout.PrimaryText, blockout.ActionText));
         var edge = fab.Items.Single(i => i.Title == "Edge Smoother");
         Assert.Equal(("Install to Engine", false), (edge.PrimaryText, edge.HasUpdate));
+        Assert.True(edge.ShowsRemove); // plugins only: asset packs never go into an engine
+        Assert.False(plants[0].ShowsRemove);
         Assert.Equal(["UE_5.7"], blockout.OutdatedDownloads.Select(v => v.EngineAppName));
         Assert.Equal(["UE_5.7"], blockout.OutdatedInstalls.Select(i => i.EngineAppName));
         Assert.Equal((1, true, "Update Available (1)"), (fab.UpdateCount, viewModel.HasLibraryUpdates, fab.UpdatesFilterText));
@@ -367,14 +369,14 @@ public class ScreenshotTests
 
         // Every engine that has it, newest first, whoever installed it.
         Assert.Equal(["Unreal Engine 5.7", "Unreal Engine 4.27"], dialog.Targets.Select(t => t.Title));
-        Assert.Equal(["Installed by EGL", "Unregistered"], dialog.Targets.Select(t => t.Badge));
+        Assert.All(dialog.Targets, t => Assert.Null(t.Badge)); // who installed it is in the note
         Assert.Equal("Unreal Engine 5.7", dialog.SelectedTarget?.Title);
-        Assert.StartsWith("Installed by the Epic Games Launcher", dialog.Note);
+        Assert.StartsWith("Deletes the plugin installed by the Epic Games Launcher", dialog.Note);
         Assert.True(dialog.ConfirmCommand.CanExecute(null));
         Save(window, "fab-remove-plugin.png");
 
         dialog.SelectedTarget = dialog.Targets[1];
-        Assert.StartsWith("Not registered with any launcher", dialog.Note);
+        Assert.StartsWith("Deletes the plugin copied in by hand", dialog.Note);
     }
 
     [AvaloniaFact]
@@ -394,6 +396,12 @@ public class ScreenshotTests
         Assert.Equal("Unreal Engine 5.6", dialog.SelectedTarget?.Title);
         Assert.StartsWith("Already in your Vault Cache", dialog.Note);
         Save(window, "fab-install-plugin.png");
+
+        // One that isn't downloaded yet just downloads into the engine: nothing to note.
+        var notDownloaded = dialog.Targets.Single(t => t.Title.EndsWith("5.5"));
+        Assert.Equal((true, false), (notDownloaded.IsAvailable, notDownloaded.Version?.IsDownloaded));
+        dialog.SelectedTarget = notDownloaded;
+        Assert.Null(dialog.Note);
     }
 
     [AvaloniaFact]
