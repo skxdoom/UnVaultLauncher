@@ -1,4 +1,5 @@
 using UnVault.Core.Manifests;
+using UnVault.Core.Util;
 
 namespace UnVault.Core.Install;
 
@@ -17,9 +18,7 @@ public static class InstallCleaner
         foreach (var file in files)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            string path = Path.GetFullPath(Path.Combine(root, file.Filename));
-            if (!path.StartsWith(root + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
-                throw new IOException($"Manifest path escapes the install folder: {file.Filename}");
+            string path = ContainedPath.Resolve(root, file.Filename);
 
             var info = new FileInfo(path);
             if (!info.Exists)
@@ -71,9 +70,7 @@ public static class InstallCleaner
 
     private static IEnumerable<string> Ancestors(string directory, string root)
     {
-        for (string? current = directory;
-             current is not null && current.Length > root.Length && current.StartsWith(root, StringComparison.OrdinalIgnoreCase);
-             current = Path.GetDirectoryName(current))
+        for (string? current = directory; current is not null && ContainedPath.IsInside(root, current); current = Path.GetDirectoryName(current))
         {
             yield return current;
         }

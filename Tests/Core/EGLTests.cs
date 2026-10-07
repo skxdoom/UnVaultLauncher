@@ -15,6 +15,26 @@ public sealed class LauncherInstalledTests : IDisposable
     public void Dispose() => Directory.Delete(_dir, recursive: true);
 
     [Fact]
+    public void A_damaged_file_reads_as_no_entries()
+    {
+        File.WriteAllText(DatPath, "{ \"InstallationList\": [ { \"AppName\": ");
+        Assert.Empty(EGLInstallations.ReadLauncherInstalledFrom(DatPath));
+    }
+
+    [Fact]
+    public async Task Edits_made_at_the_same_time_all_land()
+    {
+        string engine = Directory.CreateDirectory(Path.Combine(_dir, "UE_5.7")).FullName;
+
+        // As when several plugin operations finish together, or the app and the CLI both write.
+        await Task.WhenAll(Enumerable.Range(0, 12).Select(i => Task.Run(() =>
+            EGLInstallations.RegisterLauncherInstall(Entry($"Plugin{i}", engine, "1.0"), DatPath))));
+
+        Assert.Equal(12, EGLInstallations.ReadLauncherInstalledFrom(DatPath).Count);
+        Assert.Empty(Directory.EnumerateFiles(_dir, "*.tmp"));
+    }
+
+    [Fact]
     public void Register_keeps_other_entries_and_unknown_fields_and_writes_EGL_style()
     {
         string existingEngine = Directory.CreateDirectory(Path.Combine(_dir, "UE_5.7")).FullName;

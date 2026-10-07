@@ -78,6 +78,38 @@ public class ScreenshotTests
     }
 
     [AvaloniaFact]
+    public void Notices_show_on_the_Library_tab_too()
+    {
+        var viewModel = SampleMainViewModel();
+        viewModel.IsFabTab = true;
+        viewModel.Notice = "Sign-in failed: the code has expired.";
+        var window = Show(viewModel);
+
+        var text = window.GetVisualDescendants().OfType<TextBlock>().Single(t => t.Text == viewModel.Notice);
+        Assert.True(text.IsEffectivelyVisible);
+        Save(window, "fab-library-notice.png");
+    }
+
+    [AvaloniaFact]
+    public void An_empty_library_page_says_why()
+    {
+        var viewModel = SampleMainViewModel();
+        var fab = viewModel.Fab;
+        SampleFab(viewModel);
+
+        fab.KindIndex = 3; // projects
+        fab.DownloadedOnly = true;
+        fab.UpdatesOnly = true;
+        Assert.Equal((true, "Nothing matches. Try another search or filter."), (fab.IsEmpty, fab.EmptyText));
+
+        fab.SetItems(null, [], []);
+        Assert.Equal(viewModel.IsSignedIn ? "Your Fab library is empty." : "Your Vault Cache is empty.", fab.EmptyText);
+        fab.Error = "Couldn't load your library from Fab: offline.";
+        fab.SetItems(null, [], []);
+        Assert.Equal("", fab.EmptyText); // the error banner says it
+    }
+
+    [AvaloniaFact]
     public void Library_shows_loading_progress_next_to_its_title()
     {
         var viewModel = SampleMainViewModel();
@@ -540,6 +572,7 @@ public class ScreenshotTests
     private static MainViewModel SampleMainViewModel()
     {
         var viewModel = new MainViewModel(new AppServices()) { IsSignedIn = true, DisplayName = "Test Account" };
+        viewModel.Settings.EngineInstallRoot = @"E:\Epic Games"; // set, so nothing asks this PC's Epic Games Launcher
         viewModel.SetEngines(
         [
             new LocalEngine("UE_5.7", @"E:\Epic Games\UE_5.7", "5.7.4-51494982+++UE5+Release-5.7-Windows", 26 * GB + 300 * (GB / 1024), LocalInstallKind.UnVault),

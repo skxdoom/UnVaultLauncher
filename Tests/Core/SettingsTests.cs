@@ -66,6 +66,18 @@ public sealed class SettingsTests : IDisposable
         Assert.EndsWith(@"\Epic\EpicGamesLauncher\VaultCache", AppSettings.EGLDefaultVaultCache);
     }
 
+    [Theory]
+    [InlineData(0, 1)]
+    [InlineData(-4, 1)]
+    [InlineData(500, AppSettings.MaxParallelDownloads)]
+    [InlineData(8, 8)]
+    public void Parallel_downloads_from_a_hand_edited_file_stay_usable(int written, int expected)
+    {
+        string path = Path.Combine(_dir, "settings.json");
+        File.WriteAllText(path, $$"""{ "ParallelDownloads": {{written}} }""");
+        Assert.Equal(expected, AppSettings.Load(path).ParallelDownloads);
+    }
+
     [Fact]
     public void Data_folder_moves_from_its_old_name_once()
     {

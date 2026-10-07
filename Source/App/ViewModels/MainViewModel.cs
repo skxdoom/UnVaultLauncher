@@ -330,6 +330,14 @@ public partial class MainViewModel : ViewModelBase
         }
         if (_owned.Count == 0)
             await RefreshCoreAsync(includeOwned: true);
+        if (!IsSignedIn)
+            return; // the session ended meanwhile; the page asks to sign in
+        if (_owned.Count == 0)
+        {
+            // Epic couldn't be reached (the notice says why): the picker would claim every version is installed.
+            Notice ??= "Epic didn't list any engine versions for your account. Try Refresh.";
+            return;
+        }
 
         var picker = ComponentPickerViewModel.ForInstall(this, InstallableEngines, appName);
         Dialog = picker;

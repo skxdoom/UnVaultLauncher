@@ -1,6 +1,7 @@
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using UnVault.Core.Util;
 
 namespace UnVault.Core.EGL;
 
@@ -21,13 +22,21 @@ public static class EGLInstallations
 
     public static IReadOnlyList<LauncherInstalledEntry> ReadLauncherInstalled() => ReadLauncherInstalledFrom(LauncherInstalledPath);
 
+    /// <summary>Empty when the file is missing, damaged or locked: that shouldn't hide every installed engine.</summary>
     public static IReadOnlyList<LauncherInstalledEntry> ReadLauncherInstalledFrom(string path)
     {
-        if (!File.Exists(path))
+        try
+        {
+            if (!File.Exists(path))
+                return [];
+            using var stream = File.OpenRead(path);
+            var file = JsonSerializer.Deserialize(stream, EGLJSONContext.Default.LauncherInstalledFile);
+            return file?.InstallationList ?? [];
+        }
+        catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException)
+        {
             return [];
-        using var stream = File.OpenRead(path);
-        var file = JsonSerializer.Deserialize(stream, EGLJSONContext.Default.LauncherInstalledFile);
-        return file?.InstallationList ?? [];
+        }
     }
 
     public static IReadOnlyList<EGLItem> ReadItems()
@@ -44,9 +53,9 @@ public static class EGLInstallations
                 if (JsonSerializer.Deserialize(stream, EGLJSONContext.Default.EGLItem) is { } item)
                     items.Add(item);
             }
-            catch (JsonException)
+            catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException)
             {
-                // A half-written or foreign file shouldn't hide every other install.
+                // A half-written, foreign or locked file shouldn't hide every other install.
             }
         }
         return items;
@@ -94,6 +103,31 @@ public static class EGLInstallations
     /// </summary>
     private static void EditLauncherInstalled(string path, Action<JsonArray> edit)
     {
+        // Operations finishing together, or the app and the CLI, would each write over the other's change. The lock is
+        // named, so it holds across processes.
+        using var mutex = new Mutex(initiallyOwned: false, @"Local\UnVaultLauncher.LauncherInstalled");
+        try
+        {
+            if (!mutex.WaitOne(TimeSpan.FromSeconds(30)))
+                throw new IOException("Another edit of LauncherInstalled.dat didn't finish.");
+        }
+        catch (AbandonedMutexException)
+        {
+            // Its holder quit midway. The file is only ever replaced whole, so it's intact and the lock is ours now.
+        }
+
+        try
+        {
+            EditLocked(path, edit);
+        }
+        finally
+        {
+            mutex.ReleaseMutex();
+        }
+    }
+
+    private static void EditLocked(string path, Action<JsonArray> edit)
+    {
         JsonObject root = File.Exists(path)
             ? JsonNode.Parse(File.ReadAllText(path), documentOptions: new JsonDocumentOptions { AllowTrailingCommas = true }) as JsonObject ?? []
             : [];
@@ -107,20 +141,40 @@ public static class EGLInstallations
         if (File.Exists(path) && !File.Exists(backup))
             File.Copy(path, backup);
 
-        string temp = path + ".tmp";
-        using (var stream = File.Create(temp))
-        using (var writer = new Utf8JsonWriter(stream, new JsonWriterOptions
-               {
-                   Indented = true,
-                   IndentCharacter = '\t',
-                   IndentSize = 1,
-                   NewLine = "\r\n",
-                   Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-               }))
+        string temp = AtomicFile.TemporaryFor(path);
+        try
         {
-            root.WriteTo(writer);
+            using (var stream = File.Create(temp))
+            using (var writer = new Utf8JsonWriter(stream, new JsonWriterOptions
+                   {
+                       Indented = true,
+                       IndentCharacter = '\t',
+                       IndentSize = 1,
+                       NewLine = "\r\n",
+                       Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+                   }))
+            {
+                root.WriteTo(writer);
+            }
+
+            for (int attempt = 1; ; attempt++)
+            {
+                try
+                {
+                    File.Move(temp, path, overwrite: true);
+                    break;
+                }
+                catch (IOException) when (attempt < 5)
+                {
+                    Thread.Sleep(100 * attempt); // EGL or a UE tool reading it at that moment
+                }
+            }
         }
-        File.Move(temp, path, overwrite: true);
+        catch
+        {
+            AtomicFile.TryDelete(temp);
+            throw;
+        }
     }
 
     private static int RemoveWhere(JsonArray list, Func<JsonObject, bool> predicate)

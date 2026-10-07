@@ -53,7 +53,7 @@
 
         <ScrollViewer Grid.Row="2" x:Name="Scroller" Margin="0,12,0,0">
             <Panel x:Name="Page" Margin="24,0,24,10" MaxWidth="{StaticResource PageMaxWidth}">
-                <TextBlock Text="Nothing matches. Try another search or filter." Classes="muted" HorizontalAlignment="Center" Margin="0,40"
+                <TextBlock Text="{Binding EmptyText}" Classes="muted" HorizontalAlignment="Center" Margin="0,40"
                            IsVisible="{Binding IsEmpty}" />
                 <!-- Rows of tiles, created only for rows on screen: a thousand tiles at once made showing and searching slow. -->
                 <ItemsControl ItemsSource="{Binding Rows}">

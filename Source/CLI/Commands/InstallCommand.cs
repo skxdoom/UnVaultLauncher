@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using Spectre.Console;
 using Spectre.Console.Cli;
+using UnVault.Core;
 using UnVault.Core.Install;
 using UnVault.Core.Manifests;
 using UnVault.Core.Util;
@@ -84,7 +85,7 @@ internal sealed class InstallCommand : EpicCommand<InstallCommand.Settings>
             return 0;
 
         var status = new InstallStatus();
-        var installer = new Installer(Services.HTTP) { MaxParallelDownloads = Math.Clamp(settings.Connections ?? Services.Settings.ParallelDownloads, 1, 64) };
+        var installer = new Installer(Services.HTTP) { MaxParallelDownloads = Math.Clamp(settings.Connections ?? Services.Settings.ParallelDownloads, 1, AppSettings.MaxParallelDownloads) };
         bool register = !settings.NoRegister;
         await ProgressDisplay.RunInstallAsync(status,
             () => InstallWorkflow.InstallAsync(source, plan, tags, settings.Only, directory, installer, status, register, cancellationToken));

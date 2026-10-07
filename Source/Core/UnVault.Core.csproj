@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="UnVault.Core.Tests" />
+    <InternalsVisibleTo Include="UnVault.App.Tests" />
   </ItemGroup>
 
   <ItemGroup>

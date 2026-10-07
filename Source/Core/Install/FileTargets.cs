@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using Microsoft.Win32.SafeHandles;
 using UnVault.Core.Manifests;
+using UnVault.Core.Util;
 
 namespace UnVault.Core.Install;
 
@@ -141,11 +142,5 @@ internal sealed class FileTargets : IDisposable
     }
 
     /// <summary>Manifest path → absolute path, refusing anything that escapes the install folder.</summary>
-    private string ResolvePath(int index)
-    {
-        string full = Path.GetFullPath(Path.Combine(_root, _plan.Files[index].Filename));
-        if (!full.StartsWith(_root + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
-            throw new IOException($"Manifest path escapes the install folder: {_plan.Files[index].Filename}");
-        return full;
-    }
+    private string ResolvePath(int index) => ContainedPath.Resolve(_root, _plan.Files[index].Filename);
 }

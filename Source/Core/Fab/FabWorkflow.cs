@@ -304,9 +304,7 @@ public static class FabWorkflow
         {
             cancellationToken.ThrowIfCancellationRequested();
             string source = Path.Combine(sourceRoot, file.Filename);
-            string target = Path.GetFullPath(Path.Combine(root, file.Filename));
-            if (!target.StartsWith(root + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
-                throw new IOException($"Manifest path escapes the target folder: {file.Filename}");
+            string target = ContainedPath.Resolve(root, file.Filename, "target folder");
             if (!File.Exists(source))
                 throw new InstallException($"The downloaded copy is incomplete: {file.Filename} is missing. Download it again.");
 

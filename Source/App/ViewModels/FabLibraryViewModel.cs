@@ -94,6 +94,9 @@ public partial class FabLibraryViewModel : ViewModelBase
 
     [ObservableProperty] public partial bool IsEmpty { get; set; }
 
+    /// <summary>Shown when there's no tile: whether filters hide everything or there's nothing at all.</summary>
+    [ObservableProperty] public partial string EmptyText { get; set; } = "";
+
     /// <summary>Filters once typing pauses rather than on every key.</summary>
     partial void OnSearchTextChanged(string value) => FilterSoon();
 
@@ -146,7 +149,18 @@ public partial class FabLibraryViewModel : ViewModelBase
         {
             string vaultDirectory = Owner.Settings.ResolveVaultCache().Path;
             var engines = Owner.LocalEngines;
-            var (vault, installs) = await Task.Run(() => (VaultCache.Scan(vaultDirectory), FindPluginInstalls(engines)));
+            var finding = Task.Run(() => FindPluginInstalls(engines));
+            IReadOnlyList<VaultEntry> vault;
+            try
+            {
+                vault = await Task.Run(() => VaultCache.Scan(vaultDirectory));
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                vault = [];
+                Owner.Notice = $"Couldn't read the Vault Cache in {vaultDirectory}: {ex.Message}";
+            }
+            var installs = await finding;
 
             string? accountID = Owner.CurrentAccountID;
             if (accountID != _libraryAccountID)
@@ -171,9 +185,15 @@ public partial class FabLibraryViewModel : ViewModelBase
                 }
 
                 var refresh = _refreshing ??= RefreshLibraryAsync(accountID);
-                await refresh;
-                if (_refreshing == refresh)
-                    _refreshing = null;
+                try
+                {
+                    await refresh;
+                }
+                finally
+                {
+                    if (_refreshing == refresh)
+                        _refreshing = null; // even after a failure, so the next load tries again
+                }
                 if (Owner.CurrentAccountID != accountID)
                     return; // the account changed meanwhile; its own load shows its library
             }
@@ -211,8 +231,9 @@ public partial class FabLibraryViewModel : ViewModelBase
                 // Only costs the instant start next time.
             }
         }
-        catch (Exception ex) when (ex is EpicAPIException or HttpRequestException or TaskCanceledException)
+        catch (Exception ex) when (ex is EpicAPIException or HttpRequestException or TaskCanceledException or IOException or UnauthorizedAccessException)
         {
+            // IOException and UnauthorizedAccessException: saving refreshed sign-in tokens failed.
             if (Owner.CurrentAccountID != accountID)
                 return;
             Error = _library is null
@@ -311,6 +332,10 @@ public partial class FabLibraryViewModel : ViewModelBase
         UpdateCount = _all.Count(i => i.HasUpdate);
         Summary = Items.Count == _all.Count ? $"{_all.Count:N0} items  ·  {downloaded:N0} downloaded" : $"{Items.Count:N0} of {_all.Count:N0} items";
         IsEmpty = !IsLoading && Items.Count == 0;
+        EmptyText = _all.Count > 0 ? "Nothing matches. Try another search or filter."
+            : HasError ? "" // the banner above says what went wrong
+            : IsSignedOut ? "Your Vault Cache is empty."
+            : "Your Fab library is empty.";
     }
 
     private void BuildRows() => Rows = Items.Chunk(_columns).Select(row => new FabItemRow(row, _columns)).ToList();

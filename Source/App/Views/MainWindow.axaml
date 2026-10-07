@@ -10,7 +10,7 @@
         Background="{StaticResource WindowBackgroundBrush}">
 
     <Grid>
-        <Grid RowDefinitions="Auto,*,Auto">
+        <Grid RowDefinitions="Auto,Auto,*,Auto">
 
             <!-- Header -->
             <Border Grid.Row="0" Background="{StaticResource HeaderBackgroundBrush}" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="0,0,0,1" Padding="20,10">
@@ -80,16 +80,18 @@
                 </Grid>
             </Border>
 
-            <!-- Engines -->
-            <ScrollViewer Grid.Row="1" IsVisible="{Binding IsEnginesTab}">
-                <StackPanel Margin="24,20,24,24" Spacing="12" MaxWidth="{StaticResource PageMaxWidth}">
+            <!-- A problem worth telling about (failed sign-in, Epic unreachable…), above either tab -->
+            <Border Grid.Row="1" Classes="banner warning" Margin="24,16,24,0" MaxWidth="{StaticResource PageMaxWidth}" IsVisible="{Binding HasNotice}">
+                <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Text="{Binding Notice}" TextWrapping="Wrap" VerticalAlignment="Center" />
+                    <Button Grid.Column="1" Classes="subtle" Content="✕" Command="{Binding DismissNoticeCommand}"
+                            ToolTip.Tip="Dismiss" AutomationProperties.Name="Dismiss" />
+                </Grid>
+            </Border>
 
-                    <Border Classes="banner warning" IsVisible="{Binding HasNotice}">
-                        <Grid ColumnDefinitions="*,Auto">
-                            <TextBlock Text="{Binding Notice}" TextWrapping="Wrap" VerticalAlignment="Center" />
-                            <Button Grid.Column="1" Classes="subtle" Content="✕" Command="{Binding DismissNoticeCommand}" />
-                        </Grid>
-                    </Border>
+            <!-- Engines -->
+            <ScrollViewer Grid.Row="2" IsVisible="{Binding IsEnginesTab}">
+                <StackPanel Margin="24,20,24,24" Spacing="12" MaxWidth="{StaticResource PageMaxWidth}">
 
                     <Border Classes="banner" IsVisible="{Binding IsSignedOut}">
                         <Grid ColumnDefinitions="*,Auto">
@@ -135,10 +137,10 @@
             </ScrollViewer>
 
             <!-- Fab -->
-            <views:FabLibraryView Grid.Row="1" DataContext="{Binding Fab}" IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext).IsFabTab}" />
+            <views:FabLibraryView Grid.Row="2" DataContext="{Binding Fab}" IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext).IsFabTab}" />
 
             <!-- Downloads / running jobs -->
-            <Border Grid.Row="2" IsVisible="{Binding HasOperations}" Background="{StaticResource HeaderBackgroundBrush}"
+            <Border Grid.Row="3" IsVisible="{Binding HasOperations}" Background="{StaticResource HeaderBackgroundBrush}"
                     BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="0,1,0,0" Padding="20,12" MaxHeight="260">
                 <ScrollViewer>
                     <ItemsControl ItemsSource="{Binding Operations}">

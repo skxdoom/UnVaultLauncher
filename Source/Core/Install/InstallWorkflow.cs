@@ -114,24 +114,29 @@ public static class InstallWorkflow
     }
 
     /// <summary>
-    /// Applies a modify: records the new selection first (so an interrupted download is repaired towards it),
-    /// deletes deselected files, then downloads added ones.
+    /// Applies a modify: deletes deselected files, then downloads added ones. The record follows the files: removed
+    /// components leave it before their files are deleted, added ones join it once their files are complete. So after a
+    /// cancel or a failure, running the same modify again resumes the download instead of finding nothing to change.
     /// </summary>
     public static async Task<InstallCleaner.Result> ApplyModifyAsync(ModifyPlan plan, Installer installer, InstallStatus status, CancellationToken cancellationToken)
     {
         var install = plan.Install;
         if (plan.ToAdd is not null && install.Sources.Count == 0)
             throw new InstallException("Can't add components: no download location is known for this install.");
+        byte[] rawManifest = await File.ReadAllBytesAsync(install.ManifestPath, cancellationToken);
 
-        install.ToRecord(plan.NewTags).Save(install.Directory, await File.ReadAllBytesAsync(install.ManifestPath, cancellationToken));
-
-        var cleaned = plan.ToRemove.Count > 0
-            ? await Task.Run(() => InstallCleaner.DeleteFiles(install.Directory, plan.ToRemove, cancellationToken), cancellationToken)
-            : default;
+        InstallCleaner.Result cleaned = default;
+        if (plan.ToRemove.Count > 0)
+        {
+            var kept = install.InstallTags.Where(plan.NewTags.Contains).ToHashSet(StringComparer.Ordinal);
+            install.ToRecord(kept).Save(install.Directory, rawManifest);
+            cleaned = await Task.Run(() => InstallCleaner.DeleteFiles(install.Directory, plan.ToRemove, cancellationToken), cancellationToken);
+        }
 
         if (plan.ToAdd is not null)
             await installer.InstallAsync(plan.ToAdd, install.Directory, install.Sources, new Dictionary<string, string>(), status, cancellationToken);
 
+        install.ToRecord(plan.NewTags).Save(install.Directory, rawManifest);
         return cleaned;
     }
 }

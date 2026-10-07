@@ -1,33 +1,42 @@
 # Builds UnVaultLauncher.exe and puts it in a draft release, for a person to check and publish.
 # Release: set <Version> in Directory.Build.props, push, then Actions > Release > Run workflow.
 # The draft keeps the commit it was built from; GitHub tags that commit (e.g. v0.3.1) when the release is published.
+# Building runs other people's code (NuGet packages, the tests), so that job can only read the repository. The two small
+# jobs around it run none of that: one checks the version, the other signs the exe and makes the draft.
 name: Release
 
 on:
   workflow_dispatch:
     inputs:
       dry_run:
-        description: Only build and test, without making a release
+        description: Only build and test, without making a release (the exe is kept as a download of the run)
         type: boolean
         default: false
 
+# One release at a time: two runs could both pass the check that the version isn't released yet.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 jobs:
-  release:
+  version:
     runs-on: windows-latest
-    timeout-minutes: 30
+    timeout-minutes: 5
     permissions:
-      contents: write      # create the draft release
-      id-token: write      # sign the build provenance
-      attestations: write  # store it with the repository
+      contents: write  # only to see draft releases, which GitHub lists just to those who can write; nothing is built here
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
 
     steps:
       - uses: actions/checkout@v7
-
-      - uses: actions/setup-dotnet@v6
         with:
-          global-json-file: global.json
+          persist-credentials: false
+          sparse-checkout: Directory.Build.props
+          sparse-checkout-cone-mode: false
 
       - name: Version
+        id: version
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
@@ -35,8 +44,8 @@ jobs:
         run: |
           $version = (Select-Xml -Path Directory.Build.props -XPath '//Version').Node.InnerText
           $tag = "v$version"
-          "VERSION=$version" >> $env:GITHUB_ENV
-          "TAG=$tag" >> $env:GITHUB_ENV
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "tag=$tag" >> $env:GITHUB_OUTPUT
           # Each version is released once: a second run would make a duplicate draft or point at another commit.
           $releases = gh api "repos/$env:GITHUB_REPOSITORY/releases" --paginate --jq '.[].tag_name'
           git ls-remote --exit-code --tags origin "refs/tags/$tag" | Out-Null
@@ -46,6 +55,22 @@ jobs:
           }
           $global:LASTEXITCODE = 0
           "$tag from commit $env:GITHUB_SHA"
+
+  build:
+    needs: version
+    runs-on: windows-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
 
       - name: Test
         run: dotnet test UnVault.sln -c Release
@@ -58,8 +83,32 @@ jobs:
           # A missing profile is only a warning to dotnet publish; it then builds something else, without the exe.
           if (-not (Test-Path UnVaultLauncher.exe)) { throw "The publish didn't produce UnVaultLauncher.exe; see its warnings above." }
 
+      - uses: actions/upload-artifact@v7
+        with:
+          name: UnVaultLauncher
+          path: UnVaultLauncher.exe
+          if-no-files-found: error
+          retention-days: 7
+
+  release:
+    needs: [version, build]
+    if: ${{ !inputs.dry_run }}
+    runs-on: windows-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write      # create the draft release
+      id-token: write      # sign the build provenance
+      attestations: write  # store it with the repository
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+      TAG: ${{ needs.version.outputs.tag }}
+
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: UnVaultLauncher
+
       - name: Release notes
-        if: ${{ !inputs.dry_run }}
         shell: pwsh
         run: |
           $hash = (Get-FileHash UnVaultLauncher.exe -Algorithm SHA256).Hash.ToLowerInvariant()
@@ -75,14 +124,12 @@ jobs:
 
       # A signed record that the exe came from this workflow and commit (checked with gh attestation verify).
       - uses: actions/attest@v4
-        if: ${{ !inputs.dry_run }}
         with:
           subject-path: UnVaultLauncher.exe
 
       - name: Create the draft release
-        if: ${{ !inputs.dry_run }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: >
           gh release create "$env:TAG" UnVaultLauncher.exe --draft --target "$env:GITHUB_SHA"
-          --title "UnVault Launcher $env:VERSION" --notes-file notes.md
+          --title "UnVault Launcher $env:VERSION" --notes-file notes.md --repo "$env:GITHUB_REPOSITORY"

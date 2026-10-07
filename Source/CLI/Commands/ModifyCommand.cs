@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using Spectre.Console;
 using Spectre.Console.Cli;
+using UnVault.Core;
 using UnVault.Core.Install;
 using UnVault.Core.Util;
 
@@ -65,7 +66,7 @@ internal sealed class ModifyCommand : EpicCommand<ModifyCommand.Settings>
             return 0;
 
         var status = new InstallStatus();
-        var installer = new Installer(Services.HTTP) { MaxParallelDownloads = Math.Clamp(settings.Connections ?? Services.Settings.ParallelDownloads, 1, 64) };
+        var installer = new Installer(Services.HTTP) { MaxParallelDownloads = Math.Clamp(settings.Connections ?? Services.Settings.ParallelDownloads, 1, AppSettings.MaxParallelDownloads) };
         InstallCleaner.Result cleaned = default;
         if (plan.ToAdd is null)
             cleaned = await AnsiConsole.Status().StartAsync("Deleting files…", _ => InstallWorkflow.ApplyModifyAsync(plan, installer, status, cancellationToken));

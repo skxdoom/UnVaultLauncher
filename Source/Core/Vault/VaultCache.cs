@@ -65,9 +65,9 @@ public static class VaultCache
                     entries.Add(entry);
                 }
             }
-            catch (Exception ex) when (ex is JsonException or IOException)
+            catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException)
             {
-                // A damaged entry shouldn't hide the rest.
+                // A damaged or unreadable entry shouldn't hide the rest.
             }
         }
         return entries.OrderBy(e => e.Title, StringComparer.OrdinalIgnoreCase).ToList();

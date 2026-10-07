@@ -8,6 +8,7 @@ using UnVault.Core.Epic;
 using UnVault.Core.Fab;
 using UnVault.Core.Install;
 using UnVault.Core.Manifests;
+using UnVault.Core.Util;
 
 namespace UnVault.Core.Tests;
 
@@ -201,6 +202,100 @@ public sealed class InstallerTests : IDisposable
         new InstallRecord { AppName = "UE_5.7" }.Save(_dir, Encoding.UTF8.GetBytes("manifest v2"));
         Assert.Equal("manifest v2", File.ReadAllText(manifestPath));
         Assert.Empty(Directory.EnumerateFiles(InstallJournal.DirectoryFor(_dir), "*.tmp"));
+    }
+
+    [Fact]
+    public async Task Installs_into_and_cleans_a_folder_typed_with_a_trailing_separator()
+    {
+        var (manifest, expected, chunkFiles) = BuildTestBuild();
+        string typed = _dir + Path.DirectorySeparatorChar; // as tab completion in a terminal leaves it
+
+        await new Installer(new HttpClient(new FakeCDN(chunkFiles))).InstallAsync(InstallPlan.Create(manifest, manifest.Files), typed,
+            [new ChunkSource("https://cdn.test/CloudDir")], new Dictionary<string, string>(), new InstallStatus(), default);
+        foreach (var (name, content) in expected)
+            Assert.Equal(content, File.ReadAllBytes(Path.Combine(_dir, name)));
+
+        File.SetAttributes(Path.Combine(_dir, "Engine/ReadOnly.txt"), FileAttributes.Normal);
+        var cleaned = InstallCleaner.DeleteFiles(typed, manifest.Files);
+        Assert.Equal((4, 1), (cleaned.FilesDeleted, cleaned.FoldersRemoved)); // Engine\ goes, the install folder stays
+        Assert.True(Directory.Exists(_dir));
+    }
+
+    [Theory]
+    [InlineData(@"E:\", @"E:\UE_5.8\Engine", true)] // a drive root
+    [InlineData(@"E:\Engines\UE_5.8\", @"E:\Engines\UE_5.8\Engine", true)]
+    [InlineData(@"E:\Engines\UE_5.8", @"E:\Engines\UE_5.8\Engine", true)]
+    [InlineData(@"E:\Engines\UE_5.8", @"E:\Engines\UE_5.8", false)] // the folder itself
+    [InlineData(@"E:\Engines\UE_5", @"E:\Engines\UE_5.8\Engine", false)] // a folder whose name merely starts the same
+    public void Knows_what_is_inside_a_folder(string root, string path, bool inside) =>
+        Assert.Equal(inside, ContainedPath.IsInside(root, path));
+
+    [Fact]
+    public void Refuses_manifest_paths_that_leave_their_folder()
+    {
+        Assert.Throws<IOException>(() => ContainedPath.Resolve(@"E:\Engines\UE_5.8", @"..\UE_5.7\Engine\x.dll"));
+        Assert.Throws<IOException>(() => ContainedPath.Resolve(@"E:\Engines\UE_5.8", @"C:\Windows\x.dll"));
+        Assert.Equal(@"E:\Engine\x.dll", ContainedPath.Resolve(@"E:\", "Engine/x.dll"));
+    }
+
+    [Fact]
+    public async Task A_component_change_that_failed_runs_again_and_resumes()
+    {
+        // Core is always there; "old" and "extra" are components. Extra spans two chunks, so a run can stop between them.
+        byte[] core = RandomNumberGenerator.GetBytes(1000), old = RandomNumberGenerator.GetBytes(1000), extra = RandomNumberGenerator.GetBytes(4000);
+        var (coreChunk, coreFile) = ChunkFactory.Create(new EpicGUID(0x10, 0, 0, 0), core);
+        var (oldChunk, oldFile) = ChunkFactory.Create(new EpicGUID(0x20, 0, 0, 0), old);
+        var (extraFirst, extraFirstFile) = ChunkFactory.Create(new EpicGUID(0x30, 0, 0, 0), extra[..2000]);
+        var (extraSecond, extraSecondFile) = ChunkFactory.Create(new EpicGUID(0x31, 0, 0, 0), extra[2000..]);
+        var chunkFiles = new Dictionary<EpicGUID, byte[]>
+        {
+            [coreChunk.GUID] = coreFile, [oldChunk.GUID] = oldFile, [extraFirst.GUID] = extraFirstFile, [extraSecond.GUID] = extraSecondFile,
+        };
+        FileManifest Entry(string name, byte[] content, string? tag, params ChunkPart[] parts) => new()
+        {
+            Filename = name, SHA1 = SHA1.HashData(content), FileSize = content.Length, ChunkParts = parts, InstallTags = tag is null ? [] : [tag],
+        };
+        var manifest = new Manifest
+        {
+            Version = 21,
+            Meta = new ManifestMeta { FeatureLevel = 21, AppName = "UE_9.9", BuildVersion = "9.9.0-1" },
+            Chunks = [coreChunk, oldChunk, extraFirst, extraSecond],
+            Files =
+            [
+                Entry("Engine/Core.bin", core, null, new ChunkPart(coreChunk.GUID, 0, 1000)),
+                Entry("Engine/Old.bin", old, "old", new ChunkPart(oldChunk.GUID, 0, 1000)),
+                Entry("Engine/Extra.bin", extra, "extra", new ChunkPart(extraFirst.GUID, 0, 2000), new ChunkPart(extraSecond.GUID, 0, 2000)),
+            ],
+            CustomFields = new Dictionary<string, string>(),
+        };
+        ChunkSource[] sources = [new("https://cdn.test/CloudDir")];
+        static HashSet<string> Tags(params string[] tags) => new(tags, StringComparer.Ordinal);
+
+        await new Installer(new HttpClient(new FakeCDN(chunkFiles))).InstallAsync(InstallPlan.Create(manifest, manifest.SelectFiles(Tags("old"))), _dir,
+            sources, new Dictionary<string, string>(), new InstallStatus(), default);
+        string manifestPath = Path.Combine(_dir, "build.manifest");
+        File.WriteAllBytes(manifestPath, [1, 2, 3]); // only copied into the record, never parsed here
+        var install = new ExistingInstall("UE_9.9", _dir, manifest, manifestPath, Tags("old"), sources, "test");
+
+        // Swapping "old" for "extra" stops after Extra's first chunk.
+        var plan = InstallWorkflow.PlanModify(install, Tags("extra"));
+        var broken = new FakeCDN(chunkFiles) { Unavailable = { extraSecond.GUID } };
+        await Assert.ThrowsAsync<InstallException>(() => InstallWorkflow.ApplyModifyAsync(plan,
+            new Installer(new HttpClient(broken)) { MaxParallelDownloads = 1, RetryBaseDelay = TimeSpan.FromMilliseconds(1) }, new InstallStatus(), default));
+
+        // "old" is gone from disk and from the record, and "extra" isn't claimed yet: the same change still has work to do.
+        var record = InstallRecord.TryRead(_dir)!;
+        Assert.Empty(record.InstallTags);
+        Assert.False(File.Exists(Path.Combine(_dir, "Engine/Old.bin")));
+        var again = InstallWorkflow.PlanModify(install with { InstallTags = record.InstallTags.ToHashSet(StringComparer.Ordinal) }, Tags("extra"));
+        Assert.Equal(plan.ToAdd!.ID, again.ToAdd!.ID); // the same download, so its journal applies
+
+        var cdn = new FakeCDN(chunkFiles);
+        await InstallWorkflow.ApplyModifyAsync(again, new Installer(new HttpClient(cdn)), new InstallStatus(), default);
+
+        Assert.Equal(["extra"], InstallRecord.TryRead(_dir)!.InstallTags);
+        Assert.Equal(extra, File.ReadAllBytes(Path.Combine(_dir, "Engine/Extra.bin")));
+        Assert.DoesNotContain(cdn.Requests, r => r.Contains(extraFirst.GUID.ToString())); // resumed
     }
 
     [Fact]

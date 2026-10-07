@@ -2,9 +2,19 @@ namespace UnVault.Core;
 
 public static class AppPaths
 {
+    private static readonly Lazy<string> Resolved =
+        new(() => ResolveDataDirectory(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)));
+
+    private static string? _override;
+
     /// <summary>%LOCALAPPDATA%\UnVaultLauncher on Windows, ~/.local/share/UnVaultLauncher elsewhere.</summary>
-    public static string DataDirectory { get; } =
-        ResolveDataDirectory(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
+    public static string DataDirectory => _override ?? Resolved.Value;
+
+    /// <summary>
+    /// Puts sign-in, settings and caches in another folder. Tests use one of their own, so they never read the user's
+    /// session or settings, clean up their thumbnails, or move their old data folder.
+    /// </summary>
+    internal static void UseDataDirectory(string directory) => _override = directory;
 
     public static string ManifestCacheDirectory => Path.Combine(DataDirectory, "manifests");
 

@@ -177,7 +177,7 @@ public partial class SettingsViewModel : ViewModelBase
         settings.EngineInstallRoot = engineRoot;
         settings.VaultCacheDirectory = vault;
         settings.ProjectDirectories = projectFolders.Count == 0 ? null : projectFolders;
-        settings.ParallelDownloads = (int)Math.Clamp(ParallelDownloads ?? AppSettings.DefaultParallelDownloads, 1, 64);
+        settings.ParallelDownloads = (int)Math.Clamp(ParallelDownloads ?? AppSettings.DefaultParallelDownloads, 1, AppSettings.MaxParallelDownloads);
         try
         {
             settings.Save();

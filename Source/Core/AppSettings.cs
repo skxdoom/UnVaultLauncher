@@ -22,6 +22,7 @@ public readonly record struct ResolvedFolders(IReadOnlyList<string> Paths, Setti
 public sealed class AppSettings
 {
     public const int DefaultParallelDownloads = 16;
+    public const int MaxParallelDownloads = 64;
 
     /// <summary>Parent folder for new engines (UE_5.8 goes to {this}\UE_5.8). Null = automatic.</summary>
     public string? EngineInstallRoot { get; set; }
@@ -39,16 +40,20 @@ public sealed class AppSettings
     public static AppSettings Load(string? path = null)
     {
         path ??= FilePath;
+        AppSettings settings;
         try
         {
-            return File.Exists(path)
+            settings = File.Exists(path)
                 ? JsonSerializer.Deserialize(File.ReadAllText(path), SettingsJSONContext.Default.AppSettings) ?? new AppSettings()
                 : new AppSettings();
         }
         catch (Exception ex) when (ex is JsonException or IOException)
         {
-            return new AppSettings();
+            settings = new AppSettings();
         }
+        // The file can be edited by hand; 0 would stop every download.
+        settings.ParallelDownloads = Math.Clamp(settings.ParallelDownloads, 1, MaxParallelDownloads);
+        return settings;
     }
 
     public void Save(string? path = null)
