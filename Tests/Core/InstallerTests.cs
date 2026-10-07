@@ -2,6 +2,7 @@ using System.Buffers.Binary;
 using System.IO.Compression;
 using System.Net;
 using System.Security.Cryptography;
+using System.Text;
 using UnVault.Core.Chunks;
 using UnVault.Core.Epic;
 using UnVault.Core.Fab;
@@ -158,6 +159,48 @@ public sealed class InstallerTests : IDisposable
         foreach (var (name, content) in expected)
             Assert.Equal(content, File.ReadAllBytes(Path.Combine(_dir, name)));
         Assert.DoesNotContain(healthy.Requests, r => r.Contains(plan.Chunks[0].Info.GUID.ToString()) && r.Contains("cdn.test"));
+    }
+
+    [Fact]
+    public async Task Resuming_downloads_again_what_finished_chunks_wrote_into_files_deleted_since()
+    {
+        var (manifest, expected, chunkFiles) = BuildTestBuild();
+        var plan = InstallPlan.Create(manifest, manifest.Files);
+        ChunkSource[] sources = [new("https://cdn.test/CloudDir")];
+
+        // Stops after chunk A (B is unavailable); then Big.bin, which A filled, is deleted, as unticking a component does.
+        var broken = new FakeCDN(chunkFiles) { Unavailable = { plan.Chunks[1].Info.GUID } };
+        await Assert.ThrowsAsync<InstallException>(() =>
+            new Installer(new HttpClient(broken)) { MaxParallelDownloads = 1, RetryBaseDelay = TimeSpan.FromMilliseconds(1) }
+                .InstallAsync(plan, _dir, sources, new Dictionary<string, string>(), new InstallStatus(), default));
+        File.Delete(Path.Combine(_dir, "Engine/Big.bin"));
+
+        // Ticked again, same plan: the journal says A is done, but its file is gone, so A is fetched again.
+        var cdn = new FakeCDN(chunkFiles);
+        await new Installer(new HttpClient(cdn)).InstallAsync(plan, _dir, sources, new Dictionary<string, string>(), new InstallStatus(), default);
+
+        foreach (var (name, content) in expected)
+            Assert.Equal(content, File.ReadAllBytes(Path.Combine(_dir, name)));
+        Assert.Contains(cdn.Requests, r => r.Contains(plan.Chunks[0].Info.GUID.ToString()));
+    }
+
+    [Fact]
+    public void Install_record_files_are_replaced_whole_and_an_unchanged_manifest_is_left_alone()
+    {
+        byte[] manifest = Encoding.UTF8.GetBytes("manifest v1");
+        new InstallRecord { AppName = "UE_5.7" }.Save(_dir, manifest);
+        string manifestPath = InstallRecord.ManifestPath(_dir);
+        var written = File.GetLastWriteTimeUtc(manifestPath);
+        Thread.Sleep(20);
+
+        // Changing components saves the same build again: the record changes, the manifest (the only copy) isn't rewritten.
+        new InstallRecord { AppName = "UE_5.7", InstallTags = ["engine_source"] }.Save(_dir, manifest);
+        Assert.Equal(written, File.GetLastWriteTimeUtc(manifestPath));
+        Assert.Equal(["engine_source"], InstallRecord.TryRead(_dir)!.InstallTags);
+
+        new InstallRecord { AppName = "UE_5.7" }.Save(_dir, Encoding.UTF8.GetBytes("manifest v2"));
+        Assert.Equal("manifest v2", File.ReadAllText(manifestPath));
+        Assert.Empty(Directory.EnumerateFiles(InstallJournal.DirectoryFor(_dir), "*.tmp"));
     }
 
     [Fact]

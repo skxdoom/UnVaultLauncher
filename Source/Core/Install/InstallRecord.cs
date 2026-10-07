@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using UnVault.Core.Manifests;
+using UnVault.Core.Util;
 
 namespace UnVault.Core.Install;
 
@@ -33,12 +34,19 @@ public sealed class InstallRecord
     public static string RecordPath(string installDir) => Path.Combine(InstallJournal.DirectoryFor(installDir), "install.json");
     public static string ManifestPath(string installDir) => Path.Combine(InstallJournal.DirectoryFor(installDir), "install.manifest");
 
+    /// <summary>Replaces each file in one step, so a crash midway never leaves an install that can't be verified or repaired.</summary>
     public void Save(string installDir, byte[] rawManifest)
     {
         Directory.CreateDirectory(InstallJournal.DirectoryFor(installDir));
-        File.WriteAllBytes(ManifestPath(installDir), rawManifest);
-        File.WriteAllText(RecordPath(installDir), JsonSerializer.Serialize(this, InstallJSONContext.Default.InstallRecord));
+        // Changing components keeps the build: its manifest, the only copy, is then left as it is.
+        string manifestPath = ManifestPath(installDir);
+        if (!HasContent(manifestPath, rawManifest))
+            AtomicFile.WriteAllBytes(manifestPath, rawManifest);
+        AtomicFile.WriteAllText(RecordPath(installDir), JsonSerializer.Serialize(this, InstallJSONContext.Default.InstallRecord));
     }
+
+    private static bool HasContent(string path, byte[] content) =>
+        File.Exists(path) && new FileInfo(path).Length == content.Length && File.ReadAllBytes(path).AsSpan().SequenceEqual(content);
 
     /// <summary>Just the record, without parsing the manifest. Null if there's none or it's unreadable.</summary>
     public static InstallRecord? TryRead(string installDir)

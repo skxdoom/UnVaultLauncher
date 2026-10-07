@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using UnVault.Core.Install;
 using UnVault.Core.Manifests;
+using UnVault.Core.Util;
 
 namespace UnVault.Core.Fab;
 
@@ -20,7 +21,7 @@ public sealed class PluginRecord
 public static class PluginInstalls
 {
     public static string StateDirectory(string engineDir, string artifactID) =>
-        Path.Combine(InstallJournal.DirectoryFor(engineDir), "plugins", artifactID);
+        Path.Combine(InstallJournal.DirectoryFor(engineDir), "plugins", EnginePlugins.ArtifactFolderName(artifactID));
 
     private static string RecordPath(string engineDir, string artifactID) => Path.Combine(StateDirectory(engineDir, artifactID), "plugin.json");
     private static string ManifestPath(string engineDir, string artifactID) => Path.Combine(StateDirectory(engineDir, artifactID), "install.manifest");
@@ -29,8 +30,8 @@ public static class PluginInstalls
     {
         string directory = StateDirectory(engineDir, record.ArtifactID);
         Directory.CreateDirectory(directory);
-        File.WriteAllBytes(ManifestPath(engineDir, record.ArtifactID), rawManifest);
-        File.WriteAllText(RecordPath(engineDir, record.ArtifactID), JsonSerializer.Serialize(record, PluginJSONContext.Default.PluginRecord));
+        AtomicFile.WriteAllBytes(ManifestPath(engineDir, record.ArtifactID), rawManifest);
+        AtomicFile.WriteAllText(RecordPath(engineDir, record.ArtifactID), JsonSerializer.Serialize(record, PluginJSONContext.Default.PluginRecord));
     }
 
     public static (PluginRecord Record, Manifest Manifest)? Load(string engineDir, string artifactID)

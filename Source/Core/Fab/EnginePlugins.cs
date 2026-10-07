@@ -1,5 +1,6 @@
 using UnVault.Core.EGL;
 using UnVault.Core.Install;
+using UnVault.Core.Util;
 
 namespace UnVault.Core.Fab;
 
@@ -29,11 +30,27 @@ public static class EnginePlugins
 {
     public static string MarketplaceDirectory(string engineDir) => Path.Combine(engineDir, "Engine", "Plugins", "Marketplace");
 
-    public static string MarketplaceFolder(string engineDir, string artifactID)
+    public static string MarketplaceFolder(string engineDir, string artifactID) =>
+        Path.Combine(MarketplaceDirectory(engineDir), ArtifactFolderName(artifactID));
+
+    /// <summary>
+    /// An artifact ID used as a folder name: its Marketplace folder, its Vault Cache folder, its state in .unvault\plugins.
+    /// It comes from Fab or EGL's files, and one like "..." would name the folder above, which removal would then delete.
+    /// </summary>
+    internal static string ArtifactFolderName(string artifactID) =>
+        FileNames.IsPlain(artifactID) ? artifactID : throw new InstallException($"'{artifactID}' can't be used as a folder name.");
+
+    /// <summary>
+    /// True for a file inside a plugin's folder under Engine/Plugins. A plugin listing anything else (an engine file)
+    /// would overwrite it when installed and delete it when removed.
+    /// </summary>
+    public static bool IsPluginFile(string filename)
     {
-        if (artifactID.Length == 0 || artifactID is "." or ".." || artifactID.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
-            throw new InstallException($"'{artifactID}' isn't a plugin folder name.");
-        return Path.Combine(MarketplaceDirectory(engineDir), artifactID);
+        string[] parts = filename.Split('/', '\\');
+        return parts.Length >= 4
+            && parts[0].Equals("Engine", StringComparison.OrdinalIgnoreCase)
+            && parts[1].Equals("Plugins", StringComparison.OrdinalIgnoreCase)
+            && parts.All(FileNames.IsPlain);
     }
 
     /// <summary>The plugins UnVault, EGL or anything else put into this engine.</summary>
@@ -50,7 +67,7 @@ public static class EnginePlugins
             if (!EngineLibrary.IsEngineApp(entry.AppName) && SamePath(entry.InstallLocation, engineDir) && !found.ContainsKey(entry.AppName))
             {
                 string folder = SafeFolder(engineDir, entry.AppName);
-                found[entry.AppName] = new EnginePlugin(entry.AppName, PluginSource.EGL, folder, CanRemove: Directory.Exists(folder) && folder != MarketplaceDirectory(engineDir), entry.AppVersion);
+                found[entry.AppName] = new EnginePlugin(entry.AppName, PluginSource.EGL, folder, CanRemove: Directory.Exists(folder) && !SamePath(folder, MarketplaceDirectory(engineDir)), entry.AppVersion);
             }
         }
 

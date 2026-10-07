@@ -106,9 +106,19 @@ public partial class MainViewModel : ViewModelBase
     /// <summary>Shown next to the name in the header, e.g. "v0.1.0".</summary>
     public string VersionText { get; } = "v" + ProductInfo.Version;
 
-    /// <summary>Engine versions the account owns but hasn't installed (stale EGL records count as not installed).</summary>
+    /// <summary>
+    /// Engine versions the account owns but hasn't installed (stale EGL records count as not installed), leaving out
+    /// any an operation is installing right now: a second install would write into the same folder.
+    /// </summary>
     public IReadOnlyList<EpicAsset> InstallableEngines =>
-        _owned.Where(o => !_local.Any(l => l.Exists && string.Equals(l.AppName, o.AppName, StringComparison.OrdinalIgnoreCase))).ToList();
+        _owned.Where(o => !_local.Any(l => l.Exists && Same(l.AppName, o.AppName))
+                          && !Operations.Any(op => op.IsRunning && op.EngineAppName is { } busy && Same(busy, o.AppName)))
+            .ToList();
+
+    private static bool Same(string a, string b) => string.Equals(a, b, StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>The signed-in account; a slow fetch compares it before and after, as the user may sign out meanwhile.</summary>
+    internal string? CurrentAccountID => Services.Account.IsLoggedIn ? Services.Account.Session?.AccountID : null;
 
     /// <summary>First load: engines, then (signed in) the library in the background, so the Library tab shows pending updates before it's opened.</summary>
     public async Task StartAsync()
@@ -149,10 +159,10 @@ public partial class MainViewModel : ViewModelBase
         try
         {
             _local = await Task.Run(EngineLibrary.ScanLocal);
-            string? accountID = Services.Account.IsLoggedIn ? Services.Account.Session?.AccountID : null;
+            string? accountID = CurrentAccountID;
             if (accountID is null)
                 _owned = [];
-            else if (_owned.Count == 0 && await Task.Run(() => OwnedEnginesCache.Load(accountID)) is { } saved)
+            else if (_owned.Count == 0 && await Task.Run(() => OwnedEnginesCache.Load(accountID)) is { } saved && CurrentAccountID == accountID)
                 _owned = saved.Engines; // Epic's list from last time, so update badges and installable versions are there at once
 
             // The installed engines show right away; the local scan is quick, Epic's list is not.
@@ -164,7 +174,11 @@ public partial class MainViewModel : ViewModelBase
                 LoadingText = $"{installed:N0} installed  ·  checking Epic for versions and updates…";
                 try
                 {
-                    _owned = (await Services.API.GetAssetsAsync()).Where(a => a.IsEngine).ToList();
+                    var owned = (await Services.API.GetAssetsAsync()).Where(a => a.IsEngine).ToList();
+                    // Signed out or into another account meanwhile: this list isn't theirs, and the change refreshes on its own.
+                    if (CurrentAccountID != accountID)
+                        return;
+                    _owned = owned;
                     Notice = null;
                     await SaveOwnedEnginesAsync(accountID);
                 }
@@ -175,7 +189,8 @@ public partial class MainViewModel : ViewModelBase
                 }
                 catch (Exception ex) when (ex is EpicAPIException or HttpRequestException or TaskCanceledException)
                 {
-                    Notice = $"Couldn't reach Epic: {ex.Message}";
+                    if (CurrentAccountID == accountID)
+                        Notice = $"Couldn't reach Epic: {ex.Message}";
                 }
                 SetEngines(_local, _owned);
             }
@@ -229,8 +244,6 @@ public partial class MainViewModel : ViewModelBase
         foreach (var engine in _allEngines)
             Engines.Add(engine);
         HasNoEngines = Engines.Count == 0;
-
-        static bool Same(string a, string b) => string.Equals(a, b, StringComparison.OrdinalIgnoreCase);
     }
 
     internal void SetBusy(OperationViewModel operation, bool busy)

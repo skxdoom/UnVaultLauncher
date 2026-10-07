@@ -5,6 +5,7 @@ using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 using UnVault.Core.Manifests;
+using UnVault.Core.Util;
 
 namespace UnVault.Core.Epic;
 
@@ -51,7 +52,7 @@ public sealed partial class EpicAPIClient(HttpClient http, EpicAccount account)
     private async Task<byte[]> DownloadVerifiedAsync(IEnumerable<string> urls, string? expectedSHA1, string cacheName, CancellationToken cancellationToken)
     {
         string cachePath = Path.Combine(AppPaths.ManifestCacheDirectory, cacheName + ".manifest");
-        bool cacheable = !string.IsNullOrEmpty(expectedSHA1);
+        bool cacheable = !string.IsNullOrEmpty(expectedSHA1) && FileNames.IsPlain(cacheName); // the name comes from Epic
 
         if (cacheable && File.Exists(cachePath))
         {

@@ -104,6 +104,7 @@ public class ScreenshotTests
             ProgressText = "4.1 GB of 10.9 GB  ·  61 204/206 255 files",
             SpeedText = "48.2 MB/s  ·  2m left",
         });
+        Assert.DoesNotContain("UE_5.8", viewModel.InstallableEngines.Select(e => e.AppName)); // already being installed
         viewModel.Operations.Add(new OperationViewModel(viewModel, "Verifying Unreal Engine 5.6.1", (_, _, _) => Task.FromResult<string?>(null))
         {
             State = OperationState.Completed,
@@ -225,6 +226,9 @@ public class ScreenshotTests
         Assert.Equal(["Contoso Art", "Fabrikam Studio"], plants.Select(i => i.SellerText).Order());
         fab.SetBusy(plants[0].Key, true);
         Assert.Equal([true, false], plants.Select(i => i.IsBusy));
+        // Nothing else starts on a busy item's files: two operations on them would collide.
+        Assert.Equal((false, false), (plants[0].DownloadCommand.CanExecute(null), plants[0].RemoveCommand.CanExecute(null)));
+        Assert.True(plants[1].DownloadCommand.CanExecute(null));
         fab.SetBusy(plants[0].Key, false);
         Assert.Single(fab.Items, i => i.Matches("Fabrikam")); // search covers the seller
         WaitFor(() => fab.Items.Single(i => i.Title.StartsWith("Modular Warehouse")).Thumbnail is not null); // local:// picture loaded

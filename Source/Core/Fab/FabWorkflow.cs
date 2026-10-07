@@ -2,6 +2,7 @@ using UnVault.Core.EGL;
 using UnVault.Core.Epic;
 using UnVault.Core.Install;
 using UnVault.Core.Manifests;
+using UnVault.Core.Util;
 using UnVault.Core.Vault;
 
 namespace UnVault.Core.Fab;
@@ -45,7 +46,7 @@ public static class FabWorkflow
             Version = ShortVersion(manifest.Meta.BuildVersion),
             Thumbnail = artifact.Item.ThumbnailURL,
             Categories = "|" + string.Join("|", (artifact.Item.Categories ?? []).Select(c => c.Name).Append(KindCategory(FabKinds.FromManifest(manifest)))) + "|",
-            Directory = Path.Combine(vaultDirectory, artifact.ArtifactID),
+            Directory = Path.Combine(vaultDirectory, EnginePlugins.ArtifactFolderName(artifact.ArtifactID)),
         };
 
         string stateDirectory = Path.Combine(entry.Directory, ".unvault");
@@ -111,7 +112,7 @@ public static class FabWorkflow
         if (PluginInstalls.Load(engineDirectory, artifact.ArtifactID) is { } installed)
         {
             var (write, delete) = Diff(installed.Manifest, manifest);
-            return new PluginUpdate(source, artifact, engineDirectory, write, delete);
+            return new PluginUpdate(source, artifact, engineDirectory, write, [.. delete.Where(f => EnginePlugins.IsPluginFile(f.Filename))]);
         }
 
         var bad = await Verifier.FindBadFilesAsync(manifest.Files, engineDirectory, checking, cancellationToken: cancellationToken);
@@ -205,9 +206,8 @@ public static class FabWorkflow
         InstallCleaner.Result result;
         if (PluginInstalls.Load(engineDirectory, artifactID) is { } installed)
         {
-            // Ours: exactly the files we put there.
-            result = InstallCleaner.DeleteFiles(engineDirectory, installed.Manifest.Files);
-            PluginInstalls.Delete(engineDirectory, artifactID);
+            // Ours: exactly the files we put there (only plugin files, whatever an older record lists).
+            result = InstallCleaner.DeleteFiles(engineDirectory, installed.Manifest.Files.Where(f => EnginePlugins.IsPluginFile(f.Filename)));
         }
         else
         {
@@ -217,6 +217,8 @@ public static class FabWorkflow
                 throw new InstallException($"{artifactID} isn't in Engine\\Plugins\\Marketplace, so its files can't be told apart from the engine's. Remove it with the Epic Games Launcher.");
             result = InstallCleaner.DeleteFolder(folder);
         }
+        // Also whatever an interrupted install left there: its resume journal mustn't vouch for files that are gone now.
+        PluginInstalls.Delete(engineDirectory, artifactID);
         EGLInstallations.UnregisterLauncherInstall(artifactID, engineDirectory, launcherInstalledPath);
         return result;
     }
@@ -283,9 +285,14 @@ public static class FabWorkflow
     {
         if (FabKinds.FromManifest(manifest) != FabItemKind.Plugin)
             throw new InstallException($"{title} isn't an engine plugin, so it can't be installed into an engine.");
+        if (manifest.Files.FirstOrDefault(f => !EnginePlugins.IsPluginFile(f.Filename)) is { } outside)
+            throw new InstallException($"{title} has files outside a plugin folder ({outside.Filename}), so it isn't installed into an engine.");
     }
 
-    /// <summary>Copies manifest files from one root to another, reporting progress in bytes and files.</summary>
+    /// <summary>
+    /// Copies manifest files from one root to another, reporting progress in bytes and files. Each file is copied beside
+    /// its target first and then moved over it, so a cancel or a full disk never leaves a cut-off file in its place.
+    /// </summary>
     internal static async Task CopyFilesAsync(string sourceRoot, string targetRoot, IReadOnlyCollection<FileManifest> files, InstallStatus status, CancellationToken cancellationToken)
     {
         status.WriteTotal = files.Sum(f => f.FileSize);
@@ -307,15 +314,25 @@ public static class FabWorkflow
             if (File.Exists(target) && File.GetAttributes(target).HasFlag(FileAttributes.ReadOnly))
                 File.SetAttributes(target, FileAttributes.Normal);
 
-            await using (var input = new FileStream(source, FileMode.Open, FileAccess.Read, FileShare.Read, 1, FileOptions.SequentialScan | FileOptions.Asynchronous))
-            await using (var output = new FileStream(target, FileMode.Create, FileAccess.Write, FileShare.None, 1, FileOptions.Asynchronous))
+            string temporary = AtomicFile.TemporaryFor(target);
+            try
             {
-                int read;
-                while ((read = await input.ReadAsync(buffer, cancellationToken)) > 0)
+                await using (var input = new FileStream(source, FileMode.Open, FileAccess.Read, FileShare.Read, 1, FileOptions.SequentialScan | FileOptions.Asynchronous))
+                await using (var output = new FileStream(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None, 1, FileOptions.Asynchronous))
                 {
-                    await output.WriteAsync(buffer.AsMemory(0, read), cancellationToken);
-                    status.AddWritten(read);
+                    int read;
+                    while ((read = await input.ReadAsync(buffer, cancellationToken)) > 0)
+                    {
+                        await output.WriteAsync(buffer.AsMemory(0, read), cancellationToken);
+                        status.AddWritten(read);
+                    }
                 }
+                File.Move(temporary, target, overwrite: true);
+            }
+            catch
+            {
+                AtomicFile.TryDelete(temporary);
+                throw;
             }
             status.FileDone();
         }

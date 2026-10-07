@@ -126,8 +126,10 @@ public partial class FabItemViewModel : ViewModelBase
 
     [ObservableProperty] public partial Bitmap? Thumbnail { get; set; }
 
+    /// <summary>An operation is working on this item's files; nothing else may start on them until it ends.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsIdle))]
+    [NotifyCanExecuteChangedFor(nameof(DownloadCommand), nameof(RemoveCommand))]
     public partial bool IsBusy { get; set; }
 
     public bool IsIdle => !IsBusy;
@@ -172,7 +174,7 @@ public partial class FabItemViewModel : ViewModelBase
     [RelayCommand]
     private void Action() => _owner.OpenAction(this);
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(IsIdle))]
     private void Download() => _owner.OpenDownload(this);
 
     [RelayCommand]
@@ -190,7 +192,7 @@ public partial class FabItemViewModel : ViewModelBase
             _owner.Owner.OpenURL(folder);
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(IsIdle))]
     private void Remove() => _owner.OpenRemove(this);
 
     /// <summary>["UE_4.27","UE_5.3","UE_5.4","UE_5.5"] → "4.27, 5.3–5.5".</summary>

@@ -1,7 +1,6 @@
 # UnVault Launcher
 
-A lightweight, fast launcher for installing and managing Unreal Engine and Fab assets and plugins.
-You sign in with your Epic account inside the app.
+A streamlined and lightweight launcher for installing and managing Unreal Engine and Fab assets and plugins.
 
 - **Engines**: install, modify and verify Unreal Engine versions. Untick target platforms, debug symbols or templates to save disk space.
 - **Library**: install plugins into engines, add asset packs to projects, create projects from complete-project items, and keep downloads in the Vault Cache.

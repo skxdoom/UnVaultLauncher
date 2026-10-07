@@ -265,8 +265,69 @@ public sealed class FabTests : IDisposable
     [InlineData("..")]
     [InlineData(@"..\..\Engine")]
     [InlineData("")]
+    [InlineData("...")] // Windows drops trailing dots: this would be the Marketplace folder itself
+    [InlineData("EdgeSmoother. ")]
+    [InlineData("NUL")]
     public void Refuses_to_remove_anything_but_a_plugin_folder(string artifactID) =>
         Assert.Throws<InstallException>(() => FabWorkflow.UninstallPlugin(_dir, artifactID, LauncherInstalled));
+
+    [Fact]
+    public void A_listed_plugin_whose_name_points_at_the_Marketplace_folder_is_never_removable()
+    {
+        string engine = Directory.CreateDirectory(Path.Combine(_dir, "UE_5.7")).FullName;
+        string other = Directory.CreateDirectory(Path.Combine(EnginePlugins.MarketplaceDirectory(engine), "EdgeSmoo0a1b2c3d4e5fV6")).FullName;
+        EGL.EGLInstallations.RegisterLauncherInstall(new EGL.LauncherInstalledEntry { AppName = "...", ArtifactID = "...", InstallLocation = engine }, LauncherInstalled);
+
+        var listed = EnginePlugins.Find(engine, EGL.EGLInstallations.ReadLauncherInstalledFrom(LauncherInstalled)).Single(p => p.ArtifactID == "...");
+
+        Assert.False(listed.CanRemove);
+        Assert.Throws<InstallException>(() => FabWorkflow.UninstallPlugin(engine, "...", LauncherInstalled));
+        Assert.True(Directory.Exists(other));
+    }
+
+    [Theory]
+    [InlineData("Engine/Plugins/Marketplace/EdgeSmoo0a1b2c3d4e5fV6/EdgeSmoother.uplugin", true)]
+    [InlineData("Engine/Plugins/BundledTool/BundledTool.uplugin", true)] // a few of Epic's own go straight into Engine/Plugins
+    [InlineData("Engine/Binaries/Win64/UnrealEditor.exe", false)]
+    [InlineData("Engine/Plugins/../Binaries/Win64/UnrealEditor.exe", false)]
+    [InlineData("Engine/Plugins/Marketplace/.../Config/Engine.ini", false)]
+    [InlineData("Engine/Plugins/Loose.uplugin", false)]
+    public void Plugin_files_stay_inside_a_plugin_folder(string filename, bool expected) =>
+        Assert.Equal(expected, EnginePlugins.IsPluginFile(filename));
+
+    [Fact]
+    public async Task Refuses_a_plugin_that_would_write_engine_files()
+    {
+        var entry = MakeVaultEntry("Sneaky0a1b2c3d4e5fV1", "Sneaky Tool", "5.7.0-1",
+            ("Engine/Plugins/Marketplace/Sneaky0a1b2c3d4e5fV1/Sneaky.uplugin", 20), ("Engine/Binaries/Win64/UnrealEditor.exe", 50));
+        string engine = Directory.CreateDirectory(Path.Combine(_dir, "UE_5.7")).FullName;
+        string editor = Path.Combine(engine, "Engine", "Binaries", "Win64", "UnrealEditor.exe");
+        Directory.CreateDirectory(Path.GetDirectoryName(editor)!);
+        File.WriteAllText(editor, "engine");
+
+        await Assert.ThrowsAsync<InstallException>(() => FabWorkflow.InstallPluginFromVaultAsync(entry, engine, new InstallStatus(), default, LauncherInstalled));
+        Assert.Equal("engine", File.ReadAllText(editor));
+    }
+
+    [Fact]
+    public void Removing_a_plugin_deletes_only_plugin_files_whatever_its_record_lists()
+    {
+        string engine = Directory.CreateDirectory(Path.Combine(_dir, "UE_5.7")).FullName;
+        const string PluginFile = "Engine/Plugins/Marketplace/Sneaky0a1b2c3d4e5fV1/Sneaky.uplugin", EngineFile = "Engine/Binaries/Win64/UnrealEditor.exe";
+        foreach (string name in new[] { PluginFile, EngineFile })
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(Path.Combine(engine, name))!);
+            File.WriteAllText(Path.Combine(engine, name), "data");
+        }
+        // As if recorded before plugins were held to their own folder.
+        PluginInstalls.Save(engine, new PluginRecord { ArtifactID = "Sneaky0a1b2c3d4e5fV1" },
+            Encoding.UTF8.GetBytes(JSONManifestBuilder.Build("Sneaky0a1b2c3d4e5fV1", "5.7.0-1", (PluginFile, 4), (EngineFile, 4))));
+
+        FabWorkflow.UninstallPlugin(engine, "Sneaky0a1b2c3d4e5fV1", LauncherInstalled);
+
+        Assert.False(File.Exists(Path.Combine(engine, PluginFile)));
+        Assert.True(File.Exists(Path.Combine(engine, EngineFile)));
+    }
 
     [Fact]
     public async Task Updating_a_vault_copy_swaps_its_manifest_and_drops_files_the_new_build_lacks()
@@ -337,10 +398,17 @@ public sealed class FabTests : IDisposable
             ("Content/StreetVehicles/Car.uasset", 30), ("Config/DefaultInput.ini", 5), ("Pack.uproject", 5));
         string project = Directory.CreateDirectory(Path.Combine(_dir, "MyGame")).FullName;
 
+        // An older copy already in the project, read-only: replaced whole, through a file beside it.
+        string car = Path.Combine(project, "Content", "StreetVehicles", "Car.uasset");
+        Directory.CreateDirectory(Path.GetDirectoryName(car)!);
+        File.WriteAllText(car, "older");
+        File.SetAttributes(car, FileAttributes.ReadOnly);
+
         int copied = await FabWorkflow.AddToProjectAsync(entry, project, new InstallStatus(), default);
 
         Assert.Equal(1, copied);
-        Assert.True(File.Exists(Path.Combine(project, "Content", "StreetVehicles", "Car.uasset")));
+        Assert.Equal(30, new FileInfo(car).Length);
+        Assert.Single(Directory.EnumerateFiles(Path.GetDirectoryName(car)!)); // nothing left beside it
         Assert.False(Directory.Exists(Path.Combine(project, "Config")));
         Assert.False(File.Exists(Path.Combine(project, "Pack.uproject")));
     }

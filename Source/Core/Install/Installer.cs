@@ -1,6 +1,7 @@
 using System.Buffers;
 using UnVault.Core.Chunks;
 using UnVault.Core.Epic;
+using UnVault.Core.Manifests;
 
 namespace UnVault.Core.Install;
 
@@ -35,6 +36,7 @@ public sealed class Installer(HttpClient http)
             throw new InstallException("No download locations for this build.");
 
         using var journal = InstallJournal.Open(stateDirectory ?? InstallJournal.DirectoryFor(installDir), plan);
+        var done = StillWritten(plan, installDir, journal.Done);
 
         status.DownloadTotal = plan.DownloadBytes;
         status.WriteTotal = plan.InstallBytes;
@@ -44,7 +46,7 @@ public sealed class Installer(HttpClient http)
         var pending = new List<PlannedChunk>();
         foreach (var chunk in plan.Chunks)
         {
-            if (journal.Done.Contains(chunk.Info.GUID))
+            if (done.Contains(chunk.Info.GUID))
             {
                 status.AddDownloaded(chunk.Info.FileSize);
                 status.AddWritten(chunk.Writes.Sum(w => (long)w.Size));
@@ -56,7 +58,7 @@ public sealed class Installer(HttpClient http)
             }
         }
 
-        using var targets = new FileTargets(plan, installDir, journal.Done, status);
+        using var targets = new FileTargets(plan, installDir, done, status);
         uint featureLevel = plan.Manifest.FeatureLevel;
         int nextSource = 0;
 
@@ -86,6 +88,32 @@ public sealed class Installer(HttpClient http)
 
         targets.EnsureAllComplete();
         journal.Complete();
+    }
+
+    /// <summary>
+    /// The journal's chunks whose files are all still there at full size. The journal only says the data was written:
+    /// a file deleted or cut short since (a component removed and added again, a plugin folder deleted) has its
+    /// chunks downloaded again instead of being taken as done.
+    /// </summary>
+    private static HashSet<EpicGUID> StillWritten(InstallPlan plan, string installDir, IReadOnlySet<EpicGUID> journaled)
+    {
+        var done = journaled.ToHashSet();
+        if (done.Count == 0)
+            return done;
+
+        var intact = new bool?[plan.Files.Count];
+        foreach (var chunk in plan.Chunks)
+        {
+            if (done.Contains(chunk.Info.GUID) && chunk.Writes.Any(w => (intact[w.FileIndex] ??= IsFullSize(plan.Files[w.FileIndex])) == false))
+                done.Remove(chunk.Info.GUID);
+        }
+        return done;
+
+        bool IsFullSize(FileManifest file)
+        {
+            var info = new FileInfo(Path.Combine(installDir, file.Filename));
+            return info.Exists && info.Length == file.FileSize;
+        }
     }
 
     /// <summary>Fetches and decodes one chunk, rotating through CDNs and retrying with backoff.</summary>

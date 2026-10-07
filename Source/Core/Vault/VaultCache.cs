@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using UnVault.Core.Util;
 
 namespace UnVault.Core.Vault;
 
@@ -90,8 +91,8 @@ public static class VaultCache
         entry.AddedDate = now;
         entry.ModifiedDate = now;
 
-        File.WriteAllBytes(entry.ManifestPath, rawManifest);
-        File.WriteAllText(Path.Combine(entry.Directory, "vault.json"), JsonSerializer.Serialize(entry, typeof(VaultEntry), WriteOptions));
+        AtomicFile.WriteAllBytes(entry.ManifestPath, rawManifest);
+        AtomicFile.WriteAllText(Path.Combine(entry.Directory, "vault.json"), JsonSerializer.Serialize(entry, typeof(VaultEntry), WriteOptions));
     }
 
     // Indented, with '+' in build strings left readable, like EGL writes.

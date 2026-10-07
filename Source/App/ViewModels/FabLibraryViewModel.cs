@@ -25,6 +25,7 @@ public partial class FabLibraryViewModel : ViewModelBase
     private List<FabItemViewModel> _all = [];
     private IReadOnlyList<FabLibraryItem>? _library;
     private DateTimeOffset? _libraryFetchedAt;
+    private string? _libraryAccountID; // whose _library is
     private Task? _refreshing;
     private bool _rebuilding;
     private int _columns = 4;
@@ -147,15 +148,21 @@ public partial class FabLibraryViewModel : ViewModelBase
             var engines = Owner.LocalEngines;
             var (vault, installs) = await Task.Run(() => (VaultCache.Scan(vaultDirectory), FindPluginInstalls(engines)));
 
-            string? accountID = Owner.IsSignedIn ? Owner.Services.Account.Session?.AccountID : null;
-            if (accountID is null)
+            string? accountID = Owner.CurrentAccountID;
+            if (accountID != _libraryAccountID)
             {
+                // Signed out or into another account: nothing of the last one's may show, nor its fetch still under way.
                 _library = null;
+                _libraryFetchedAt = null;
+                _libraryAccountID = accountID;
+                _refreshing = null;
+                Error = null;
             }
-            else if (includeLibrary || _library is null)
+
+            if (accountID is not null && (includeLibrary || _library is null))
             {
                 // Fab is slow to list a big library, so show the copy from last time meanwhile.
-                if (_library is null && await Task.Run(() => FabLibraryCache.Load(accountID)) is { } saved)
+                if (_library is null && await Task.Run(() => FabLibraryCache.Load(accountID)) is { } saved && Owner.CurrentAccountID == accountID)
                 {
                     _library = saved.Items;
                     _libraryFetchedAt = saved.FetchedAt;
@@ -167,6 +174,8 @@ public partial class FabLibraryViewModel : ViewModelBase
                 await refresh;
                 if (_refreshing == refresh)
                     _refreshing = null;
+                if (Owner.CurrentAccountID != accountID)
+                    return; // the account changed meanwhile; its own load shows its library
             }
 
             SetItems(_library, vault, installs);
@@ -186,6 +195,8 @@ public partial class FabLibraryViewModel : ViewModelBase
         {
             var progress = new Progress<int>(read => LoadingText = $"{(_library is null ? "Loading" : "Updating")}… {read:N0} read");
             var library = await Owner.Services.API.GetFabLibraryAsync(progress);
+            if (Owner.CurrentAccountID != accountID)
+                return;
             _library = library;
             _libraryFetchedAt = DateTimeOffset.Now;
             Error = null;
@@ -202,6 +213,8 @@ public partial class FabLibraryViewModel : ViewModelBase
         }
         catch (Exception ex) when (ex is EpicAPIException or HttpRequestException or TaskCanceledException)
         {
+            if (Owner.CurrentAccountID != accountID)
+                return;
             Error = _library is null
                 ? $"Couldn't load your library from Fab: {ex.Message}"
                 : $"Couldn't update your library from Fab, so this is the list from {_libraryFetchedAt?.ToLocalTime():g}: {ex.Message}";
@@ -348,6 +361,8 @@ public partial class FabLibraryViewModel : ViewModelBase
 
     private async Task OpenDialogAsync(FabItemViewModel item, FabActionMode mode)
     {
+        if (item.IsBusy)
+            return; // two operations on the same files would collide
         var dialog = new FabActionViewModel(this, item, mode);
         Owner.Dialog = dialog;
         await dialog.LoadAsync();
@@ -429,7 +444,7 @@ public partial class FabLibraryViewModel : ViewModelBase
 
     internal void OpenUpdate(FabItemViewModel item)
     {
-        if (!item.HasUpdate)
+        if (!item.HasUpdate || item.IsBusy)
             return;
         Owner.Dialog = new ConfirmViewModel(Owner, $"Update {item.Title}?", "Only files that changed are downloaded.",
             "Update", () => StartUpdate(item, item.OutdatedDownloads, item.OutdatedInstalls));
