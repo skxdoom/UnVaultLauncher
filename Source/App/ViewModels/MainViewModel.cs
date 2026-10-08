@@ -182,10 +182,10 @@ public partial class MainViewModel : ViewModelBase
                     Notice = null;
                     await SaveOwnedEnginesAsync(accountID);
                 }
-                catch (NotLoggedInException)
+                catch (NotLoggedInException ex)
                 {
                     _owned = [];
-                    UpdateAccount();
+                    SessionEnded(ex);
                 }
                 catch (Exception ex) when (ex is EpicAPIException or HttpRequestException or TaskCanceledException)
                 {
@@ -304,6 +304,18 @@ public partial class MainViewModel : ViewModelBase
         await RefreshCoreAsync(includeOwned: true);
         if (Fab.HasLoaded || IsSignedIn)
             await Fab.LoadAsync(includeLibrary: true);
+    }
+
+    /// <summary>
+    /// Epic ended the session (a password change, signed out everywhere) or it ran out: the app shows itself signed out,
+    /// with the reason, and the library drops what was the account's.
+    /// </summary>
+    internal void SessionEnded(NotLoggedInException ex)
+    {
+        Notice = ex.Message;
+        UpdateAccount();
+        if (Fab.HasLoaded)
+            _ = Fab.LoadAsync(includeLibrary: false);
     }
 
     private void UpdateAccount()

@@ -18,18 +18,24 @@ public sealed record EpicAuthSession
 internal sealed class EpicTokenResponse
 {
     [JsonPropertyName("access_token")] public string AccessToken { get; set; } = "";
+    [JsonPropertyName("expires_in")] public long ExpiresIn { get; set; }
     [JsonPropertyName("expires_at")] public DateTimeOffset ExpiresAt { get; set; }
     [JsonPropertyName("refresh_token")] public string RefreshToken { get; set; } = "";
+    [JsonPropertyName("refresh_expires")] public long RefreshExpiresIn { get; set; }
     [JsonPropertyName("refresh_expires_at")] public DateTimeOffset RefreshExpiresAt { get; set; }
     [JsonPropertyName("account_id")] public string AccountID { get; set; } = "";
     [JsonPropertyName("displayName")] public string DisplayName { get; set; } = "";
 
-    public EpicAuthSession ToSession() => new()
+    /// <summary>
+    /// Expiry counted from now on this PC, from how long the tokens last: compared later with this PC's clock, Epic's
+    /// own expiry times would be off by however far this clock is (after dual-booting, say). Those are the fallback.
+    /// </summary>
+    public EpicAuthSession ToSession(DateTimeOffset now) => new()
     {
         AccessToken = AccessToken,
-        AccessExpiresAt = ExpiresAt,
+        AccessExpiresAt = ExpiresIn > 0 ? now.AddSeconds(ExpiresIn) : ExpiresAt,
         RefreshToken = RefreshToken,
-        RefreshExpiresAt = RefreshExpiresAt,
+        RefreshExpiresAt = RefreshExpiresIn > 0 ? now.AddSeconds(RefreshExpiresIn) : RefreshExpiresAt,
         AccountID = AccountID,
         DisplayName = DisplayName,
     };

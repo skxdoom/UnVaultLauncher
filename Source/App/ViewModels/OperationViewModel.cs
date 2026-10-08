@@ -3,6 +3,7 @@ using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using UnVault.App.Services;
+using UnVault.Core.Epic;
 using UnVault.Core.Install;
 using UnVault.Core.Util;
 
@@ -124,6 +125,8 @@ public partial class OperationViewModel : ViewModelBase
             State = OperationState.Failed;
             Phase = "Failed";
             Message = ex.Message;
+            if (ex is NotLoggedInException ended)
+                _owner.SessionEnded(ended);
         }
         finally
         {

@@ -120,6 +120,7 @@ public sealed partial class EpicAPIClient(HttpClient http, EpicAccount account)
     /// </summary>
     private async Task<T> SendJSONAsync<T>(Func<HttpRequestMessage> createRequest, JsonTypeInfo<T> typeInfo, CancellationToken cancellationToken, bool retryForbidden = false)
     {
+        bool renewed = false;
         for (int attempt = 1; ; attempt++)
         {
             var session = await account.GetValidSessionAsync(cancellationToken);
@@ -140,6 +141,14 @@ public sealed partial class EpicAPIClient(HttpClient http, EpicAccount account)
             }
 
             using var response = sent;
+            if (response.StatusCode == HttpStatusCode.Unauthorized && !renewed)
+            {
+                // The token was turned down before its time (sessions ended elsewhere, a password change): a new one, then
+                // once more. If the session itself is over, that's a NotLoggedInException.
+                renewed = true;
+                await account.RenewAsync(session, cancellationToken);
+                continue;
+            }
             if (attempt < Tries && RetryWait(response, attempt, retryForbidden) is { } wait)
             {
                 await Task.Delay(wait, cancellationToken);

@@ -1,9 +1,10 @@
 using System.Net;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace UnVault.Core.Epic;
 
-public class EpicAPIException(string message, HttpStatusCode? statusCode = null, string errorCode = "")
+public partial class EpicAPIException(string message, HttpStatusCode? statusCode = null, string errorCode = "")
     : Exception(message)
 {
     public HttpStatusCode? StatusCode { get; } = statusCode;
@@ -25,7 +26,7 @@ public class EpicAPIException(string message, HttpStatusCode? statusCode = null,
             if (JsonSerializer.Deserialize(body, EpicJSONContext.Default.EpicErrorResponse) is { ErrorCode.Length: > 0 } error)
             {
                 errorCode = error.ErrorCode;
-                message = $"{error.ErrorMessage} ({error.ErrorCode})";
+                message = $"{MaskSecrets(error.ErrorMessage)} ({error.ErrorCode})";
             }
         }
         catch (JsonException)
@@ -35,6 +36,16 @@ public class EpicAPIException(string message, HttpStatusCode? statusCode = null,
 
         throw new EpicAPIException(message, response.StatusCode, errorCode);
     }
+
+    /// <summary>
+    /// Epic's error messages can quote what was sent ("Sorry the refresh token '…' is invalid"), and messages end up on
+    /// screen and in crash.log: anything that looks like a token or a code is left out.
+    /// </summary>
+    internal static string MaskSecrets(string message) => SecretRegex().Replace(message, "…");
+
+    /// <summary>eg1~ tokens, and long runs of hex or base64-like characters (authorization codes, other tokens).</summary>
+    [GeneratedRegex(@"eg1~[^\s'""]+|[A-Za-z0-9+/_=-]{32,}")]
+    private static partial Regex SecretRegex();
 
     /// <summary>
     /// The endpoint for an error message, without query and with token-like path segments masked: Epic's logout

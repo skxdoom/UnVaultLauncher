@@ -69,12 +69,13 @@ public sealed partial class EpicAuthClient(HttpClient http)
         string basic = Convert.ToBase64String(Encoding.ASCII.GetBytes($"{EpicEndpoints.LauncherClientID}:{EpicEndpoints.LauncherClientSecret}"));
         request.Headers.Authorization = new AuthenticationHeaderValue("Basic", basic);
 
+        var sent = DateTimeOffset.UtcNow; // the tokens' lifetimes count from about here
         using var response = await http.SendAsync(request, cancellationToken);
         await EpicAPIException.ThrowIfFailedAsync(response, cancellationToken);
 
         var token = await response.Content.ReadFromJsonAsync(EpicJSONContext.Default.EpicTokenResponse, cancellationToken)
             ?? throw new EpicAPIException("Empty token response.");
-        return token.ToSession();
+        return token.ToSession(sent);
     }
 
     [GeneratedRegex(@"(?:authorizationCode""?\s*:\s*""|[?&]code=)([0-9a-fA-F]{32})")]

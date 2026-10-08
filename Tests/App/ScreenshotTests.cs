@@ -91,6 +91,18 @@ public class ScreenshotTests
     }
 
     [AvaloniaFact]
+    public void A_session_Epic_ended_shows_as_signed_out_with_the_reason()
+    {
+        var viewModel = SampleMainViewModel();
+        const string Reason = "Epic ended this session, for example after a password change. Sign in again.";
+
+        viewModel.SessionEnded(new NotLoggedInException(Reason));
+
+        Assert.Equal((false, Reason), (viewModel.IsSignedIn, viewModel.Notice));
+        Save(Show(viewModel), "session-ended.png");
+    }
+
+    [AvaloniaFact]
     public void An_empty_library_page_says_why()
     {
         var viewModel = SampleMainViewModel();

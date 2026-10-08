@@ -231,6 +231,10 @@ public partial class FabLibraryViewModel : ViewModelBase
                 // Only costs the instant start next time.
             }
         }
+        catch (NotLoggedInException ex)
+        {
+            Owner.SessionEnded(ex);
+        }
         catch (Exception ex) when (ex is EpicAPIException or HttpRequestException or TaskCanceledException or IOException or UnauthorizedAccessException)
         {
             // IOException and UnauthorizedAccessException: saving refreshed sign-in tokens failed.

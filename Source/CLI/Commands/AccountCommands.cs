@@ -61,7 +61,15 @@ internal sealed class LogoutCommand : EpicCommand<NoSettings>
 {
     protected override async Task<int> RunAsync(NoSettings settings, CancellationToken cancellationToken)
     {
-        await Services.Account.LogoutAsync(cancellationToken);
+        try
+        {
+            await Services.Account.LogoutAsync(cancellationToken);
+        }
+        catch (Exception ex) when (ex is EpicAPIException or HttpRequestException)
+        {
+            // The saved session is deleted either way; Epic expires the tokens on its own.
+            AnsiConsole.MarkupLine($"[yellow]Couldn't tell Epic:[/] {Markup.Escape(ex.Message)}");
+        }
         FabLibraryCache.Delete();
         OwnedEnginesCache.Delete();
         AnsiConsole.MarkupLine("Logged out; the saved session was removed.");
