@@ -4,6 +4,8 @@
     <OutputType>Exe</OutputType>
     <AssemblyName>UnVaultLauncher-CLI</AssemblyName>
     <RootNamespace>UnVault.CLI</RootNamespace>
+    <Product>UnVault Launcher CLI</Product>
+    <AssemblyTitle>UnVault Launcher CLI</AssemblyTitle>
   </PropertyGroup>
 
   <ItemGroup>

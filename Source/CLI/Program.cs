@@ -40,7 +40,7 @@ app.Configure(config =>
         .WithExample("verify", "UE_5.7", "--only", "Engine/Binaries/**");
 
     config.AddCommand<ListInstallsCommand>("installs")
-        .WithDescription("List engines and plugins installed by the Epic Games Launcher, with detected components.");
+        .WithDescription("List the engines on this PC, whoever installed them, with their components and the Fab plugins in them.");
 
     config.AddCommand<ComponentsCommand>("components")
         .WithDescription("Show an engine's optional components and what adding/removing each would cost or save.")

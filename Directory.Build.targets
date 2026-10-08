@@ -6,4 +6,10 @@
       <Reference Remove="@(Reference)" Condition="'%(Filename)' == 'Microsoft.Web.WebView2.Wpf' Or '%(Filename)' == 'Microsoft.Web.WebView2.WinForms'" />
     </ItemGroup>
   </Target>
+
+  <!-- Publish profiles can set CopyExeTo to put the finished exe somewhere handy (win-x64: the repository root). -->
+  <Target Name="CopyPublishedExe" AfterTargets="Publish" Condition="'$(CopyExeTo)' != ''">
+    <Copy SourceFiles="$(PublishDir)$(AssemblyName).exe" DestinationFolder="$(CopyExeTo)" />
+    <Message Importance="high" Text="$(Product) -&gt; $([System.IO.Path]::GetFullPath('$(CopyExeTo)$(AssemblyName).exe'))" />
+  </Target>
 </Project>

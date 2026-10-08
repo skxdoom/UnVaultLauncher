@@ -32,9 +32,4 @@
     <ProjectReference Include="..\Core\UnVault.Core.csproj" />
   </ItemGroup>
 
-  <!-- Publish profiles can set CopyExeTo to put the finished exe somewhere handy (win-x64: the repository root). -->
-  <Target Name="CopyPublishedExe" AfterTargets="Publish" Condition="'$(CopyExeTo)' != ''">
-    <Copy SourceFiles="$(PublishDir)$(AssemblyName).exe" DestinationFolder="$(CopyExeTo)" />
-    <Message Importance="high" Text="UnVault Launcher -&gt; $([System.IO.Path]::GetFullPath('$(CopyExeTo)$(AssemblyName).exe'))" />
-  </Target>
 </Project>

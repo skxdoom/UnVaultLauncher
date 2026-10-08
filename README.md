@@ -24,7 +24,9 @@ Needs the [.NET 10 SDK](https://dotnet.microsoft.com/download).
 dotnet publish Source/App -p:PublishProfile=win-x64
 ```
 
-This puts `UnVaultLauncher.exe` in the repository root. `Source/CLI` builds `UnVaultLauncher-CLI.exe`, the same features on the command line.
+This puts `UnVaultLauncher.exe` in the repository root.
+
+There's also a command-line tool for engines, for scripting and diagnostics. It isn't included in releases; `dotnet publish Source/CLI -p:PublishProfile=win-x64` builds it as a single `UnVaultLauncher-CLI.exe` in the repository root. It can sign in, list the versions you own and the engines installed, install, modify and verify engines, and list your Fab library. Installing Fab content is in the app only. Run it with `--help` for the commands.
 
 ## Security and privacy
 

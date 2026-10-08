@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Platform.Storage;
 using UnVault.App.Services;
+using UnVault.Core.Epic;
 
 namespace UnVault.App.Views;
 
@@ -18,7 +19,7 @@ public partial class MainWindow : Window, IUserInteraction
 
     public Task<string?> SignInAsync() => new LoginWindow().ShowAndWaitAsync(this);
 
-    public Task ForgetSignInAsync() => LoginWindow.ClearBrowserDataAsync();
+    public Task ForgetSignInAsync() => SignInBrowser.ClearAsync();
 
     public async Task<string?> PickFolderAsync(string title, string? startPath)
     {

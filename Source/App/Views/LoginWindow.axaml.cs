@@ -29,34 +29,12 @@ public partial class LoginWindow : Window
         Closed += (_, _) => _controller?.Close();
     }
 
-    public static string BrowserDataFolder => Path.Combine(AppPaths.DataDirectory, "WebView2");
 
     /// <summary>Shows the window and returns the authorization code, or null if the user closed it.</summary>
     public async Task<string?> ShowAndWaitAsync(Window owner)
     {
         await ShowDialog(owner);
         return _code;
-    }
-
-    /// <summary>Forgets the embedded browser's Epic cookies, so the next sign-in can pick another account.</summary>
-    public static async Task ClearBrowserDataAsync()
-    {
-        // WebView2 helper processes can hold files for a moment after the window closes.
-        for (int attempt = 0; attempt < 10 && Directory.Exists(BrowserDataFolder); attempt++)
-        {
-            try
-            {
-                Directory.Delete(BrowserDataFolder, recursive: true);
-            }
-            catch (IOException)
-            {
-                await Task.Delay(300);
-            }
-            catch (UnauthorizedAccessException)
-            {
-                await Task.Delay(300);
-            }
-        }
     }
 
     private async Task StartAsync()
@@ -70,7 +48,7 @@ public partial class LoginWindow : Window
         try
         {
             var handle = TryGetPlatformHandle()?.Handle ?? throw new InvalidOperationException("No native window handle.");
-            var environment = await CoreWebView2Environment.CreateAsync(browserExecutableFolder: null, userDataFolder: BrowserDataFolder);
+            var environment = await CoreWebView2Environment.CreateAsync(browserExecutableFolder: null, userDataFolder: SignInBrowser.DataDirectory);
             _controller = await environment.CreateCoreWebView2ControllerAsync(handle);
             _controller.DefaultBackgroundColor = System.Drawing.Color.FromArgb(255, 14, 16, 20);
             UpdateBrowserBounds();

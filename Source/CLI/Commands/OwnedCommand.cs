@@ -1,8 +1,8 @@
 using System.ComponentModel;
 using Spectre.Console;
 using Spectre.Console.Cli;
-using UnVault.Core.EGL;
 using UnVault.Core.Epic;
+using UnVault.Core.Install;
 
 namespace UnVault.CLI.Commands;
 
@@ -20,11 +20,12 @@ internal sealed class OwnedCommand : EpicCommand<OwnedCommand.Settings>
         var assets = await AnsiConsole.Status().StartAsync("Asking Epic what you own…",
             _ => Services.API.GetAssetsAsync(cancellationToken: cancellationToken));
 
-        var localByApp = EGLInstallations.ReadItems()
-            .GroupBy(i => i.AppName, StringComparer.OrdinalIgnoreCase)
-            .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
+        // Whoever installed it; an existing folder wins over a stale EGL record for the same version.
+        var localByApp = EngineLibrary.ScanLocal()
+            .GroupBy(e => e.AppName, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.FirstOrDefault(e => e.Exists) ?? g.First(), StringComparer.OrdinalIgnoreCase);
 
-        var engines = assets.Where(a => a.IsEngine).OrderByDescending(a => EngineVersion(a.AppName)).ToList();
+        var engines = assets.Where(a => a.IsEngine).OrderByDescending(a => EngineLibrary.ParseVersion(a.AppName)).ToList();
 
         var table = new Table().Title("Unreal Engine versions")
             .AddColumn("App").AddColumn("Latest build").AddColumn("Installed build").AddColumn("Status");
@@ -34,12 +35,12 @@ internal sealed class OwnedCommand : EpicCommand<OwnedCommand.Settings>
             string installed = "", status;
             if (!localByApp.TryGetValue(engine.AppName, out var local))
                 status = "[grey]not installed[/]";
-            else if (!Directory.Exists(local.InstallLocation))
+            else if (!local.Exists)
                 status = "[red]stale EGL record (folder missing)[/]";
             else
             {
-                installed = ShortVersion(local.AppVersionString);
-                status = local.AppVersionString == engine.BuildVersion ? "[green]up to date[/]" : "[yellow]update available[/]";
+                installed = ShortVersion(local.BuildVersion);
+                status = local.BuildVersion == engine.BuildVersion ? "[green]up to date[/]" : "[yellow]update available[/]";
             }
             table.AddRow(Markup.Escape(engine.AppName), Markup.Escape(ShortVersion(engine.BuildVersion)), Markup.Escape(installed), status);
         }
@@ -61,10 +62,6 @@ internal sealed class OwnedCommand : EpicCommand<OwnedCommand.Settings>
 
         return 0;
     }
-
-    /// <summary>"UE_5.7" → 5.7, for sorting.</summary>
-    private static Version EngineVersion(string appName) =>
-        Version.TryParse(appName.AsSpan(3), out var version) ? version : new Version(0, 0);
 
     private static string ShortVersion(string version)
     {
