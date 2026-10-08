@@ -12,6 +12,14 @@ namespace UnVault.Core.Epic;
 /// <summary>Launcher API calls that need a signed-in account.</summary>
 public sealed partial class EpicAPIClient(HttpClient http, EpicAccount account)
 {
+    /// <summary>How many times a request is sent before a busy or failing Epic service is reported.</summary>
+    private const int Tries = 4;
+
+    /// <summary>Wait before sending a failed request again; doubles each time. Tests make it short.</summary>
+    internal TimeSpan RetryBaseDelay { get; init; } = TimeSpan.FromSeconds(1);
+
+    /// <summary>The longest "retry after" from Epic that's waited out; asked to wait longer, the request fails with Epic's message.</summary>
+    internal TimeSpan MaxRetryAfter { get; init; } = TimeSpan.FromMinutes(1);
     /// <summary>Everything the account owns that the launcher can install (engines, plugins, games).</summary>
     public Task<List<EpicAsset>> GetAssetsAsync(string platform = "Windows", string label = "Live", CancellationToken cancellationToken = default) =>
         GetJSONAsync(
@@ -75,29 +83,42 @@ public sealed partial class EpicAPIClient(HttpClient http, EpicAccount account)
                 }
 
                 if (cacheable)
-                {
-                    Directory.CreateDirectory(AppPaths.ManifestCacheDirectory);
-                    await File.WriteAllBytesAsync(cachePath, data, cancellationToken);
-                }
+                    await Task.Run(() => SaveToCache(cachePath, data)); // an engine's is big; keep the writing off the UI thread
                 return data;
             }
-            catch (HttpRequestException ex)
+            catch (Exception ex) when (ex is HttpRequestException || (ex is TaskCanceledException && !cancellationToken.IsCancellationRequested))
             {
-                errors.Add($"{StripQuery(url)}: {ex.Message}");
+                // A timeout too: the next server may answer.
+                errors.Add($"{StripQuery(url)}: {(ex is TaskCanceledException ? "timed out" : ex.Message)}");
             }
         }
 
         throw new EpicAPIException("Couldn't download the manifest:\n  " + string.Join("\n  ", errors));
     }
 
-    private Task<T> GetJSONAsync<T>(string url, JsonTypeInfo<T> typeInfo, CancellationToken cancellationToken, int attempts = 1) =>
-        SendJSONAsync(() => new HttpRequestMessage(HttpMethod.Get, url), typeInfo, cancellationToken, attempts);
+    /// <summary>Only a speed-up for next time, so a failed write (another download writing the same file, a full disk) isn't one.</summary>
+    private static void SaveToCache(string path, byte[] data)
+    {
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            AtomicFile.WriteAllBytes(path, data);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // Downloaded again next time.
+        }
+    }
+
+    private Task<T> GetJSONAsync<T>(string url, JsonTypeInfo<T> typeInfo, CancellationToken cancellationToken, bool retryForbidden = false) =>
+        SendJSONAsync(() => new HttpRequestMessage(HttpMethod.Get, url), typeInfo, cancellationToken, retryForbidden);
 
     /// <summary>
-    /// Sends an authorized request and reads a JSON response. With attempts &gt; 1, retries 403s with
-    /// exponential backoff — Fab's edge returns those sporadically for valid requests.
+    /// Sends an authorized request and reads a JSON response. A busy or failing service (429, 5xx) or a failed connection
+    /// is tried again after a growing wait, or as long as Epic asks with "retry after". With <paramref name="retryForbidden"/>,
+    /// so is a 403: Fab's edge returns those sporadically for valid requests.
     /// </summary>
-    private async Task<T> SendJSONAsync<T>(Func<HttpRequestMessage> createRequest, JsonTypeInfo<T> typeInfo, CancellationToken cancellationToken, int attempts = 1)
+    private async Task<T> SendJSONAsync<T>(Func<HttpRequestMessage> createRequest, JsonTypeInfo<T> typeInfo, CancellationToken cancellationToken, bool retryForbidden = false)
     {
         for (int attempt = 1; ; attempt++)
         {
@@ -106,10 +127,22 @@ public sealed partial class EpicAPIClient(HttpClient http, EpicAccount account)
             using var request = createRequest();
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", session.AccessToken);
 
-            using var response = await http.SendAsync(request, cancellationToken);
-            if (response.StatusCode == HttpStatusCode.Forbidden && attempt < attempts)
+            HttpResponseMessage sent;
+            try
             {
-                await Task.Delay(TimeSpan.FromSeconds(1 << (attempt - 1)), cancellationToken);
+                sent = await http.SendAsync(request, cancellationToken);
+            }
+            catch (HttpRequestException) when (attempt < Tries)
+            {
+                // The connection failed (reset, a moment offline); a timeout isn't retried, as it already took long.
+                await Task.Delay(RetryDelay(attempt), cancellationToken);
+                continue;
+            }
+
+            using var response = sent;
+            if (attempt < Tries && RetryWait(response, attempt, retryForbidden) is { } wait)
+            {
+                await Task.Delay(wait, cancellationToken);
                 continue;
             }
             await EpicAPIException.ThrowIfFailedAsync(response, cancellationToken);
@@ -126,6 +159,27 @@ public sealed partial class EpicAPIClient(HttpClient http, EpicAccount account)
             }
         }
     }
+
+    /// <summary>How long to wait before sending a failed request again; null when another try won't help.</summary>
+    private TimeSpan? RetryWait(HttpResponseMessage response, int attempt, bool retryForbidden)
+    {
+        switch (response.StatusCode)
+        {
+            case HttpStatusCode.TooManyRequests or HttpStatusCode.ServiceUnavailable:
+                var asked = response.Headers.RetryAfter is { } after ? after.Delta ?? after.Date - DateTimeOffset.UtcNow : null;
+                if (asked > MaxRetryAfter)
+                    return null;
+                return asked > RetryDelay(attempt) ? asked : RetryDelay(attempt);
+            case HttpStatusCode.InternalServerError or HttpStatusCode.BadGateway or HttpStatusCode.GatewayTimeout:
+                return RetryDelay(attempt);
+            case HttpStatusCode.Forbidden when retryForbidden:
+                return RetryDelay(attempt);
+            default:
+                return null;
+        }
+    }
+
+    private TimeSpan RetryDelay(int attempt) => RetryBaseDelay * (1 << (attempt - 1));
 
     /// <summary>
     /// An engine's manifest lists every file of the engine, so parsing it isn't instant, and callers are often the UI:

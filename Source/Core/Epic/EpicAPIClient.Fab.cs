@@ -6,9 +6,6 @@ namespace UnVault.Core.Epic;
 /// <summary>Fab (ex-Marketplace) library and downloads. Uses the same Epic launcher session; no fab.com cookies.</summary>
 public sealed partial class EpicAPIClient
 {
-    /// <summary>Fab's edge sporadically answers valid requests with 403; this many tries smooths that over.</summary>
-    private const int FabAttempts = 4;
-
     /// <summary>
     /// Pages are fetched one after another (each needs the previous cursor), and every request has a fixed cost on
     /// Fab's side on top of the time per item, so a big library loads fastest in a few large pages.
@@ -21,6 +18,7 @@ public sealed partial class EpicAPIClient
     {
         var session = await account.GetValidSessionAsync(cancellationToken);
         var items = new List<FabLibraryItem>();
+        var seen = new HashSet<string>(StringComparer.Ordinal);
         string? cursor = null;
 
         do
@@ -29,10 +27,13 @@ public sealed partial class EpicAPIClient
             if (cursor is not null)
                 url += "&cursor=" + Uri.EscapeDataString(cursor);
 
-            var page = await GetJSONAsync(url, FabJSONContext.Default.FabLibraryPage, cancellationToken, FabAttempts);
+            var page = await GetJSONAsync(url, FabJSONContext.Default.FabLibraryPage, cancellationToken, retryForbidden: true);
             items.AddRange(page.Results ?? []);
             progress?.Report(items.Count);
             cursor = string.IsNullOrEmpty(page.Cursors?.Next) ? null : page.Cursors.Next;
+            // A page pointing back to one already read would have the listing go round forever.
+            if (cursor is not null && !seen.Add(cursor))
+                throw new EpicAPIException("Fab's library listing went in circles (it pointed back to a page already read).");
         }
         while (cursor is not null);
 
@@ -96,7 +97,7 @@ public sealed partial class EpicAPIClient
             },
             FabJSONContext.Default.FabArtifactManifestResponse,
             cancellationToken,
-            FabAttempts);
+            retryForbidden: true);
 
         return response.DownloadInfo?.FirstOrDefault()
             ?? throw new EpicAPIException($"Fab returned no download info for {artifactID} ({platform}).");
