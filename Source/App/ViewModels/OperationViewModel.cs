@@ -45,7 +45,7 @@ public partial class OperationViewModel : ViewModelBase
     /// <summary>The engine this works on (by app name, since library cards are rebuilt on refresh).</summary>
     public string? EngineAppName { get; }
 
-    /// <summary>The Fab library row this works on (by title, since rows are rebuilt on refresh).</summary>
+    /// <summary>The Fab library row this works on (by its key, since rows are rebuilt on refresh).</summary>
     public string? FabItemKey { get; }
 
     [ObservableProperty] public partial string Phase { get; set; } = "Starting…";

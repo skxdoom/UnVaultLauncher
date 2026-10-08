@@ -100,9 +100,13 @@ public class ScreenshotTests
         var dialogHost = window.GetVisualDescendants().OfType<ContentControl>().Single(c => c.Name == "DialogHost");
         settingsButton.Focus();
 
-        // Settings: focus goes to its first field, and Tab goes round the dialog without reaching the page behind.
+        // Settings: focus moves into the dialog without selecting a field (nothing looks picked after a click)...
         viewModel.Dialog = new SettingsViewModel(viewModel, Core.EGL.EGLLauncherSettings.Empty);
         Dispatcher.UIThread.RunJobs();
+        Assert.Same(dialogHost, window.FocusManager?.GetFocusedElement());
+
+        // ...Tab goes to its first field, and round the dialog without reaching the page behind.
+        window.KeyPressQwerty(PhysicalKey.Tab, RawInputModifiers.None);
         Assert.IsType<TextBox>(window.FocusManager?.GetFocusedElement());
         for (int i = 0; i < 20; i++)
         {
@@ -117,11 +121,11 @@ public class ScreenshotTests
         Assert.Null(viewModel.Dialog);
         Assert.Same(settingsButton, window.FocusManager?.GetFocusedElement());
 
-        // A confirmation has only buttons: its main one gets the focus, and Enter confirms.
+        // Enter confirms, with the focus on the dialog (not on the page's button that opened it, which Enter would press again).
         bool confirmed = false;
         viewModel.Dialog = new ConfirmViewModel(viewModel, "Update Greybox Tools?", "Only files that changed are downloaded.", "Update", () => confirmed = true);
         Dispatcher.UIThread.RunJobs();
-        Assert.Equal("Update", (window.FocusManager?.GetFocusedElement() as Button)?.Content);
+        Assert.Same(dialogHost, window.FocusManager?.GetFocusedElement());
         window.KeyPressQwerty(PhysicalKey.Enter, RawInputModifiers.None);
         Dispatcher.UIThread.RunJobs();
         Assert.True(confirmed);
@@ -161,7 +165,8 @@ public class ScreenshotTests
         dialog.ShowProjects([new UnrealProject("Ridgeback", @"D:\Projects\Ridgeback\Ridgeback.uproject", "5.7", null)]);
         viewModel.Dialog = dialog;
         var window = Show(viewModel);
-        Assert.IsType<TextBox>(window.FocusManager?.GetFocusedElement()); // the search, ready to type into
+        var search = window.GetVisualDescendants().OfType<TextBox>().Single(t => t.PlaceholderText == "Search projects");
+        search.Focus(); // clicked into
 
         dialog.ProjectSearch = "ridge";
         window.KeyPressQwerty(PhysicalKey.Escape, RawInputModifiers.None);

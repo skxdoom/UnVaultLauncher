@@ -177,25 +177,6 @@ public sealed class FabTests : IDisposable
         Assert.Equal(expected, FabKinds.EngineAppFromBuild(build));
 
     [Fact]
-    public void Picks_the_version_for_an_engine_with_older_fallback_only_for_content()
-    {
-        var item = new FabLibraryItem
-        {
-            ProjectVersions =
-            [
-                new FabProjectVersion { ArtifactID = "Pack_5.3", EngineVersions = ["UE_5.3", "UE_5.4"] },
-                new FabProjectVersion { ArtifactID = "Pack_5.6", EngineVersions = ["UE_5.6"] },
-            ],
-        };
-
-        Assert.Equal("Pack_5.3", FabWorkflow.PickVersion(item, "UE_5.4", allowOlder: false)?.ArtifactID);
-        Assert.Null(FabWorkflow.PickVersion(item, "UE_5.7", allowOlder: false));
-        Assert.Equal("Pack_5.6", FabWorkflow.PickVersion(item, "UE_5.7", allowOlder: true)?.ArtifactID);
-        Assert.Equal("Pack_5.3", FabWorkflow.PickVersion(item, "UE_5.5", allowOlder: true)?.ArtifactID);
-        Assert.Null(FabWorkflow.PickVersion(item, "UE_5.2", allowOlder: true));
-    }
-
-    [Fact]
     public async Task Installs_a_plugin_from_the_vault_and_removes_it_again()
     {
         var entry = MakeVaultEntry("EdgeSmoo0a1b2c3d4e5fV6", "Edge Smoother", "5.7.0-1+++UE5+Dev-Marketplace-Windows",

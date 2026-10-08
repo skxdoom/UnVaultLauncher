@@ -14,7 +14,6 @@ namespace UnVault.App.ViewModels;
 
 public partial class MainViewModel : ViewModelBase
 {
-    private List<EngineCardViewModel> _allEngines = [];
     private IReadOnlyList<LocalEngine> _local = [];
     private IReadOnlyList<EpicAsset> _owned = [];
 
@@ -61,7 +60,7 @@ public partial class MainViewModel : ViewModelBase
 
     public bool IsEnginesTab => !IsFabTab;
 
-    /// <summary>Engines shown (older versions filtered unless asked for).</summary>
+    /// <summary>The engine cards: every engine on this PC, newest first.</summary>
     public ObservableCollection<EngineCardViewModel> Engines { get; } = [];
 
     public ObservableCollection<OperationViewModel> Operations { get; } = [];
@@ -227,7 +226,7 @@ public partial class MainViewModel : ViewModelBase
         _owned = ownedList;
         var busy = Operations.Where(o => o.IsRunning && o.EngineAppName is not null).Select(o => o.EngineAppName!).ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-        _allEngines = localList.Select(l => l.AppName)
+        var engines = localList.Select(l => l.AppName)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .Select(app => new EngineCardViewModel(this, app,
                 localList.FirstOrDefault(l => Same(l.AppName, app) && l.Exists) ?? localList.First(l => Same(l.AppName, app)),
@@ -241,7 +240,7 @@ public partial class MainViewModel : ViewModelBase
             .ToList();
 
         Engines.Clear();
-        foreach (var engine in _allEngines)
+        foreach (var engine in engines)
             Engines.Add(engine);
         HasNoEngines = Engines.Count == 0;
     }
@@ -251,7 +250,7 @@ public partial class MainViewModel : ViewModelBase
         Fab.SetBusy(operation.FabItemKey, busy);
         if (operation.EngineAppName is not { } appName)
             return;
-        foreach (var engine in _allEngines.Where(e => string.Equals(e.AppName, appName, StringComparison.OrdinalIgnoreCase)))
+        foreach (var engine in Engines.Where(e => string.Equals(e.AppName, appName, StringComparison.OrdinalIgnoreCase)))
             engine.IsBusy = busy;
     }
 

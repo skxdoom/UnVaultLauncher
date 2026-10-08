@@ -39,10 +39,10 @@ internal sealed class OwnedCommand : EpicCommand<OwnedCommand.Settings>
                 status = "[red]stale EGL record (folder missing)[/]";
             else
             {
-                installed = ShortVersion(local.BuildVersion);
+                installed = EngineLibrary.WithoutBranch(local.BuildVersion);
                 status = local.BuildVersion == engine.BuildVersion ? "[green]up to date[/]" : "[yellow]update available[/]";
             }
-            table.AddRow(Markup.Escape(engine.AppName), Markup.Escape(ShortVersion(engine.BuildVersion)), Markup.Escape(installed), status);
+            table.AddRow(Markup.Escape(engine.AppName), Markup.Escape(EngineLibrary.WithoutBranch(engine.BuildVersion)), Markup.Escape(installed), status);
         }
         AnsiConsole.Write(table);
 
@@ -52,7 +52,7 @@ internal sealed class OwnedCommand : EpicCommand<OwnedCommand.Settings>
             var otherTable = new Table().Title("Other owned items")
                 .AddColumn("App").AddColumn("Namespace").AddColumn("Build");
             foreach (var asset in others.OrderBy(a => a.AppName, StringComparer.OrdinalIgnoreCase))
-                otherTable.AddRow(Markup.Escape(asset.AppName), Markup.Escape(asset.Namespace), Markup.Escape(ShortVersion(asset.BuildVersion)));
+                otherTable.AddRow(Markup.Escape(asset.AppName), Markup.Escape(asset.Namespace), Markup.Escape(EngineLibrary.WithoutBranch(asset.BuildVersion)));
             AnsiConsole.Write(otherTable);
         }
         else if (others.Count > 0)
@@ -61,11 +61,5 @@ internal sealed class OwnedCommand : EpicCommand<OwnedCommand.Settings>
         }
 
         return 0;
-    }
-
-    private static string ShortVersion(string version)
-    {
-        int cut = version.IndexOf("+++", StringComparison.Ordinal);
-        return cut > 0 ? version[..cut] : version;
     }
 }

@@ -221,36 +221,34 @@ public partial class ComponentPickerViewModel : ViewModelBase
     /// </summary>
     internal async Task ShowManifestAsync(Manifest manifest, IReadOnlySet<string> installed, int versionRequest = -1)
     {
+        var (core, impacts) = await Task.Run(() =>
+            (manifest.MeasureSelection(new HashSet<string>()), ComponentPlanner.Analyze(manifest, installed)));
+        if (versionRequest >= 0 && versionRequest != _versionRequest)
+            return;
+
+        _manifest = manifest;
+        ClearOptions();
+        Subtitle = manifest.Meta.BuildVersion;
+        CoreSizeText = ByteSize.Format(core.InstallBytes);
+        foreach (var impact in impacts.OrderBy(i => ComponentNames.GetDisplayName(i.Tag), StringComparer.OrdinalIgnoreCase))
         {
-            var (core, impacts) = await Task.Run(() =>
-                (manifest.MeasureSelection(new HashSet<string>()), ComponentPlanner.Analyze(manifest, installed)));
-            if (versionRequest >= 0 && versionRequest != _versionRequest)
-                return;
+            string detail = impact.Installed ? "on disk" : $"{ByteSize.Format(impact.DownloadBytes)} download";
+            var option = new ComponentOptionViewModel(this, impact.Tag, impact.Installed, ByteSize.Format(impact.DiskBytes), detail);
+            if (!IsModify && DefaultTags.Contains(impact.Tag))
+                option.IsSelected = true;
 
-            _manifest = manifest;
-            ClearOptions();
-            Subtitle = manifest.Meta.BuildVersion;
-            CoreSizeText = ByteSize.Format(core.InstallBytes);
-            foreach (var impact in impacts.OrderBy(i => ComponentNames.GetDisplayName(i.Tag), StringComparer.OrdinalIgnoreCase))
+            (ComponentNames.GetGroup(impact.Tag) switch
             {
-                string detail = impact.Installed ? "on disk" : $"{ByteSize.Format(impact.DownloadBytes)} download";
-                var option = new ComponentOptionViewModel(this, impact.Tag, impact.Installed, ByteSize.Format(impact.DiskBytes), detail);
-                if (!IsModify && DefaultTags.Contains(impact.Tag))
-                    option.IsSelected = true;
-
-                (ComponentNames.GetGroup(impact.Tag) switch
-                {
-                    ComponentGroup.TargetPlatform => PlatformOptions,
-                    ComponentGroup.Debugging => DebugOptions,
-                    _ => ContentOptions,
-                }).Add(option);
-            }
-
-            OnPropertyChanged(nameof(HasPlatformOptions));
-            OnPropertyChanged(nameof(HasDebugOptions));
-            IsLoading = false;
-            Recalculate();
+                ComponentGroup.TargetPlatform => PlatformOptions,
+                ComponentGroup.Debugging => DebugOptions,
+                _ => ContentOptions,
+            }).Add(option);
         }
+
+        OnPropertyChanged(nameof(HasPlatformOptions));
+        OnPropertyChanged(nameof(HasDebugOptions));
+        IsLoading = false;
+        Recalculate();
     }
 
     /// <summary>Recomputes totals in the background; only the latest request updates the screen.</summary>

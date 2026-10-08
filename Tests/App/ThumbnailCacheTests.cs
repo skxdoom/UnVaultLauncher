@@ -47,8 +47,7 @@ public sealed class ThumbnailCacheTests : IDisposable
     public async Task All_thumbnails_of_a_real_vault_cache_load_or_give_a_placeholder()
     {
         string? vault = Environment.GetEnvironmentVariable("UNVAULT_REAL_VAULT");
-        if (vault is null || !Directory.Exists(vault))
-            return;
+        Assert.SkipUnless(vault is not null && Directory.Exists(vault), "Set UNVAULT_REAL_VAULT to a Vault Cache folder to run this.");
 
         var cache = NewCache();
         var urls = Core.Vault.VaultCache.Scan(vault).Select(e => e.Thumbnail).OfType<string>().Distinct().ToList();

@@ -43,7 +43,7 @@ public static class FabWorkflow
             ItemID = artifact.Item.AssetID,
             Title = artifact.Item.Title,
             Build = manifest.Meta.BuildVersion,
-            Version = ShortVersion(manifest.Meta.BuildVersion),
+            Version = EngineLibrary.WithoutBranch(manifest.Meta.BuildVersion),
             Thumbnail = artifact.Item.ThumbnailURL,
             Categories = "|" + string.Join("|", (artifact.Item.Categories ?? []).Select(c => c.Name).Append(KindCategory(FabKinds.FromManifest(manifest)))) + "|",
             Directory = Path.Combine(vaultDirectory, EnginePlugins.ArtifactFolderName(artifact.ArtifactID)),
@@ -248,23 +248,6 @@ public static class FabWorkflow
         return Path.Combine(targetDirectory, projectFile.Filename);
     }
 
-    /// <summary>The item's version for an engine; or, for content (not plugins), the newest older one as a fallback.</summary>
-    public static FabProjectVersion? PickVersion(FabLibraryItem item, string engineAppName, bool allowOlder)
-    {
-        var versions = item.ProjectVersions ?? [];
-        var exact = versions.FirstOrDefault(v => (v.EngineVersions ?? []).Contains(engineAppName, StringComparer.OrdinalIgnoreCase));
-        if (exact is not null || !allowOlder)
-            return exact;
-
-        var target = EngineLibrary.ParseVersion(engineAppName);
-        return versions
-            .Select(v => (Version: v, Best: (v.EngineVersions ?? []).Select(EngineLibrary.ParseVersion).Where(e => e <= target).DefaultIfEmpty().Max()))
-            .Where(x => x.Best is not null)
-            .OrderByDescending(x => x.Best)
-            .Select(x => x.Version)
-            .FirstOrDefault();
-    }
-
     private static void RecordPlugin(string engineDirectory, PluginRecord record, byte[] rawManifest, string? launcherInstalledPath)
     {
         record.InstalledAt = DateTimeOffset.Now;
@@ -334,12 +317,6 @@ public static class FabWorkflow
             }
             status.FileDone();
         }
-    }
-
-    private static string ShortVersion(string build)
-    {
-        int cut = build.IndexOf("+++", StringComparison.Ordinal);
-        return cut > 0 ? build[..cut] : build;
     }
 
     private static string KindCategory(FabItemKind kind) => kind switch

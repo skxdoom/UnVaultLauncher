@@ -78,6 +78,13 @@ public static class EngineLibrary
     public static Version ParseVersion(string appName) =>
         IsEngineApp(appName) && Version.TryParse(appName.AsSpan(3), out var version) ? version : new Version(0, 0);
 
+    /// <summary>"5.7.4-51494982+++UE5+Release-5.7-Windows" → "5.7.4-51494982": the build, without the branch it was made from.</summary>
+    public static string WithoutBranch(string buildVersion)
+    {
+        int cut = buildVersion.IndexOf("+++", StringComparison.Ordinal);
+        return cut > 0 ? buildVersion[..cut] : buildVersion;
+    }
+
     /// <summary>"5.8.3-58210709+++UE5+Release-5.8-Windows" → "5.8.3".</summary>
     public static string ShortBuildVersion(string buildVersion)
     {

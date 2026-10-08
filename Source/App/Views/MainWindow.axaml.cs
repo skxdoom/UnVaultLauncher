@@ -4,7 +4,6 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
-using Avalonia.VisualTree;
 using UnVault.App.Services;
 using UnVault.Core.Epic;
 
@@ -57,17 +56,10 @@ public partial class MainWindow : Window, IUserInteraction
     }
 
     /// <summary>
-    /// Focus to the dialog's first field or list, ready to type or pick; in a dialog of buttons only (a confirmation),
-    /// to its main button, so Enter confirms it.
+    /// Focus to the dialog itself, not to one of its fields: nothing looks selected after a click, Esc and Enter answer the
+    /// dialog, and Tab goes to its first field. Left on the page, focus would let Enter press the button behind it again.
     /// </summary>
-    internal void FocusDialog()
-    {
-        var focusable = DialogHost.GetVisualDescendants().OfType<InputElement>()
-            .Where(e => e.Focusable && e.IsEffectivelyEnabled && e.IsEffectivelyVisible && KeyboardNavigation.GetIsTabStop(e))
-            .ToList();
-        var target = focusable.FirstOrDefault(e => e is not Button) ?? focusable.OfType<Button>().FirstOrDefault(b => b.IsDefault) ?? focusable.FirstOrDefault();
-        target?.Focus(NavigationMethod.Tab);
-    }
+    internal void FocusDialog() => DialogHost.Focus(NavigationMethod.Unspecified);
 
     private void UseScaling() => (DataContext as ViewModels.MainViewModel)?.Services.Thumbnails.UseScaling(RenderScaling);
 

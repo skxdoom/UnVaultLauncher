@@ -18,8 +18,6 @@ public static class EpicEndpoints
 
     public const string AccountService = "https://account-public-service-prod03.ol.epicgames.com";
     public const string LauncherService = "https://launcher-public-service-prod06.ol.epicgames.com";
-    public const string CatalogService = "https://catalog-public-service-prod06.ol.epicgames.com";
-    public const string LibraryService = "https://library-service.live.use1a.on.epicgames.com";
     public const string FabService = "https://www.fab.com";
 
     public static string TokenURL => $"{AccountService}/account/api/oauth/token";

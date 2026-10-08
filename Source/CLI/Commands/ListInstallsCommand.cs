@@ -44,7 +44,7 @@ internal sealed class ListInstallsCommand : Command<ListInstallsCommand.Settings
                     : DescribeComponents(engine);
                 table.AddRow(
                     Markup.Escape(engine.AppName),
-                    Markup.Escape(ShortVersion(engine.BuildVersion)),
+                    Markup.Escape(EngineLibrary.WithoutBranch(engine.BuildVersion)),
                     Markup.Escape(engine.Directory),
                     ByteSize.Format(engine.InstallSize),
                     InstalledBy(engine.Kind),
@@ -81,7 +81,7 @@ internal sealed class ListInstallsCommand : Command<ListInstallsCommand.Settings
                     table.AddRow(
                         Markup.Escape(name),
                         Markup.Escape(plugin.ArtifactID),
-                        Markup.Escape(ShortVersion(plugin.BuildVersion ?? "")),
+                        Markup.Escape(EngineLibrary.WithoutBranch(plugin.BuildVersion ?? "")),
                         Markup.Escape(engine.AppName),
                         plugin.Source switch
                         {
@@ -126,11 +126,4 @@ internal sealed class ListInstallsCommand : Command<ListInstallsCommand.Settings
         LocalInstallKind.AdoptedFromEGL => "Epic Games Launcher, managed by UnVault",
         _ => "Epic Games Launcher",
     };
-
-    /// <summary>"5.7.4-51494982+++UE5+Release-5.7-Windows" → "5.7.4-51494982".</summary>
-    private static string ShortVersion(string version)
-    {
-        int cut = version.IndexOf("+++", StringComparison.Ordinal);
-        return cut > 0 ? version[..cut] : version;
-    }
 }

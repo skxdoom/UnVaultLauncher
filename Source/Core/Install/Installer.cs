@@ -51,7 +51,6 @@ public sealed class Installer(HttpClient http)
 
         status.DownloadTotal = plan.DownloadBytes;
         status.WriteTotal = plan.InstallBytes;
-        status.ChunksTotal = plan.Chunks.Count;
         status.FilesTotal = plan.Files.Count;
 
         var pending = new List<PlannedChunk>();
@@ -61,7 +60,6 @@ public sealed class Installer(HttpClient http)
             {
                 status.AddDownloaded(chunk.Info.FileSize);
                 status.AddWritten(chunk.Writes.Sum(w => (long)w.Size));
-                status.ChunkDone();
             }
             else
             {
@@ -89,7 +87,6 @@ public sealed class Installer(HttpClient http)
                         status.AddWritten(write.Size);
                     }
                     journal.MarkDone(chunk.Info.GUID);
-                    status.ChunkDone();
                 }
                 finally
                 {
