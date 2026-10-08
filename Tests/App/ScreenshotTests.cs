@@ -200,6 +200,40 @@ public class ScreenshotTests
     }
 
     [AvaloniaFact]
+    public void The_version_opens_About_and_tells_when_a_newer_release_is_out()
+    {
+        var viewModel = SampleMainViewModel();
+        var window = Show(viewModel);
+        var version = window.GetVisualDescendants().OfType<Button>().Single(b => b.Command == viewModel.OpenAboutCommand);
+        var pill = version.GetVisualDescendants().OfType<Border>().Single(b => b.Classes.Contains("chip"));
+        Assert.False(pill.IsVisible);
+
+        // GitHub has 0.6.0: the pill shows beside the version, and About says so, with the release to download.
+        viewModel.AppUpdate = new Core.NewerRelease("0.6.0", "https://github.com/skxdoom/UnVaultLauncher/releases/tag/v0.6.0");
+        viewModel.UpdateCheck = UpdateCheckState.Available;
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(pill.IsVisible);
+
+        version.Command!.Execute(null);
+        var about = Assert.IsType<AboutViewModel>(viewModel.Dialog);
+        Assert.Equal("Version 0.6.0 is available.", about.Owner.UpdateStatusText);
+        Dispatcher.UIThread.RunJobs();
+        Save(window, "about-update.png");
+
+        viewModel.UpdateCheck = UpdateCheckState.UpToDate;
+        Assert.Equal("You have the latest version.", about.Owner.UpdateStatusText);
+        viewModel.UpdateCheckError = "GitHub didn't answer.";
+        viewModel.UpdateCheck = UpdateCheckState.Failed;
+        Assert.Equal("Couldn't check for updates: GitHub didn't answer.", about.Owner.UpdateStatusText);
+        Dispatcher.UIThread.RunJobs();
+        Save(window, "about.png");
+
+        window.KeyPressQwerty(PhysicalKey.Escape, RawInputModifiers.None);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Null(viewModel.Dialog);
+    }
+
+    [AvaloniaFact]
     public void A_session_Epic_ended_shows_as_signed_out_with_the_reason()
     {
         var viewModel = SampleMainViewModel();

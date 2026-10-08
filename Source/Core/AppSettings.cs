@@ -35,6 +35,9 @@ public sealed class AppSettings
 
     public int ParallelDownloads { get; set; } = DefaultParallelDownloads;
 
+    /// <summary>Ask GitHub at startup whether a newer release is out.</summary>
+    public bool CheckForUpdates { get; set; } = true;
+
     public static string FilePath => Path.Combine(AppPaths.DataDirectory, "settings.json");
 
     public static AppSettings Load(string? path = null)

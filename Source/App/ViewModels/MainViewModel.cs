@@ -12,6 +12,8 @@ using UnVault.Core.Util;
 
 namespace UnVault.App.ViewModels;
 
+public enum UpdateCheckState { NotChecked, Checking, UpToDate, Available, Failed }
+
 public partial class MainViewModel : ViewModelBase
 {
     private IReadOnlyList<LocalEngine> _local = [];
@@ -102,8 +104,53 @@ public partial class MainViewModel : ViewModelBase
             MemoryRelief.Release();
     }
 
-    /// <summary>Shown next to the name in the header, e.g. "v0.1.0".</summary>
-    public string VersionText { get; } = "v" + ProductInfo.Version;
+    /// <summary>Shown next to the name in the header, e.g. "0.5.0"; it opens About.</summary>
+    public string VersionText { get; } = ProductInfo.Version;
+
+    /// <summary>Whether GitHub has a newer release of the app (see <see cref="CheckForUpdatesAsync"/>).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasAppUpdate), nameof(UpdateStatusText))]
+    public partial UpdateCheckState UpdateCheck { get; set; }
+
+    [ObservableProperty] public partial NewerRelease? AppUpdate { get; set; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(UpdateStatusText))]
+    public partial string? UpdateCheckError { get; set; }
+
+    /// <summary>Shows the "Update available" pill beside the version.</summary>
+    public bool HasAppUpdate => UpdateCheck == UpdateCheckState.Available;
+
+    public string UpdateStatusText => UpdateCheck switch
+    {
+        UpdateCheckState.Checking => "Checking for updates…",
+        UpdateCheckState.UpToDate => "You have the latest version.",
+        UpdateCheckState.Available => $"Version {AppUpdate?.Version} is available.",
+        UpdateCheckState.Failed => $"Couldn't check for updates: {UpdateCheckError}",
+        _ => Settings.CheckForUpdates ? "Not checked for updates yet." : "Checking for updates at startup is turned off in Settings.",
+    };
+
+    /// <summary>Asks GitHub for the latest release; at startup (unless turned off in Settings) and from About.</summary>
+    internal async Task CheckForUpdatesAsync()
+    {
+        if (UpdateCheck == UpdateCheckState.Checking)
+            return;
+        UpdateCheck = UpdateCheckState.Checking;
+        try
+        {
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+            AppUpdate = await Services.Updates.FindNewerAsync(ProductInfo.Version, timeout.Token);
+            UpdateCheck = AppUpdate is null ? UpdateCheckState.UpToDate : UpdateCheckState.Available;
+        }
+        catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException)
+        {
+            UpdateCheckError = ex is OperationCanceledException ? "GitHub didn't answer." : ex.Message;
+            UpdateCheck = UpdateCheckState.Failed;
+        }
+    }
+
+    [RelayCommand]
+    private void OpenAbout() => Dialog = new AboutViewModel(this);
 
     /// <summary>
     /// Engine versions the account owns but hasn't installed (stale EGL records count as not installed), leaving out
@@ -122,6 +169,8 @@ public partial class MainViewModel : ViewModelBase
     /// <summary>First load: engines, then (signed in) the library in the background, so the Library tab shows pending updates before it's opened.</summary>
     public async Task StartAsync()
     {
+        if (Settings.CheckForUpdates)
+            _ = CheckForUpdatesAsync(); // alongside; it never throws
         await RefreshAsync();
         if (IsSignedIn && !Fab.HasLoaded && !Fab.IsLoading)
             await Fab.LoadAsync(includeLibrary: true);

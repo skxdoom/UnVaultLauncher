@@ -63,6 +63,11 @@
                                        FormatString="0" Width="130" />
                     </Grid>
 
+                    <TextBlock Text="UPDATES" Classes="section" />
+                    <CheckBox Content="Check for Updates at Startup" IsChecked="{Binding CheckForUpdates}" />
+                    <TextBlock Text="Asks GitHub whether a newer release of UnVault Launcher is out, and shows it beside the version. Nothing else is sent."
+                               Classes="muted small" TextWrapping="Wrap" Margin="0,4,0,0" />
+
                     <Border Classes="banner warning" Margin="0,16,0,0" IsVisible="{Binding HasError}">
                         <TextBlock Text="{Binding Error}" TextWrapping="Wrap" />
                     </Border>

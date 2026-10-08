@@ -20,7 +20,16 @@
                             <Image Source="/Assets/unvault-logo.png" Width="28" Height="28" />
                             <TextBlock Text="UnVault" FontSize="18" FontWeight="Bold" VerticalAlignment="Center" />
                             <TextBlock Text="Launcher" FontSize="18" Classes="muted" VerticalAlignment="Center" Margin="-4,0,0,0" />
-                            <TextBlock Text="{Binding VersionText}" Classes="muted small" VerticalAlignment="Center" Margin="-2,3,0,0" />
+                            <!-- The version opens About; a pill beside it tells when a newer release is out -->
+                            <Button Classes="subtle" Padding="4,1" Margin="-6,3,0,0" VerticalAlignment="Center" Command="{Binding OpenAboutCommand}"
+                                    ToolTip.Tip="About UnVault Launcher" AutomationProperties.Name="About UnVault Launcher">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock Text="{Binding VersionText}" Classes="muted small" VerticalAlignment="Center" />
+                                    <Border Classes="chip warning" IsVisible="{Binding HasAppUpdate}">
+                                        <TextBlock Text="Update available" />
+                                    </Border>
+                                </StackPanel>
+                            </Button>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                             <Button Content="Engines" Classes="tab" Classes.active="{Binding IsEnginesTab}" Command="{Binding ShowEnginesCommand}" />
@@ -176,6 +185,9 @@
                     </DataTemplate>
                     <DataTemplate DataType="vm:ConfirmViewModel">
                         <views:ConfirmView />
+                    </DataTemplate>
+                    <DataTemplate DataType="vm:AboutViewModel">
+                        <views:AboutView />
                     </DataTemplate>
                 </ContentControl.DataTemplates>
             </ContentControl>

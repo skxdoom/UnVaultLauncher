@@ -34,7 +34,7 @@ There's also a command-line tool for engines, for scripting and diagnostics. It 
 - You sign in on Epic's own page. UnVault Launcher never sees your password, only a one-time code it exchanges with Epic.
 - Your session is stored encrypted for your Windows account and sent only to Epic. Signing out also ends it on Epic's side.
 - Downloads go over HTTPS, and engine and Fab files are checked against the hashes in Epic's manifests.
-- No telemetry, no admin rights, no background service. It only connects to Epic's and Fab's servers.
+- No telemetry, no admin rights, no background service. It connects to Epic's and Fab's servers, and at startup asks GitHub whether a newer release is out (Settings can turn that off).
 - Release builds aren't code-signed, so Windows may warn about an unknown publisher on first run.
 
 ## Transparency

@@ -1,4 +1,5 @@
 using System.Net.Http;
+using UnVault.Core;
 using UnVault.Core.Epic;
 
 namespace UnVault.App.Services;
@@ -12,12 +13,14 @@ public sealed class AppServices
         Account = new EpicAccount(new EpicAuthClient(HTTP), SessionStore.Default);
         API = new EpicAPIClient(HTTP, Account);
         Thumbnails = new ThumbnailCache(HTTP);
+        Updates = new UpdateChecker(HTTP);
     }
 
     public HttpClient HTTP { get; }
     public EpicAccount Account { get; }
     public EpicAPIClient API { get; }
     public ThumbnailCache Thumbnails { get; }
+    public UpdateChecker Updates { get; }
 }
 
 /// <summary>Things view models need a window for. Implemented by the main window; faked in tests.</summary>

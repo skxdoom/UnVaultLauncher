@@ -70,6 +70,7 @@ public partial class SettingsViewModel : ViewModelBase
         foreach (string folder in current.ProjectDirectories ?? [])
             AddProjectFolder(folder);
         ParallelDownloads = current.ParallelDownloads;
+        CheckForUpdates = current.CheckForUpdates;
         UpdateVaultSummary();
     }
 
@@ -86,6 +87,7 @@ public partial class SettingsViewModel : ViewModelBase
     [ObservableProperty] public partial string EngineInstallRoot { get; set; } = "";
     [ObservableProperty] public partial string VaultCacheDirectory { get; set; } = "";
     [ObservableProperty] public partial decimal? ParallelDownloads { get; set; }
+    [ObservableProperty] public partial bool CheckForUpdates { get; set; }
     [ObservableProperty] public partial string VaultSummary { get; set; } = "";
 
     [ObservableProperty]
@@ -178,6 +180,7 @@ public partial class SettingsViewModel : ViewModelBase
         settings.VaultCacheDirectory = vault;
         settings.ProjectDirectories = projectFolders.Count == 0 ? null : projectFolders;
         settings.ParallelDownloads = (int)Math.Clamp(ParallelDownloads ?? AppSettings.DefaultParallelDownloads, 1, AppSettings.MaxParallelDownloads);
+        settings.CheckForUpdates = CheckForUpdates;
         try
         {
             settings.Save();
