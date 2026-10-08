@@ -5,6 +5,7 @@ using UnVault.Core.Manifests;
 
 namespace UnVault.Core.Chunks;
 
+/// <summary>A chunk file that isn't what the manifest describes: cut off, damaged on the way, or another chunk.</summary>
 public sealed class ChunkFormatException(string message) : Exception(message);
 
 /// <summary>
@@ -33,27 +34,53 @@ public static class ChunkDecoder
     /// <see cref="ChunkInfo.WindowSize"/> bytes) and verifies it against the manifest's SHA-1.
     /// Returns the number of data bytes.
     /// </summary>
-    public static int Decode(byte[] file, ChunkInfo expected, byte[] destination, IReadOnlyDictionary<string, string>? secrets = null)
+    public static int Decode(byte[] file, ChunkInfo expected, byte[] destination, IReadOnlyDictionary<string, string>? secrets = null) =>
+        Decode(file, file.Length, expected, destination, secrets);
+
+    /// <summary>
+    /// The same, for a chunk file in the first <paramref name="length"/> bytes of <paramref name="file"/> (a pooled buffer).
+    /// Anything wrong with the file, however it got damaged, is a <see cref="ChunkFormatException"/>.
+    /// </summary>
+    public static int Decode(byte[] file, int length, ChunkInfo expected, byte[] destination, IReadOnlyDictionary<string, string>? secrets = null)
     {
-        var span = file.AsSpan();
+        var span = file.AsSpan(0, length);
         if (span.Length < 41 || ReadU32(span, 0) != Magic)
             throw new ChunkFormatException($"Chunk {expected.GUID}: not a chunk file.");
 
         uint headerVersion = ReadU32(span, 4);
-        int headerSize = (int)ReadU32(span, 8);
-        int dataSize = (int)ReadU32(span, 12);
+        long headerSize = ReadU32(span, 8);
+        long dataSize = ReadU32(span, 12);
+        int fieldsEnd = headerVersion >= 4 ? 98 : headerVersion >= 3 ? 66 : headerVersion >= 2 ? 62 : 41;
+        if (span.Length < fieldsEnd || headerSize < fieldsEnd)
+            throw new ChunkFormatException($"Chunk {expected.GUID}: its header is cut off or damaged.");
+
         var guid = new EpicGUID(ReadU32(span, 16), ReadU32(span, 20), ReadU32(span, 24), ReadU32(span, 28));
         byte storedAs = span[40];
         var headerSHA1 = headerVersion >= 2 ? span.Slice(41, 20) : default;
-        int uncompressedSize = headerVersion >= 3 ? (int)ReadU32(span, 62) : (int)expected.WindowSize;
+        long uncompressedSize = headerVersion >= 3 ? ReadU32(span, 62) : expected.WindowSize;
 
         if (guid != expected.GUID)
             throw new ChunkFormatException($"Chunk {expected.GUID}: file contains chunk {guid}.");
-        if ((long)headerSize + dataSize > span.Length)
+        if (headerSize + dataSize > span.Length)
             throw new ChunkFormatException($"Chunk {expected.GUID}: truncated ({span.Length} of {headerSize + dataSize} bytes).");
         if (uncompressedSize > destination.Length)
             throw new ChunkFormatException($"Chunk {expected.GUID}: {uncompressedSize} bytes don't fit the {destination.Length}-byte buffer.");
 
+        try
+        {
+            return DecodeData(file, span, (int)headerSize, (int)dataSize, (int)uncompressedSize, headerVersion, storedAs, headerSHA1, expected, destination, secrets);
+        }
+        catch (Exception ex) when (ex is InvalidDataException or EndOfStreamException or CryptographicException)
+        {
+            // Inflating or decrypting damaged data: like a hash mismatch, it's the file, not this program.
+            throw new ChunkFormatException($"Chunk {expected.GUID}: damaged data ({ex.Message})");
+        }
+    }
+
+    private static int DecodeData(
+        byte[] file, ReadOnlySpan<byte> span, int headerSize, int dataSize, int uncompressedSize, uint headerVersion, byte storedAs,
+        ReadOnlySpan<byte> headerSHA1, ChunkInfo expected, byte[] destination, IReadOnlyDictionary<string, string>? secrets)
+    {
         byte[] payload = file;
         int payloadOffset = headerSize;
         if ((storedAs & StoredEncrypted) != 0)

@@ -108,6 +108,29 @@ public class ChunkDecoderTests
 
         Assert.Throws<ChunkFormatException>(() => ChunkDecoder.Decode(file, otherInfo, new byte[100]));
     }
+
+    /// <summary>However a download got damaged, it's reported the same way, so the installer fetches it again.</summary>
+    [Fact]
+    public void Damage_of_any_kind_is_a_format_error()
+    {
+        var data = RandomNumberGenerator.GetBytes(5000);
+        var (info, file) = ChunkFactory.Create(new EpicGUID(1, 2, 3, 4), data);
+        var key = RandomNumberGenerator.GetBytes(32);
+        var secret = new EpicGUID(0xAA, 0xBB, 0xCC, 0xDD);
+        var (encryptedInfo, encrypted) = ChunkFactory.Create(new EpicGUID(9, 9, 9, 9), data, aesKey: key, secret: secret);
+        var secrets = new Dictionary<string, string> { [secret.ToString()] = Convert.ToHexString(key) };
+
+        byte[] Garbled(byte[] original)
+        {
+            byte[] copy = [.. original];
+            copy.AsSpan(110, 40).Fill(0x5A);
+            return copy;
+        }
+
+        Assert.Throws<ChunkFormatException>(() => ChunkDecoder.Decode(file[..50], info, new byte[5000])); // header cut off
+        Assert.Throws<ChunkFormatException>(() => ChunkDecoder.Decode(Garbled(file), info, new byte[5000])); // won't inflate
+        Assert.Throws<ChunkFormatException>(() => ChunkDecoder.Decode(Garbled(encrypted), encryptedInfo, new byte[5000], secrets)); // won't decrypt
+    }
 }
 
 public sealed class InstallerTests : IDisposable
@@ -148,7 +171,7 @@ public sealed class InstallerTests : IDisposable
         // First run: chunk B is unavailable everywhere, so the install fails after A is done.
         var broken = new FakeCDN(chunkFiles) { Unavailable = { plan.Chunks[1].Info.GUID } };
         await Assert.ThrowsAsync<InstallException>(() =>
-            new Installer(new HttpClient(broken)) { MaxParallelDownloads = 1, RetryBaseDelay = TimeSpan.FromMilliseconds(1) }
+            new Installer(new HttpClient(broken)) { MaxParallelDownloads = 1, RetryBaseDelay = TimeSpan.FromMilliseconds(1), GiveUpAfter = TimeSpan.Zero }
                 .InstallAsync(plan, _dir, [new ChunkSource("https://cdn.test/CloudDir")], new Dictionary<string, string>(), new InstallStatus(), default));
 
         // Second run: the first CDN is down entirely; the second works. Only chunk B should be fetched.
@@ -172,7 +195,7 @@ public sealed class InstallerTests : IDisposable
         // Stops after chunk A (B is unavailable); then Big.bin, which A filled, is deleted, as unticking a component does.
         var broken = new FakeCDN(chunkFiles) { Unavailable = { plan.Chunks[1].Info.GUID } };
         await Assert.ThrowsAsync<InstallException>(() =>
-            new Installer(new HttpClient(broken)) { MaxParallelDownloads = 1, RetryBaseDelay = TimeSpan.FromMilliseconds(1) }
+            new Installer(new HttpClient(broken)) { MaxParallelDownloads = 1, RetryBaseDelay = TimeSpan.FromMilliseconds(1), GiveUpAfter = TimeSpan.Zero }
                 .InstallAsync(plan, _dir, sources, new Dictionary<string, string>(), new InstallStatus(), default));
         File.Delete(Path.Combine(_dir, "Engine/Big.bin"));
 
@@ -281,7 +304,7 @@ public sealed class InstallerTests : IDisposable
         var plan = InstallWorkflow.PlanModify(install, Tags("extra"));
         var broken = new FakeCDN(chunkFiles) { Unavailable = { extraSecond.GUID } };
         await Assert.ThrowsAsync<InstallException>(() => InstallWorkflow.ApplyModifyAsync(plan,
-            new Installer(new HttpClient(broken)) { MaxParallelDownloads = 1, RetryBaseDelay = TimeSpan.FromMilliseconds(1) }, new InstallStatus(), default));
+            new Installer(new HttpClient(broken)) { MaxParallelDownloads = 1, RetryBaseDelay = TimeSpan.FromMilliseconds(1), GiveUpAfter = TimeSpan.Zero }, new InstallStatus(), default));
 
         // "old" is gone from disk and from the record, and "extra" isn't claimed yet: the same change still has work to do.
         var record = InstallRecord.TryRead(_dir)!;
@@ -296,6 +319,123 @@ public sealed class InstallerTests : IDisposable
         Assert.Equal(["extra"], InstallRecord.TryRead(_dir)!.InstallTags);
         Assert.Equal(extra, File.ReadAllBytes(Path.Combine(_dir, "Engine/Extra.bin")));
         Assert.DoesNotContain(cdn.Requests, r => r.Contains(extraFirst.GUID.ToString())); // resumed
+    }
+
+    [Theory]
+    [InlineData("server error")]
+    [InlineData("busy")]
+    [InlineData("dropped connection")]
+    [InlineData("cut short")]
+    [InlineData("garbled")]
+    [InlineData("stalled")]
+    public async Task Rides_out_trouble_from_the_download_server(string trouble)
+    {
+        var (manifest, expected, chunkFiles) = BuildTestBuild();
+        // The first two tries of every chunk go wrong; the third works.
+        var cdn = new FakeCDN(chunkFiles)
+        {
+            Trouble = (_, attempt, file) => attempt >= 2 ? null : trouble switch
+            {
+                "server error" => new HttpResponseMessage(HttpStatusCode.ServiceUnavailable),
+                "busy" => new HttpResponseMessage(HttpStatusCode.TooManyRequests),
+                "dropped connection" => throw new HttpRequestException("The connection was reset."),
+                "cut short" => Served(file[..(file.Length / 2)]),
+                "garbled" => Served([.. file[..110], .. Enumerable.Repeat((byte)0x5A, file.Length - 110)]),
+                _ => new HttpResponseMessage(HttpStatusCode.OK) { Content = new StreamContent(new StallingStream(file[..(file.Length / 2)])) },
+            },
+        };
+        var status = new InstallStatus();
+
+        await new Installer(new HttpClient(cdn)) { RetryBaseDelay = TimeSpan.FromMilliseconds(1), StallTimeout = TimeSpan.FromMilliseconds(200) }
+            .InstallAsync(InstallPlan.Create(manifest, manifest.Files), _dir, [new ChunkSource("https://cdn.test/CloudDir")],
+                new Dictionary<string, string>(), status, default);
+
+        foreach (var (name, content) in expected)
+            Assert.Equal(content, File.ReadAllBytes(Path.Combine(_dir, name)));
+        Assert.Equal(4, status.Retries); // two chunks, two retries each
+    }
+
+    [Fact]
+    public async Task Gives_up_on_a_chunk_that_keeps_failing_for_long_enough()
+    {
+        var (manifest, _, chunkFiles) = BuildTestBuild();
+        var cdn = new FakeCDN(chunkFiles) { Trouble = (_, _, _) => new HttpResponseMessage(HttpStatusCode.BadGateway) };
+        var giveUpAfter = TimeSpan.FromMilliseconds(300);
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+
+        var error = await Assert.ThrowsAsync<InstallException>(() =>
+            new Installer(new HttpClient(cdn)) { MaxParallelDownloads = 1, RetryBaseDelay = TimeSpan.FromMilliseconds(1), MaxRetryDelay = TimeSpan.FromMilliseconds(20), GiveUpAfter = giveUpAfter }
+                .InstallAsync(InstallPlan.Create(manifest, manifest.Files), _dir, [new ChunkSource("https://cdn.test/CloudDir")],
+                    new Dictionary<string, string>(), new InstallStatus(), default));
+
+        Assert.True(clock.Elapsed >= giveUpAfter);
+        Assert.True(cdn.Requests.Count > 3); // kept trying meanwhile
+        Assert.Contains("502", error.Message);
+    }
+
+    [Fact]
+    public async Task Stops_at_once_when_every_server_refuses_a_chunk()
+    {
+        var (manifest, _, chunkFiles) = BuildTestBuild();
+        // Signed download links that have expired: asking again won't help.
+        var cdn = new FakeCDN(chunkFiles) { Trouble = (_, _, _) => new HttpResponseMessage(HttpStatusCode.Forbidden) };
+        var status = new InstallStatus();
+
+        var error = await Assert.ThrowsAsync<InstallException>(() =>
+            new Installer(new HttpClient(cdn)) { MaxParallelDownloads = 1, RetryBaseDelay = TimeSpan.FromMilliseconds(1) }
+                .InstallAsync(InstallPlan.Create(manifest, manifest.Files), _dir,
+                    [new ChunkSource("https://one.test/CloudDir"), new ChunkSource("https://two.test/CloudDir")],
+                    new Dictionary<string, string>(), status, default));
+
+        Assert.Contains("expired", error.Message);
+        Assert.Equal(2, cdn.Requests.Count); // each server asked once
+        Assert.Equal(0, status.Retries);
+    }
+
+    [Fact]
+    public async Task A_server_refusing_a_chunk_hands_it_to_the_next()
+    {
+        var (manifest, expected, chunkFiles) = BuildTestBuild();
+        var cdn = new FakeCDN(chunkFiles) { Trouble = (url, _, _) => url.Contains("one.test") ? new HttpResponseMessage(HttpStatusCode.Forbidden) : null };
+
+        await new Installer(new HttpClient(cdn)).InstallAsync(InstallPlan.Create(manifest, manifest.Files), _dir,
+            [new ChunkSource("https://one.test/CloudDir"), new ChunkSource("https://two.test/CloudDir")],
+            new Dictionary<string, string>(), new InstallStatus(), default);
+
+        foreach (var (name, content) in expected)
+            Assert.Equal(content, File.ReadAllBytes(Path.Combine(_dir, name)));
+    }
+
+    [Fact]
+    public async Task Cancelling_partway_then_running_again_fetches_only_what_is_missing()
+    {
+        var (manifest, expected, chunkFiles) = BuildTestBuild();
+        var plan = InstallPlan.Create(manifest, manifest.Files);
+        string second = plan.Chunks[1].Info.GUID.ToString();
+        ChunkSource[] sources = [new("https://cdn.test/CloudDir")];
+
+        // The user cancels while the second chunk is on its way.
+        using var cancel = new CancellationTokenSource();
+        var first = new FakeCDN(chunkFiles)
+        {
+            Trouble = (url, _, file) =>
+            {
+                if (!url.Contains(second))
+                    return null;
+                cancel.Cancel();
+                return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StreamContent(new StallingStream(file[..10])) };
+            },
+        };
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            new Installer(new HttpClient(first)) { MaxParallelDownloads = 1 }
+                .InstallAsync(plan, _dir, sources, new Dictionary<string, string>(), new InstallStatus(), cancel.Token));
+
+        var again = new FakeCDN(chunkFiles);
+        await new Installer(new HttpClient(again)).InstallAsync(plan, _dir, sources, new Dictionary<string, string>(), new InstallStatus(), default);
+
+        foreach (var (name, content) in expected)
+            Assert.Equal(content, File.ReadAllBytes(Path.Combine(_dir, name)));
+        Assert.Contains(second, Assert.Single(again.Requests)); // the first chunk was already written
     }
 
     [Fact]
@@ -427,12 +567,19 @@ public sealed class InstallerTests : IDisposable
         return (manifest, expected, new Dictionary<EpicGUID, byte[]> { [chunkA.GUID] = fileA, [chunkB.GUID] = fileB });
     }
 
-    /// <summary>Serves chunk files by the GUID in their URL; can simulate dead hosts and missing chunks.</summary>
+    private static HttpResponseMessage Served(byte[] content) => new(HttpStatusCode.OK) { Content = new ByteArrayContent(content) };
+
+    /// <summary>Serves chunk files by the GUID in their URL; can simulate dead hosts, missing chunks and misbehaving servers.</summary>
     private sealed class FakeCDN(Dictionary<EpicGUID, byte[]> chunks) : HttpMessageHandler
     {
+        private readonly Dictionary<string, int> _attempts = [];
+
         public List<string> Requests { get; } = [];
         public HashSet<string> DownHosts { get; } = [];
         public HashSet<EpicGUID> Unavailable { get; } = [];
+
+        /// <summary>Given the URL, how many times this chunk was asked for before, and its real file: a response in its place, or null for the real one.</summary>
+        public Func<string, int, byte[], HttpResponseMessage?>? Trouble { get; init; }
 
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
@@ -445,10 +592,51 @@ public sealed class InstallerTests : IDisposable
 
             foreach (var (guid, file) in chunks)
             {
-                if (url.Contains(guid.ToString()) && !Unavailable.Contains(guid))
-                    return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(file) });
+                if (!url.Contains(guid.ToString()) || Unavailable.Contains(guid))
+                    continue;
+                int attempt;
+                lock (_attempts)
+                {
+                    attempt = _attempts.GetValueOrDefault(guid.ToString());
+                    _attempts[guid.ToString()] = attempt + 1;
+                }
+                return Task.FromResult(Trouble?.Invoke(url, attempt, file) ?? Served(file));
             }
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound));
         }
+    }
+
+    /// <summary>Sends the start of a file, then nothing more: a connection that went quiet without closing.</summary>
+    private sealed class StallingStream(byte[] start) : Stream
+    {
+        private int _position;
+
+        public override bool CanRead => true;
+        public override bool CanSeek => false;
+        public override bool CanWrite => false;
+        public override long Length => throw new NotSupportedException();
+        public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            if (_position < start.Length)
+            {
+                int count = Math.Min(buffer.Length, start.Length - _position);
+                start.AsMemory(_position, count).CopyTo(buffer);
+                _position += count;
+                return count;
+            }
+            await Task.Delay(Timeout.Infinite, cancellationToken);
+            return 0;
+        }
+
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
+            ReadAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
+
+        public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+        public override void Flush() { }
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public override void SetLength(long value) => throw new NotSupportedException();
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
     }
 }

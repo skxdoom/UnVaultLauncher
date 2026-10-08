@@ -1,4 +1,6 @@
 using System.Buffers;
+using System.Diagnostics;
+using System.Net;
 using UnVault.Core.Chunks;
 using UnVault.Core.Epic;
 using UnVault.Core.Manifests;
@@ -10,12 +12,21 @@ public sealed class InstallException(string message, Exception? inner = null) : 
 /// <summary>Downloads an <see cref="InstallPlan"/>'s chunks in parallel and writes their data into place.</summary>
 public sealed class Installer(HttpClient http)
 {
-    private const int MaxAttemptsPerChunk = 6;
-
     public int MaxParallelDownloads { get; init; } = 16;
 
-    /// <summary>Wait before the first retry of a failed chunk; doubles with each further attempt.</summary>
+    /// <summary>Wait before the first retry of a failed chunk; doubles with each further attempt, up to <see cref="MaxRetryDelay"/>.</summary>
     public TimeSpan RetryBaseDelay { get; init; } = TimeSpan.FromMilliseconds(250);
+
+    public TimeSpan MaxRetryDelay { get; init; } = TimeSpan.FromSeconds(30);
+
+    /// <summary>
+    /// How long a chunk may keep failing, on every download server, before the install stops: long enough to ride out
+    /// a dropped Wi-Fi connection or a router restart.
+    /// </summary>
+    public TimeSpan GiveUpAfter { get; init; } = TimeSpan.FromMinutes(3);
+
+    /// <summary>A chunk download that receives nothing for this long is dropped and tried again.</summary>
+    public TimeSpan StallTimeout { get; init; } = TimeSpan.FromSeconds(30);
 
     /// <summary>
     /// Runs the plan into <paramref name="installDir"/>. Safe to cancel and call again with the same plan:
@@ -116,31 +127,108 @@ public sealed class Installer(HttpClient http)
         }
     }
 
-    /// <summary>Fetches and decodes one chunk, rotating through CDNs and retrying with backoff.</summary>
+    /// <summary>
+    /// Fetches and decodes one chunk, rotating through the download servers. Dropped connections, server errors, stalled
+    /// downloads and damaged data are tried again with growing waits, until the chunk has failed for
+    /// <see cref="GiveUpAfter"/>. A server refusing the chunk (expired signed links) isn't asked again.
+    /// </summary>
     private async Task<int> DownloadAndDecodeAsync(
         PlannedChunk chunk, uint featureLevel, IReadOnlyList<ChunkSource> sources, int firstSource,
         IReadOnlyDictionary<string, string> secrets, byte[] destination, InstallStatus status, CancellationToken cancellationToken)
     {
+        var failing = Stopwatch.StartNew();
+        var refused = new HashSet<int>();
         Exception? lastError = null;
-        for (int attempt = 0; attempt < MaxAttemptsPerChunk; attempt++)
+        for (int attempt = 0; ; attempt++)
         {
-            var source = sources[(firstSource + attempt) % sources.Count];
+            int source = (firstSource + attempt) % sources.Count;
+            if (refused.Contains(source))
+                continue;
             try
             {
-                byte[] file = await http.GetByteArrayAsync(source.GetChunkURL(chunk.Info, featureLevel), cancellationToken);
-                int length = ChunkDecoder.Decode(file, chunk.Info, destination, secrets);
-                status.AddDownloaded(file.Length);
-                return length;
+                var (file, length) = await FetchAsync(sources[source].GetChunkURL(chunk.Info, featureLevel), chunk.Info.FileSize, cancellationToken);
+                try
+                {
+                    int decoded = ChunkDecoder.Decode(file, length, chunk.Info, destination, secrets);
+                    status.AddDownloaded(length);
+                    return decoded;
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(file);
+                }
+            }
+            catch (HttpRequestException ex) when (ex.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden)
+            {
+                // Waiting won't change a refusal; another server may still have the chunk.
+                refused.Add(source);
+                if (refused.Count == sources.Count)
+                    throw new InstallException($"The download servers refused chunk {chunk.Info.GUID} ({(int)ex.StatusCode!.Value} {ex.StatusCode}). Their links may have expired: " +
+                                               "run it again to get new ones. What's downloaded so far is kept.", ex);
+                lastError = ex;
+                continue;
             }
             catch (Exception ex) when (ex is HttpRequestException or IOException or ChunkFormatException
-                                       || (ex is TaskCanceledException && !cancellationToken.IsCancellationRequested))
+                                       || (ex is OperationCanceledException && !cancellationToken.IsCancellationRequested))
             {
-                lastError = ex;
-                status.Retried();
-                await Task.Delay(RetryBaseDelay * (1 << attempt), cancellationToken);
+                lastError = ex; // the OperationCanceledException is a stalled download or a request timeout, not the user
+            }
+
+            // Every server gets asked at least once.
+            if (attempt + 1 >= sources.Count && failing.Elapsed >= GiveUpAfter)
+                throw new InstallException($"Chunk {chunk.Info.GUID} couldn't be downloaded: {lastError?.Message}", lastError);
+            status.Retried();
+            await Task.Delay(RetryDelay(attempt), cancellationToken);
+        }
+    }
+
+    /// <summary>Doubling waits up to <see cref="MaxRetryDelay"/>, spread a little so parallel downloads don't all retry at once.</summary>
+    private TimeSpan RetryDelay(int attempt)
+    {
+        double milliseconds = Math.Min(RetryBaseDelay.TotalMilliseconds * Math.Pow(2, Math.Min(attempt, 20)), MaxRetryDelay.TotalMilliseconds);
+        return TimeSpan.FromMilliseconds(milliseconds * (0.8 + 0.4 * Random.Shared.NextDouble()));
+    }
+
+    /// <summary>
+    /// Downloads a chunk file into a pooled buffer (the caller returns it). Instead of a limit on the whole download, which
+    /// a big chunk on a slow line could exceed, a download is dropped once no data has arrived for <see cref="StallTimeout"/>.
+    /// </summary>
+    private async Task<(byte[] File, int Length)> FetchAsync(string url, long expectedSize, CancellationToken cancellationToken)
+    {
+        using var stalled = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        stalled.CancelAfter(StallTimeout);
+        using var response = await http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, stalled.Token);
+        response.EnsureSuccessStatusCode();
+        await using var body = await response.Content.ReadAsStreamAsync(stalled.Token);
+
+        // The manifest says how big the file is; a server sending far more than that isn't sending this chunk.
+        long limit = Math.Max(expectedSize, 64 * 1024) * 4;
+        byte[] buffer = ArrayPool<byte>.Shared.Rent((int)Math.Clamp(expectedSize, 4096, limit));
+        int length = 0;
+        try
+        {
+            while (true)
+            {
+                if (length == buffer.Length)
+                {
+                    if (buffer.Length >= limit)
+                        throw new ChunkFormatException("The server sent more data than the manifest lists for this chunk.");
+                    byte[] larger = ArrayPool<byte>.Shared.Rent((int)Math.Min((long)buffer.Length * 2, limit));
+                    buffer.AsSpan(0, length).CopyTo(larger);
+                    ArrayPool<byte>.Shared.Return(buffer);
+                    buffer = larger;
+                }
+                int read = await body.ReadAsync(buffer.AsMemory(length), stalled.Token);
+                if (read == 0)
+                    return (buffer, length);
+                length += read;
+                stalled.CancelAfter(StallTimeout); // still receiving
             }
         }
-
-        throw new InstallException($"Chunk {chunk.Info.GUID} failed after {MaxAttemptsPerChunk} attempts: {lastError?.Message}", lastError);
+        catch
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
+            throw;
+        }
     }
 }
