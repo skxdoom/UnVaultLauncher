@@ -93,8 +93,8 @@
                         <TextBlock Text="{Binding FreeSpaceText}" Classes="muted small" />
                     </StackPanel>
                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
-                        <Button Content="Cancel" Command="{Binding CancelCommand}" />
-                        <Button Content="{Binding ConfirmText}" Classes="accent" Command="{Binding ConfirmCommand}" />
+                        <Button Content="Cancel" Command="{Binding CancelCommand}" IsCancel="True" />
+                        <Button Content="{Binding ConfirmText}" Classes="accent" Command="{Binding ConfirmCommand}" IsDefault="True" />
                     </StackPanel>
                 </Grid>
             </Border>

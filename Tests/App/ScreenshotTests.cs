@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Controls.Presenters;
 using Avalonia.Headless;
@@ -88,6 +89,109 @@ public class ScreenshotTests
         var text = window.GetVisualDescendants().OfType<TextBlock>().Single(t => t.Text == viewModel.Notice);
         Assert.True(text.IsEffectivelyVisible);
         Save(window, "fab-library-notice.png");
+    }
+
+    [AvaloniaFact]
+    public void Dialogs_take_the_keyboard_Esc_cancels_and_Enter_confirms()
+    {
+        var viewModel = SampleMainViewModel();
+        var window = (MainWindow)Show(viewModel);
+        var settingsButton = window.GetVisualDescendants().OfType<Button>().Single(b => b.Command == viewModel.OpenSettingsCommand);
+        var dialogHost = window.GetVisualDescendants().OfType<ContentControl>().Single(c => c.Name == "DialogHost");
+        settingsButton.Focus();
+
+        // Settings: focus goes to its first field, and Tab goes round the dialog without reaching the page behind.
+        viewModel.Dialog = new SettingsViewModel(viewModel, Core.EGL.EGLLauncherSettings.Empty);
+        Dispatcher.UIThread.RunJobs();
+        Assert.IsType<TextBox>(window.FocusManager?.GetFocusedElement());
+        for (int i = 0; i < 20; i++)
+        {
+            window.KeyPressQwerty(PhysicalKey.Tab, RawInputModifiers.None);
+            Assert.True(window.FocusManager?.GetFocusedElement() is Visual focused && dialogHost.IsVisualAncestorOf(focused),
+                $"Tab {i + 1} left the dialog for {window.FocusManager?.GetFocusedElement()}");
+        }
+
+        // Esc cancels, and focus is back on the button that opened it.
+        window.KeyPressQwerty(PhysicalKey.Escape, RawInputModifiers.None);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Null(viewModel.Dialog);
+        Assert.Same(settingsButton, window.FocusManager?.GetFocusedElement());
+
+        // A confirmation has only buttons: its main one gets the focus, and Enter confirms.
+        bool confirmed = false;
+        viewModel.Dialog = new ConfirmViewModel(viewModel, "Update Greybox Tools?", "Only files that changed are downloaded.", "Update", () => confirmed = true);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal("Update", (window.FocusManager?.GetFocusedElement() as Button)?.Content);
+        window.KeyPressQwerty(PhysicalKey.Enter, RawInputModifiers.None);
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(confirmed);
+        Assert.Null(viewModel.Dialog);
+    }
+
+    [AvaloniaFact]
+    public void A_drop_down_closed_from_the_keyboard_keeps_its_focus_ring()
+    {
+        var viewModel = SampleMainViewModel();
+        viewModel.IsFabTab = true;
+        SampleFab(viewModel);
+        var window = Show(viewModel);
+        var kinds = window.GetVisualDescendants().OfType<ComboBox>().Single(c => ReferenceEquals(c.ItemsSource, viewModel.Fab.KindOptions));
+        kinds.Focus(NavigationMethod.Tab); // reached with Tab
+        Assert.Contains(":focus-visible", kinds.Classes);
+
+        // Opened, moved down one, picked with Enter: still marked as where the keyboard is.
+        window.KeyPressQwerty(PhysicalKey.F4, RawInputModifiers.None);
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(kinds.IsDropDownOpen);
+        window.KeyPressQwerty(PhysicalKey.ArrowDown, RawInputModifiers.None);
+        window.KeyPressQwerty(PhysicalKey.Enter, RawInputModifiers.None);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal((false, 1), (kinds.IsDropDownOpen, kinds.SelectedIndex));
+        Assert.Contains(":focus-visible", kinds.Classes);
+    }
+
+    [AvaloniaFact]
+    public void Esc_in_the_project_search_clears_it_first_then_closes_the_dialog()
+    {
+        var viewModel = SampleMainViewModel();
+        viewModel.IsFabTab = true;
+        SampleFab(viewModel);
+        var dialog = new FabActionViewModel(viewModel.Fab, viewModel.Fab.Items.Single(i => i.Title == "Street Vehicles"), FabActionMode.AddToProject);
+        dialog.ShowProjects([new UnrealProject("Ridgeback", @"D:\Projects\Ridgeback\Ridgeback.uproject", "5.7", null)]);
+        viewModel.Dialog = dialog;
+        var window = Show(viewModel);
+        Assert.IsType<TextBox>(window.FocusManager?.GetFocusedElement()); // the search, ready to type into
+
+        dialog.ProjectSearch = "ridge";
+        window.KeyPressQwerty(PhysicalKey.Escape, RawInputModifiers.None);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(("", true), (dialog.ProjectSearch, viewModel.HasDialog));
+
+        window.KeyPressQwerty(PhysicalKey.Escape, RawInputModifiers.None);
+        Dispatcher.UIThread.RunJobs();
+        Assert.False(viewModel.HasDialog);
+    }
+
+    [AvaloniaFact]
+    public void Icon_only_buttons_have_names_for_screen_readers()
+    {
+        var viewModel = SampleMainViewModel();
+        viewModel.Notice = "Couldn't reach Epic.";
+        SampleFab(viewModel);
+        var window = Show(viewModel);
+        viewModel.IsFabTab = true;
+        Dispatcher.UIThread.RunJobs();
+
+        // A button showing no text of its own (a symbol, an icon) needs a name a screen reader can say.
+        var unnamed = window.GetVisualDescendants().OfType<Button>()
+            .Where(b => b.TemplatedParent is null) // ours, not parts of a control's template (a scroll bar's arrows)
+            .Where(b => b.Content is not string { Length: > 0 } text || !text.Any(char.IsLetter))
+            .Where(b => b.Content is not TextBlock and not StackPanel and not Panel)
+            .Where(b => string.IsNullOrEmpty(AutomationProperties.GetName(b)))
+            .Select(b => ToolTip.GetTip(b) as string ?? b.Content?.ToString() ?? b.GetType().Name)
+            .ToList();
+        Assert.Empty(unnamed);
     }
 
     [AvaloniaFact]

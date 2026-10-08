@@ -20,7 +20,7 @@ public sealed record FabItemRow(IReadOnlyList<FabItemViewModel> Items, int Colum
 /// </summary>
 public partial class FabLibraryViewModel : ViewModelBase
 {
-    private const string AllEngines = "All engines";
+    private const string AllEngines = "All Engines";
 
     private List<FabItemViewModel> _all = [];
     private IReadOnlyList<FabLibraryItem>? _library;
@@ -64,7 +64,7 @@ public partial class FabLibraryViewModel : ViewModelBase
             BuildRows();
         }
     }
-    public IReadOnlyList<string> KindOptions { get; } = ["All types", "Plugins", "Asset packs", "Projects"];
+    public IReadOnlyList<string> KindOptions { get; } = ["All Types", "Plugins", "Asset Packs", "Projects"];
     public ObservableCollection<string> EngineOptions { get; } = [AllEngines];
 
     public bool IsSignedOut => !Owner.IsSignedIn;

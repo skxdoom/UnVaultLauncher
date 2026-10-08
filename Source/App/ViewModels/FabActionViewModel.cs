@@ -90,7 +90,9 @@ public partial class FabActionViewModel : ViewModelBase
         StringComparer.Create(CultureInfo.CurrentCulture, CompareOptions.IgnoreCase | CompareOptions.NumericOrdering);
 
     /// <summary>Narrows the project list by name (not folder: projects usually share one, like "Unreal Projects").</summary>
-    [ObservableProperty] public partial string ProjectSearch { get; set; } = "";
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(ClearProjectSearchCommand))]
+    public partial string ProjectSearch { get; set; } = "";
 
     partial void OnProjectSearchChanged(string value) => FilterProjects();
     public ObservableCollection<FabVersionOption> VersionChoices { get; } = [];
@@ -220,8 +222,10 @@ public partial class FabActionViewModel : ViewModelBase
             : null;
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanClearProjectSearch))]
     private void ClearProjectSearch() => ProjectSearch = "";
+
+    private bool CanClearProjectSearch() => ProjectSearch.Length > 0;
 
     private FabTargetViewModel ProjectTarget(UnrealProject project)
     {

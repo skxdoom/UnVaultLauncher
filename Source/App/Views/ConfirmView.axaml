@@ -13,8 +13,8 @@
             </StackPanel>
             <Border BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="0,1,0,0" Padding="24,14" Margin="0,20,0,0">
                 <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
-                    <Button Content="Cancel" Command="{Binding CancelCommand}" />
-                    <Button Content="{Binding ConfirmText}" Classes="accent" Command="{Binding ConfirmCommand}" />
+                    <Button Content="Cancel" Command="{Binding CancelCommand}" IsCancel="True" />
+                    <Button Content="{Binding ConfirmText}" Classes="accent" Command="{Binding ConfirmCommand}" IsDefault="True" />
                 </StackPanel>
             </Border>
         </StackPanel>

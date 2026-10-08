@@ -28,7 +28,7 @@
                     <Button Content="Launch" Classes="accent" Command="{Binding LaunchCommand}" IsVisible="{Binding IsInstalled}" />
                     <Button Content="Install…" Classes="accent" Command="{Binding InstallCommand}" IsVisible="{Binding CanInstall}" />
                     <Button Content="Options" Command="{Binding ModifyCommand}" IsVisible="{Binding IsInstalled}" />
-                    <Button Content="⋯" IsVisible="{Binding IsInstalled}" ToolTip.Tip="More">
+                    <Button Content="⋯" IsVisible="{Binding IsInstalled}" ToolTip.Tip="More" AutomationProperties.Name="More">
                         <Button.Flyout>
                             <MenuFlyout>
                                 <MenuItem Header="Verify Files" Command="{Binding VerifyCommand}" />

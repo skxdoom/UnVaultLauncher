@@ -48,7 +48,7 @@
                 <Button Content="{Binding PrimaryText}" Classes.accent="{Binding !HasUpdate}" Classes.update="{Binding HasUpdate}"
                         Command="{Binding PrimaryCommand}" IsEnabled="{Binding IsIdle}" ToolTip.Tip="{Binding UpdateText}"
                         HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
-                <Button Grid.Column="1" Content="⋯" Margin="6,0,0,0" ToolTip.Tip="More">
+                <Button Grid.Column="1" Content="⋯" Margin="6,0,0,0" ToolTip.Tip="More" AutomationProperties.Name="More">
                     <Button.Flyout>
                         <MenuFlyout>
                             <MenuItem Header="{Binding ActionText}" Command="{Binding ActionCommand}" IsVisible="{Binding HasUpdate}" IsEnabled="{Binding IsIdle}" />

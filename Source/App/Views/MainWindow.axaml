@@ -35,7 +35,7 @@
                     </StackPanel>
 
                     <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                        <Button Classes="subtle" Command="{Binding RefreshCommand}" ToolTip.Tip="Refresh" IsEnabled="{Binding !IsLoading}" Padding="8">
+                        <Button Classes="subtle" Command="{Binding RefreshCommand}" ToolTip.Tip="Refresh" AutomationProperties.Name="Refresh" IsEnabled="{Binding !IsLoading}" Padding="8">
                             <!-- A clockwise arrow: a ring around (8,8) open at the top right, ending in an arrowhead -->
                             <PathIcon Width="15" Height="15"
                                       Data="F1 M13.95,8 A5.95,5.95 0 1 1 12.207,3.793 L11.217,4.783 A4.55,4.55 0 1 0 12.55,8 A0.7,0.7 0 0 1 13.95,8 Z M13.4,6 L9.6,5.7 L13.1,2.2 Z" />
@@ -159,9 +159,9 @@
             </Border>
         </Grid>
 
-        <!-- Dialog overlay -->
-        <Border Background="{StaticResource OverlayBrush}" IsVisible="{Binding HasDialog}">
-            <ContentControl Content="{Binding Dialog}" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="24">
+        <!-- Dialog overlay: Tab goes round the dialog's controls and never reaches the page behind -->
+        <Border Background="{StaticResource OverlayBrush}" IsVisible="{Binding HasDialog}" KeyboardNavigation.TabNavigation="Cycle">
+            <ContentControl x:Name="DialogHost" Content="{Binding Dialog}" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="24">
                 <ContentControl.DataTemplates>
                     <DataTemplate DataType="vm:ComponentPickerViewModel">
                         <views:ComponentPickerView />
