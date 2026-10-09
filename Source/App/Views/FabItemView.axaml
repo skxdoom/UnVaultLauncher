@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:s="using:UnVault.App"
              xmlns:vm="using:UnVault.App.ViewModels"
              xmlns:views="using:UnVault.App.Views"
              x:Class="UnVault.App.Views.FabItemView"
@@ -42,7 +43,7 @@
                 <TextBlock Text="{Binding BylineText}" Classes="muted small" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding BylineText}" />
                 <!-- Docked right to left: the Vault Cache mark ends the line, the installed one comes before it -->
                 <DockPanel>
-                    <TextBlock DockPanel.Dock="Right" Text="Working…" Classes="muted small" Margin="8,0,0,0" IsVisible="{Binding IsBusy}" />
+                    <TextBlock DockPanel.Dock="Right" Text="{x:Static s:Strings.Working}" Classes="muted small" Margin="8,0,0,0" IsVisible="{Binding IsBusy}" />
                     <Border DockPanel.Dock="Right" Background="Transparent" Margin="6,0,0,0" IsVisible="{Binding ShowsDownloadedMark}"
                             ToolTip.Tip="{Binding DownloadedText}">
                         <Path Classes="status" Data="{StaticResource DownloadIcon}" Stroke="{StaticResource MutedTextBrush}" />
@@ -61,14 +62,14 @@
                 <Button Content="{Binding PrimaryText}" Classes.accent="{Binding !HasUpdate}" Classes.update="{Binding HasUpdate}"
                         Command="{Binding PrimaryCommand}" IsEnabled="{Binding IsIdle}" ToolTip.Tip="{Binding PrimaryToolTip}"
                         HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
-                <Button Grid.Column="1" Content="⋯" Margin="6,0,0,0" ToolTip.Tip="More" AutomationProperties.Name="More">
+                <Button Grid.Column="1" Content="⋯" Margin="6,0,0,0" ToolTip.Tip="{x:Static s:Strings.More}" AutomationProperties.Name="{x:Static s:Strings.More}">
                     <Button.Flyout>
                         <MenuFlyout>
                             <MenuItem Header="{Binding ActionText}" Command="{Binding ActionCommand}" IsVisible="{Binding HasUpdate}" IsEnabled="{Binding IsIdle}" />
-                            <MenuItem Header="Download to Vault Cache" Command="{Binding DownloadCommand}" IsEnabled="{Binding IsInLibrary}" />
-                            <MenuItem Header="Show in Folder" Command="{Binding ShowInFolderCommand}" IsEnabled="{Binding HasFolder}" />
-                            <MenuItem Header="Open on Fab" Command="{Binding OpenFabPageCommand}" IsEnabled="{Binding HasFabPage}" />
-                            <MenuItem Header="Remove from Engine" Command="{Binding RemoveCommand}" IsVisible="{Binding ShowsRemove}" IsEnabled="{Binding IsInstalled}" />
+                            <MenuItem Header="{x:Static s:Strings.DownloadToVaultCache}" Command="{Binding DownloadCommand}" IsEnabled="{Binding IsInLibrary}" />
+                            <MenuItem Header="{x:Static s:Strings.ShowInFolder}" Command="{Binding ShowInFolderCommand}" IsEnabled="{Binding HasFolder}" />
+                            <MenuItem Header="{x:Static s:Strings.OpenOnFab}" Command="{Binding OpenFabPageCommand}" IsEnabled="{Binding HasFabPage}" />
+                            <MenuItem Header="{x:Static s:Strings.RemoveFromEngine}" Command="{Binding RemoveCommand}" IsVisible="{Binding ShowsRemove}" IsEnabled="{Binding IsInstalled}" />
                         </MenuFlyout>
                     </Button.Flyout>
                 </Button>

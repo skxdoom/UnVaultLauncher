@@ -1,7 +1,8 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:s="using:UnVault.App"
         x:Class="UnVault.App.Views.LoginWindow"
-        Title="Sign in to Epic Games"
+        Title="{x:Static s:Strings.SignInToEpicGames}"
         Width="520" Height="760" MinWidth="420" MinHeight="560"
         WindowStartupLocation="CenterOwner"
         Background="{StaticResource WindowBackgroundBrush}">
@@ -10,24 +11,24 @@
         <!-- Shown until the embedded browser covers the window. -->
         <StackPanel x:Name="LoadingPanel" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="12">
             <ProgressBar IsIndeterminate="True" Width="200" />
-            <TextBlock Text="Opening Epic's sign-in page…" Classes="muted" HorizontalAlignment="Center" />
+            <TextBlock Text="{x:Static s:Strings.OpeningSignInPage}" Classes="muted" HorizontalAlignment="Center" />
         </StackPanel>
 
         <!-- Fallback without WebView2: sign in in the normal browser and paste the result. -->
         <StackPanel x:Name="FallbackPanel" IsVisible="False" Margin="28" Spacing="14" VerticalAlignment="Center">
-            <TextBlock Text="Sign in with your browser" FontSize="20" FontWeight="SemiBold" />
+            <TextBlock Text="{x:Static s:Strings.SignInWithBrowser}" FontSize="20" FontWeight="SemiBold" />
             <TextBlock x:Name="FallbackReason" Classes="muted small" TextWrapping="Wrap" />
             <TextBlock TextWrapping="Wrap"
-                       Text="1. Open Epic's sign-in page and sign in. If you're already signed in there, it skips straight to step 2." />
-            <Button Content="Open Sign-In Page" Classes="accent" Click="OnOpenBrowserClick" />
+                       Text="{x:Static s:Strings.SignInStep1}" />
+            <Button Content="{x:Static s:Strings.OpenSignInPage}" Classes="accent" Click="OnOpenBrowserClick" />
             <TextBlock TextWrapping="Wrap"
-                       Text="2. The page then shows a short text containing &quot;authorizationCode&quot;. Copy all of it and paste it here:" />
-            <TextBox x:Name="CodeBox" PlaceholderText="Paste here" AcceptsReturn="False" />
+                       Text="{x:Static s:Strings.SignInStep2}" />
+            <TextBox x:Name="CodeBox" PlaceholderText="{x:Static s:Strings.PasteHere}" AcceptsReturn="False" />
             <TextBlock Classes="muted small" TextWrapping="Wrap"
-                       Text="Epic warns not to share this code with third parties. UnVault Launcher runs on your PC and sends it only to Epic." />
+                       Text="{x:Static s:Strings.SignInCodeWarning}" />
             <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
-                <Button Content="Cancel" Click="OnCancelClick" />
-                <Button Content="Sign In" Classes="accent" Click="OnSubmitCodeClick" />
+                <Button Content="{x:Static s:Strings.Cancel}" Click="OnCancelClick" />
+                <Button Content="{x:Static s:Strings.SignIn}" Classes="accent" Click="OnSubmitCodeClick" />
             </StackPanel>
         </StackPanel>
     </Grid>

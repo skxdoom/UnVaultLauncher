@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:s="using:UnVault.App"
              xmlns:vm="using:UnVault.App.ViewModels"
              x:Class="UnVault.App.Views.InstalledPluginsView"
              x:DataType="vm:InstalledPluginsViewModel"
@@ -9,7 +10,7 @@
         <Grid RowDefinitions="Auto,*,Auto" MaxHeight="620">
 
             <StackPanel Margin="24,20,24,8" Spacing="2">
-                <TextBlock Text="Installed Plugins" FontSize="20" FontWeight="SemiBold" />
+                <TextBlock Text="{x:Static s:Strings.InstalledPlugins}" FontSize="20" FontWeight="SemiBold" />
                 <TextBlock Text="{Binding Subtitle}" Classes="muted small" TextTrimming="CharacterEllipsis" />
             </StackPanel>
 
@@ -39,9 +40,9 @@
                                             <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Title}" />
                                             <TextBlock Text="{Binding Details}" Classes="muted small" TextTrimming="CharacterEllipsis" />
                                         </StackPanel>
-                                        <Button Grid.Column="2" Content="Show in Folder" Margin="12,0,0,0" VerticalAlignment="Center"
+                                        <Button Grid.Column="2" Content="{x:Static s:Strings.ShowInFolder}" Margin="12,0,0,0" VerticalAlignment="Center"
                                                 Command="{Binding ShowInFolderCommand}" IsVisible="{Binding HasFolder}" />
-                                        <Button Grid.Column="3" Content="Remove" Margin="8,0,0,0" VerticalAlignment="Center" Command="{Binding RemoveCommand}"
+                                        <Button Grid.Column="3" Content="{x:Static s:Strings.Remove}" Margin="8,0,0,0" VerticalAlignment="Center" Command="{Binding RemoveCommand}"
                                                 ToolTip.Tip="{Binding RemoveTip}" ToolTip.ShowOnDisabled="True" />
                                     </Grid>
                                 </Border>
@@ -52,7 +53,7 @@
             </Grid>
 
             <Border Grid.Row="2" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="0,1,0,0" Padding="24,14" Margin="0,16,0,0">
-                <Button Content="Close" Classes="accent" HorizontalAlignment="Right" Command="{Binding CloseCommand}" IsDefault="True" IsCancel="True" />
+                <Button Content="{x:Static s:Strings.Close}" Classes="accent" HorizontalAlignment="Right" Command="{Binding CloseCommand}" IsDefault="True" IsCancel="True" />
             </Border>
         </Grid>
     </Border>

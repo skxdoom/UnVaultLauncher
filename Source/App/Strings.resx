@@ -1,0 +1,300 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The app's interface text, in English. A translation is a copy of this file named for its language, e.g. Strings.de.resx,
+  with the values translated and the names left as they are; anything it leaves out shows in English.
+  Not here, as they stay the same in every language: the product name (UnVault Launcher), names like GitHub, Fab and
+  Epic Games where they stand alone, and symbols such as ⋯ and ✕.
+  Section headings are written in capitals, as they show; a language without capitals writes them as it normally would.
+-->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+
+  <!-- Used in many places -->
+  <data name="Browse" xml:space="preserve">
+    <value>Browse…</value>
+    <comment>Button that opens a folder picker.</comment>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="ClearSearch" xml:space="preserve">
+    <value>Clear Search</value>
+    <comment>Name of the × button in a search box, read out by screen readers.</comment>
+  </data>
+  <data name="ClearSearchTip" xml:space="preserve">
+    <value>Clear search (Esc)</value>
+    <comment>Tooltip of the × button in a search box.</comment>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="Dismiss" xml:space="preserve">
+    <value>Dismiss</value>
+    <comment>Hides a message or a finished download from the list.</comment>
+  </data>
+  <data name="Installed" xml:space="preserve">
+    <value>Installed</value>
+    <comment>Label beside an engine component that's already on disk.</comment>
+  </data>
+  <data name="More" xml:space="preserve">
+    <value>More</value>
+    <comment>Tooltip and screen reader name of the ⋯ button that opens a menu of further actions.</comment>
+  </data>
+  <data name="Remove" xml:space="preserve">
+    <value>Remove</value>
+  </data>
+  <data name="SectionLocation" xml:space="preserve">
+    <value>LOCATION</value>
+    <comment>Section heading: the folder something is installed or created in.</comment>
+  </data>
+  <data name="SectionVersion" xml:space="preserve">
+    <value>VERSION</value>
+    <comment>Section heading: the engine version to pick.</comment>
+  </data>
+  <data name="ShowInFolder" xml:space="preserve">
+    <value>Show in Folder</value>
+  </data>
+  <data name="SignIn" xml:space="preserve">
+    <value>Sign In</value>
+  </data>
+  <data name="Working" xml:space="preserve">
+    <value>Working…</value>
+    <comment>Shown on an engine or item while a download, install or removal is busy with it.</comment>
+  </data>
+
+  <!-- Main window -->
+  <data name="AboutUnVaultLauncher" xml:space="preserve">
+    <value>About UnVault Launcher</value>
+    <comment>Tooltip of the version number in the header, which opens the About window.</comment>
+  </data>
+  <data name="Engines" xml:space="preserve">
+    <value>Engines</value>
+    <comment>Tab with the installed Unreal Engine versions.</comment>
+  </data>
+  <data name="EnginesSignInBanner" xml:space="preserve">
+    <value>Sign in to see every engine version your account can install. Installed engines can be modified and verified without signing in.</value>
+  </data>
+  <data name="InstallEngine" xml:space="preserve">
+    <value>Install Engine</value>
+    <comment>Tooltip of the + button on the Engines tab.</comment>
+  </data>
+  <data name="Library" xml:space="preserve">
+    <value>Library</value>
+    <comment>Tab with the account's Fab library, and its title.</comment>
+  </data>
+  <data name="NoEngines" xml:space="preserve">
+    <value>No engines installed yet.</value>
+  </data>
+  <data name="NoEnginesHint" xml:space="preserve">
+    <value>Click + to pick a version and only the components you need.</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>Refresh</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="SignOut" xml:space="preserve">
+    <value>Sign Out</value>
+  </data>
+  <data name="UnrealEngine" xml:space="preserve">
+    <value>Unreal Engine</value>
+    <comment>Title of the Engines tab. The engine's name; most languages keep it as it is.</comment>
+  </data>
+  <data name="UpdateAvailable" xml:space="preserve">
+    <value>Update available</value>
+    <comment>Shown beside the version number when a newer release of UnVault Launcher is out.</comment>
+  </data>
+
+  <!-- Engine cards -->
+  <data name="InstallEllipsis" xml:space="preserve">
+    <value>Install…</value>
+    <comment>Reinstalls an engine whose files are gone; opens the install window.</comment>
+  </data>
+  <data name="InstalledPlugins" xml:space="preserve">
+    <value>Installed Plugins</value>
+  </data>
+  <data name="Launch" xml:space="preserve">
+    <value>Launch</value>
+    <comment>Starts the Unreal Editor.</comment>
+  </data>
+  <data name="Options" xml:space="preserve">
+    <value>Options</value>
+    <comment>Opens the window for changing an installed engine's components.</comment>
+  </data>
+  <data name="VerifyFiles" xml:space="preserve">
+    <value>Verify Files</value>
+  </data>
+
+  <!-- Install and Options windows (engine components) -->
+  <data name="CoreComponents" xml:space="preserve">
+    <value>Core Components (Required)</value>
+  </data>
+  <data name="ReadingBuildManifest" xml:space="preserve">
+    <value>Reading the build manifest… (the first time for a version takes a few seconds)</value>
+  </data>
+  <data name="SectionContent" xml:space="preserve">
+    <value>CONTENT</value>
+    <comment>Section heading: optional content such as Starter Content and templates.</comment>
+  </data>
+  <data name="SectionDebugging" xml:space="preserve">
+    <value>DEBUGGING</value>
+    <comment>Section heading: debug symbols.</comment>
+  </data>
+  <data name="SectionTargetPlatforms" xml:space="preserve">
+    <value>TARGET PLATFORMS</value>
+  </data>
+
+  <!-- Library tab and its items -->
+  <data name="DownloadedOnly" xml:space="preserve">
+    <value>Downloaded Only</value>
+    <comment>Filter: show only items in the Vault Cache.</comment>
+  </data>
+  <data name="DownloadToVaultCache" xml:space="preserve">
+    <value>Download to Vault Cache</value>
+  </data>
+  <data name="LibrarySignInBanner" xml:space="preserve">
+    <value>Showing what's already in your Vault Cache. Sign in to see your whole library and download more.</value>
+  </data>
+  <data name="OpenOnFab" xml:space="preserve">
+    <value>Open on Fab</value>
+  </data>
+  <data name="RemoveFromEngine" xml:space="preserve">
+    <value>Remove from Engine</value>
+  </data>
+  <data name="SearchYourLibrary" xml:space="preserve">
+    <value>Search your library</value>
+  </data>
+
+  <!-- Install / Add to Project / Create Project windows -->
+  <data name="ChooseProjectFile" xml:space="preserve">
+    <value>Choose a .uproject…</value>
+    <comment>Opens a file picker for an Unreal project file; .uproject is the file type and stays as it is.</comment>
+  </data>
+  <data name="SearchProjects" xml:space="preserve">
+    <value>Search projects</value>
+  </data>
+  <data name="SectionProjectName" xml:space="preserve">
+    <value>PROJECT NAME</value>
+  </data>
+
+  <!-- Sign-in window -->
+  <data name="OpenSignInPage" xml:space="preserve">
+    <value>Open Sign-In Page</value>
+  </data>
+  <data name="OpeningSignInPage" xml:space="preserve">
+    <value>Opening Epic's sign-in page…</value>
+  </data>
+  <data name="PasteHere" xml:space="preserve">
+    <value>Paste here</value>
+  </data>
+  <data name="SignInCodeWarning" xml:space="preserve">
+    <value>Epic warns not to share this code with third parties. UnVault Launcher runs on your PC and sends it only to Epic.</value>
+  </data>
+  <data name="SignInStep1" xml:space="preserve">
+    <value>1. Open Epic's sign-in page and sign in. If you're already signed in there, it skips straight to step 2.</value>
+  </data>
+  <data name="SignInStep2" xml:space="preserve">
+    <value>2. The page then shows a short text containing "authorizationCode". Copy all of it and paste it here:</value>
+    <comment>authorizationCode is text on Epic's page and stays as it is.</comment>
+  </data>
+  <data name="SignInToEpicGames" xml:space="preserve">
+    <value>Sign in to Epic Games</value>
+    <comment>Title of the sign-in window.</comment>
+  </data>
+  <data name="SignInWithBrowser" xml:space="preserve">
+    <value>Sign in with your browser</value>
+  </data>
+
+  <!-- Downloads and other work in progress -->
+  <data name="Retry" xml:space="preserve">
+    <value>Retry</value>
+  </data>
+
+  <!-- Settings -->
+  <data name="AddFolder" xml:space="preserve">
+    <value>Add Folder…</value>
+  </data>
+  <data name="CheckForUpdatesAtStartup" xml:space="preserve">
+    <value>Check for Updates at Startup</value>
+  </data>
+  <data name="CheckForUpdatesHint" xml:space="preserve">
+    <value>Ask GitHub for new releases of UnVault Launcher.</value>
+  </data>
+  <data name="Default" xml:space="preserve">
+    <value>Default</value>
+    <comment>Label beside the project folder new projects are created in.</comment>
+  </data>
+  <data name="ParallelDownloads" xml:space="preserve">
+    <value>Parallel downloads</value>
+  </data>
+  <data name="ParallelDownloadsHint" xml:space="preserve">
+    <value>More can be faster on fast connections; fewer is gentler on slow ones.</value>
+  </data>
+  <data name="RemoveFolder" xml:space="preserve">
+    <value>Remove Folder</value>
+    <comment>Screen reader name of the button that takes a folder off the list of project folders.</comment>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="SectionDownloads" xml:space="preserve">
+    <value>DOWNLOADS</value>
+  </data>
+  <data name="SectionEngineInstallFolder" xml:space="preserve">
+    <value>ENGINE INSTALL FOLDER</value>
+  </data>
+  <data name="SectionProjectFolders" xml:space="preserve">
+    <value>PROJECT FOLDERS</value>
+  </data>
+  <data name="SectionUpdates" xml:space="preserve">
+    <value>UPDATES</value>
+  </data>
+  <data name="SectionVaultCacheFolder" xml:space="preserve">
+    <value>VAULT CACHE FOLDER</value>
+  </data>
+
+  <!-- About -->
+  <data name="AboutDescription" xml:space="preserve">
+    <value>A streamlined and lightweight launcher for installing and managing Unreal Engine and Fab assets and plugins.</value>
+  </data>
+  <data name="CheckAgain" xml:space="preserve">
+    <value>Check Again</value>
+    <comment>Asks GitHub again whether a newer release is out.</comment>
+  </data>
+  <data name="DataFolderTip" xml:space="preserve">
+    <value>Sign-in, settings, caches and crash.log</value>
+    <comment>What the data folder holds. crash.log is a file name and stays as it is.</comment>
+  </data>
+  <data name="Disclaimer" xml:space="preserve">
+    <value>Not affiliated with or endorsed by Epic Games. Unreal Engine, Epic Games and Fab are trademarks of Epic Games, Inc.</value>
+  </data>
+  <data name="Download" xml:space="preserve">
+    <value>Download</value>
+    <comment>Opens the page of the newer release.</comment>
+  </data>
+  <data name="OpenDataFolder" xml:space="preserve">
+    <value>Open Data Folder</value>
+  </data>
+  <data name="Releases" xml:space="preserve">
+    <value>Releases</value>
+    <comment>Link to the list of UnVault Launcher releases on GitHub.</comment>
+  </data>
+  <data name="ReportAnIssue" xml:space="preserve">
+    <value>Report an Issue</value>
+  </data>
+  <data name="SectionLinks" xml:space="preserve">
+    <value>LINKS</value>
+  </data>
+</root>

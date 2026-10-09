@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:s="using:UnVault.App"
              xmlns:vm="using:UnVault.App.ViewModels"
              x:Class="UnVault.App.Views.SettingsView"
              x:DataType="vm:SettingsViewModel"
@@ -8,25 +9,25 @@
     <Border Classes="card dialog">
         <Grid RowDefinitions="Auto,*,Auto" MaxHeight="700">
 
-            <TextBlock Text="Settings" FontSize="20" FontWeight="SemiBold" Margin="24,20,24,4" />
+            <TextBlock Text="{x:Static s:Strings.Settings}" FontSize="20" FontWeight="SemiBold" Margin="24,20,24,4" />
 
             <ScrollViewer Grid.Row="1">
                 <StackPanel Margin="24,0">
-                    <TextBlock Text="ENGINE INSTALL FOLDER" Classes="section" />
+                    <TextBlock Text="{x:Static s:Strings.SectionEngineInstallFolder}" Classes="section" />
                     <Grid ColumnDefinitions="*,Auto">
                         <TextBox Text="{Binding EngineInstallRoot}" PlaceholderText="{Binding EngineRootPlaceholder}" />
-                        <Button Grid.Column="1" Content="Browse…" Margin="8,0,0,0" Command="{Binding BrowseEngineRootCommand}" />
+                        <Button Grid.Column="1" Content="{x:Static s:Strings.Browse}" Margin="8,0,0,0" Command="{Binding BrowseEngineRootCommand}" />
                     </Grid>
                     <TextBlock Text="{Binding EngineRootHint}" Classes="muted small" TextWrapping="Wrap" Margin="0,6,0,0" />
 
-                    <TextBlock Text="VAULT CACHE FOLDER" Classes="section" />
+                    <TextBlock Text="{x:Static s:Strings.SectionVaultCacheFolder}" Classes="section" />
                     <Grid ColumnDefinitions="*,Auto">
                         <TextBox Text="{Binding VaultCacheDirectory}" PlaceholderText="{Binding VaultPlaceholder}" />
-                        <Button Grid.Column="1" Content="Browse…" Margin="8,0,0,0" Command="{Binding BrowseVaultCacheCommand}" />
+                        <Button Grid.Column="1" Content="{x:Static s:Strings.Browse}" Margin="8,0,0,0" Command="{Binding BrowseVaultCacheCommand}" />
                     </Grid>
                     <TextBlock Text="{Binding VaultSummary}" Classes="muted small" TextWrapping="Wrap" Margin="0,6,0,0" />
 
-                    <TextBlock Text="PROJECT FOLDERS" Classes="section" />
+                    <TextBlock Text="{x:Static s:Strings.SectionProjectFolders}" Classes="section" />
                     <Border Classes="folder" IsVisible="{Binding HasNoProjectFolders}">
                         <TextBlock Text="{Binding ProjectFoldersAutomatic}" Classes="muted" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding ProjectFoldersAutomatic}" />
                     </Border>
@@ -40,9 +41,9 @@
                                             <TextBlock Text="{Binding Path}" TextTrimming="CharacterEllipsis" />
                                         </RadioButton>
                                         <Border Grid.Column="1" Classes="chip" Margin="8,0,0,0" VerticalAlignment="Center" IsVisible="{Binding IsDefault}">
-                                            <TextBlock Text="Default" />
+                                            <TextBlock Text="{x:Static s:Strings.Default}" />
                                         </Border>
-                                        <Button Grid.Column="2" Classes="clear" Margin="4,0,-6,0" Command="{Binding RemoveCommand}" ToolTip.Tip="Remove" AutomationProperties.Name="Remove Folder">
+                                        <Button Grid.Column="2" Classes="clear" Margin="4,0,-6,0" Command="{Binding RemoveCommand}" ToolTip.Tip="{x:Static s:Strings.Remove}" AutomationProperties.Name="{x:Static s:Strings.RemoveFolder}">
                                             <Path Data="M0,0 L9,9 M9,0 L0,9" Stroke="{StaticResource MutedTextBrush}" StrokeThickness="1.6" StrokeLineCap="Round" />
                                         </Button>
                                     </Grid>
@@ -50,22 +51,22 @@
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
-                    <Button Content="Add Folder…" Margin="0,2,0,0" Command="{Binding AddProjectFolderCommand}" />
+                    <Button Content="{x:Static s:Strings.AddFolder}" Margin="0,2,0,0" Command="{Binding AddProjectFolderCommand}" />
                     <TextBlock Text="{Binding ProjectFoldersHint}" Classes="muted small" TextWrapping="Wrap" Margin="0,6,0,0" />
 
-                    <TextBlock Text="DOWNLOADS" Classes="section" />
+                    <TextBlock Text="{x:Static s:Strings.SectionDownloads}" Classes="section" />
                     <Grid ColumnDefinitions="*,Auto">
                         <StackPanel VerticalAlignment="Center">
-                            <TextBlock Text="Parallel downloads" />
-                            <TextBlock Text="More can be faster on fast connections; fewer is gentler on slow ones." Classes="muted small" />
+                            <TextBlock Text="{x:Static s:Strings.ParallelDownloads}" />
+                            <TextBlock Text="{x:Static s:Strings.ParallelDownloadsHint}" Classes="muted small" />
                         </StackPanel>
                         <NumericUpDown Grid.Column="1" Value="{Binding ParallelDownloads}" Minimum="1" Maximum="64" Increment="1"
                                        FormatString="0" Width="130" />
                     </Grid>
 
-                    <TextBlock Text="UPDATES" Classes="section" />
-                    <CheckBox Content="Check for Updates at Startup" IsChecked="{Binding CheckForUpdates}" />
-                    <TextBlock Text="Ask GitHub for new releases of UnVault Launcher."
+                    <TextBlock Text="{x:Static s:Strings.SectionUpdates}" Classes="section" />
+                    <CheckBox Content="{x:Static s:Strings.CheckForUpdatesAtStartup}" IsChecked="{Binding CheckForUpdates}" />
+                    <TextBlock Text="{x:Static s:Strings.CheckForUpdatesHint}"
                                Classes="muted small" TextWrapping="Wrap" Margin="0,4,0,0" />
 
                     <Border Classes="banner warning" Margin="0,16,0,0" IsVisible="{Binding HasError}">
@@ -76,8 +77,8 @@
 
             <Border Grid.Row="2" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="0,1,0,0" Padding="24,14" Margin="0,20,0,0">
                 <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
-                    <Button Content="Cancel" Command="{Binding CancelCommand}" IsCancel="True" />
-                    <Button Content="Save" Classes="accent" Command="{Binding SaveCommand}" IsDefault="True" />
+                    <Button Content="{x:Static s:Strings.Cancel}" Command="{Binding CancelCommand}" IsCancel="True" />
+                    <Button Content="{x:Static s:Strings.Save}" Classes="accent" Command="{Binding SaveCommand}" IsDefault="True" />
                 </StackPanel>
             </Border>
         </Grid>

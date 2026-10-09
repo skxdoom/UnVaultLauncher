@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:s="using:UnVault.App"
              xmlns:vm="using:UnVault.App.ViewModels"
              xmlns:views="using:UnVault.App.Views"
              x:Class="UnVault.App.Views.FabLibraryView"
@@ -10,7 +11,7 @@
 
         <StackPanel Spacing="12" Margin="24,20,24,0" MaxWidth="{StaticResource PageMaxWidth}">
             <Grid Classes="title" ColumnDefinitions="Auto,*,Auto">
-                <TextBlock Text="Library" FontSize="22" FontWeight="SemiBold" VerticalAlignment="Center" />
+                <TextBlock Text="{x:Static s:Strings.Library}" FontSize="22" FontWeight="SemiBold" VerticalAlignment="Center" />
                 <!-- Loading progress, next to the title (same place as on the Engines tab) -->
                 <DockPanel Grid.Column="1" Margin="20,0,12,0" VerticalAlignment="Center" IsVisible="{Binding IsLoading}">
                     <ProgressBar DockPanel.Dock="Left" IsIndeterminate="True" Width="120" />
@@ -20,12 +21,12 @@
             </Grid>
 
             <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto">
-                <TextBox Text="{Binding SearchText}" PlaceholderText="Search your library">
+                <TextBox Text="{Binding SearchText}" PlaceholderText="{x:Static s:Strings.SearchYourLibrary}">
                     <TextBox.KeyBindings>
                         <KeyBinding Gesture="Escape" Command="{Binding ClearSearchCommand}" />
                     </TextBox.KeyBindings>
                     <TextBox.InnerRightContent>
-                        <Button Classes="clear" Command="{Binding ClearSearchCommand}" ToolTip.Tip="Clear search (Esc)" AutomationProperties.Name="Clear Search"
+                        <Button Classes="clear" Command="{Binding ClearSearchCommand}" ToolTip.Tip="{x:Static s:Strings.ClearSearchTip}" AutomationProperties.Name="{x:Static s:Strings.ClearSearch}"
                                 IsVisible="{Binding SearchText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
                             <Path Data="M0,0 L9,9 M9,0 L0,9" Stroke="{StaticResource MutedTextBrush}" StrokeThickness="1.6" StrokeLineCap="Round" />
                         </Button>
@@ -33,7 +34,7 @@
                 </TextBox>
                 <ComboBox Grid.Column="1" Margin="8,0,0,0" MinWidth="130" ItemsSource="{Binding KindOptions}" SelectedIndex="{Binding KindIndex}" />
                 <ComboBox Grid.Column="2" Margin="8,0,0,0" MinWidth="130" ItemsSource="{Binding EngineOptions}" SelectedItem="{Binding EngineOption}" />
-                <CheckBox Grid.Column="3" Margin="12,0,0,0" Content="Downloaded Only" IsChecked="{Binding DownloadedOnly}" />
+                <CheckBox Grid.Column="3" Margin="12,0,0,0" Content="{x:Static s:Strings.DownloadedOnly}" IsChecked="{Binding DownloadedOnly}" />
                 <CheckBox Grid.Column="4" Margin="12,0,0,0" Content="{Binding UpdatesFilterText}" IsChecked="{Binding UpdatesOnly}" />
             </Grid>
         </StackPanel>
@@ -42,8 +43,8 @@
             <Border Classes="banner" IsVisible="{Binding IsSignedOut}">
                 <Grid ColumnDefinitions="*,Auto">
                     <TextBlock TextWrapping="Wrap" VerticalAlignment="Center"
-                               Text="Showing what's already in your Vault Cache. Sign in to see your whole library and download more." />
-                    <Button Grid.Column="1" Content="Sign In" Classes="accent" Margin="12,0,0,0" Command="{Binding Owner.SignInCommand}" />
+                               Text="{x:Static s:Strings.LibrarySignInBanner}" />
+                    <Button Grid.Column="1" Content="{x:Static s:Strings.SignIn}" Classes="accent" Margin="12,0,0,0" Command="{Binding Owner.SignInCommand}" />
                 </Grid>
             </Border>
             <Border Classes="banner warning" IsVisible="{Binding HasError}">

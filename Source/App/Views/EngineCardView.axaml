@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:s="using:UnVault.App"
              xmlns:vm="using:UnVault.App.ViewModels"
              x:Class="UnVault.App.Views.EngineCardView"
              x:DataType="vm:EngineCardViewModel">
@@ -17,7 +18,7 @@
                             <TextBlock Text="{Binding StatusText}" />
                         </Border>
                         <Border Classes="chip" IsVisible="{Binding IsBusy}">
-                            <TextBlock Text="Working…" />
+                            <TextBlock Text="{x:Static s:Strings.Working}" />
                         </Border>
                     </StackPanel>
                     <TextBlock Text="{Binding Details}" Classes="muted" TextWrapping="Wrap" IsVisible="{Binding Details, Converter={x:Static ObjectConverters.IsNotNull}}" />
@@ -25,15 +26,15 @@
                 </StackPanel>
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                    <Button Content="Launch" Classes="accent" Command="{Binding LaunchCommand}" IsVisible="{Binding IsInstalled}" />
-                    <Button Content="Install…" Classes="accent" Command="{Binding InstallCommand}" IsVisible="{Binding CanInstall}" />
-                    <Button Content="Options" Command="{Binding ModifyCommand}" IsVisible="{Binding IsInstalled}" />
-                    <Button Content="⋯" IsVisible="{Binding IsInstalled}" ToolTip.Tip="More" AutomationProperties.Name="More">
+                    <Button Content="{x:Static s:Strings.Launch}" Classes="accent" Command="{Binding LaunchCommand}" IsVisible="{Binding IsInstalled}" />
+                    <Button Content="{x:Static s:Strings.InstallEllipsis}" Classes="accent" Command="{Binding InstallCommand}" IsVisible="{Binding CanInstall}" />
+                    <Button Content="{x:Static s:Strings.Options}" Command="{Binding ModifyCommand}" IsVisible="{Binding IsInstalled}" />
+                    <Button Content="⋯" IsVisible="{Binding IsInstalled}" ToolTip.Tip="{x:Static s:Strings.More}" AutomationProperties.Name="{x:Static s:Strings.More}">
                         <Button.Flyout>
                             <MenuFlyout>
-                                <MenuItem Header="Installed Plugins" Command="{Binding OpenPluginsCommand}" />
-                                <MenuItem Header="Verify Files" Command="{Binding VerifyCommand}" />
-                                <MenuItem Header="Show in Folder" Command="{Binding OpenFolderCommand}" />
+                                <MenuItem Header="{x:Static s:Strings.InstalledPlugins}" Command="{Binding OpenPluginsCommand}" />
+                                <MenuItem Header="{x:Static s:Strings.VerifyFiles}" Command="{Binding VerifyCommand}" />
+                                <MenuItem Header="{x:Static s:Strings.ShowInFolder}" Command="{Binding OpenFolderCommand}" />
                             </MenuFlyout>
                         </Button.Flyout>
                     </Button>

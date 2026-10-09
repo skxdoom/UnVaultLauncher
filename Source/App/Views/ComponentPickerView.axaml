@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:s="using:UnVault.App"
              xmlns:vm="using:UnVault.App.ViewModels"
              x:Class="UnVault.App.Views.ComponentPickerView"
              x:DataType="vm:ComponentPickerViewModel"
@@ -12,7 +13,7 @@
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <TextBlock Text="{Binding DisplayName}" VerticalAlignment="Center" />
                         <Border Classes="chip success" IsVisible="{Binding WasInstalled}">
-                            <TextBlock Text="Installed" />
+                            <TextBlock Text="{x:Static s:Strings.Installed}" />
                         </Border>
                     </StackPanel>
                 </CheckBox>
@@ -36,7 +37,7 @@
                 <StackPanel>
                     <!-- First, so a different version can be picked while one is still loading. -->
                     <StackPanel IsVisible="{Binding IsInstall}">
-                        <TextBlock Text="VERSION" Classes="section" />
+                        <TextBlock Text="{x:Static s:Strings.SectionVersion}" Classes="section" />
                         <ComboBox ItemsSource="{Binding VersionOptions}" SelectedItem="{Binding SelectedVersion}" HorizontalAlignment="Stretch">
                             <ComboBox.ItemTemplate>
                                 <DataTemplate DataType="vm:EngineVersionOption">
@@ -48,7 +49,7 @@
 
                     <StackPanel IsVisible="{Binding IsLoading}" Margin="0,24" Spacing="10">
                         <ProgressBar IsIndeterminate="True" />
-                        <TextBlock Text="Reading the build manifest… (the first time for a version takes a few seconds)" Classes="muted" HorizontalAlignment="Center" />
+                        <TextBlock Text="{x:Static s:Strings.ReadingBuildManifest}" Classes="muted" HorizontalAlignment="Center" />
                     </StackPanel>
 
                     <Border Classes="banner warning" IsVisible="{Binding Error, Converter={x:Static ObjectConverters.IsNotNull}}" Margin="0,12">
@@ -56,24 +57,24 @@
                     </Border>
 
                     <StackPanel IsVisible="{Binding IsReady}">
-                        <TextBlock Text="LOCATION" Classes="section" />
+                        <TextBlock Text="{x:Static s:Strings.SectionLocation}" Classes="section" />
                         <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding IsInstall}">
                             <TextBox Text="{Binding Directory}" />
-                            <Button Grid.Column="1" Content="Browse…" Margin="8,0,0,0" Command="{Binding BrowseCommand}" />
+                            <Button Grid.Column="1" Content="{x:Static s:Strings.Browse}" Margin="8,0,0,0" Command="{Binding BrowseCommand}" />
                         </Grid>
                         <TextBlock Text="{Binding Directory}" IsVisible="{Binding IsModify}" />
 
-                        <TextBlock Text="CONTENT" Classes="section" />
+                        <TextBlock Text="{x:Static s:Strings.SectionContent}" Classes="section" />
                         <Grid ColumnDefinitions="*,Auto" Margin="0,1">
-                            <CheckBox IsChecked="True" IsEnabled="False" Content="Core Components (Required)" />
+                            <CheckBox IsChecked="True" IsEnabled="False" Content="{x:Static s:Strings.CoreComponents}" />
                             <TextBlock Grid.Column="1" Text="{Binding CoreSizeText}" VerticalAlignment="Center" />
                         </Grid>
                         <ItemsControl ItemsSource="{Binding ContentOptions}" ItemTemplate="{StaticResource OptionTemplate}" />
 
-                        <TextBlock Text="TARGET PLATFORMS" Classes="section" IsVisible="{Binding HasPlatformOptions}" />
+                        <TextBlock Text="{x:Static s:Strings.SectionTargetPlatforms}" Classes="section" IsVisible="{Binding HasPlatformOptions}" />
                         <ItemsControl ItemsSource="{Binding PlatformOptions}" ItemTemplate="{StaticResource OptionTemplate}" />
 
-                        <TextBlock Text="DEBUGGING" Classes="section" IsVisible="{Binding HasDebugOptions}" />
+                        <TextBlock Text="{x:Static s:Strings.SectionDebugging}" Classes="section" IsVisible="{Binding HasDebugOptions}" />
                         <ItemsControl ItemsSource="{Binding DebugOptions}" ItemTemplate="{StaticResource OptionTemplate}" />
 
                         <Border Classes="banner" Margin="0,16,0,0" IsVisible="{Binding Note, Converter={x:Static ObjectConverters.IsNotNull}}">
@@ -93,7 +94,7 @@
                         <TextBlock Text="{Binding FreeSpaceText}" Classes="muted small" />
                     </StackPanel>
                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
-                        <Button Content="Cancel" Command="{Binding CancelCommand}" IsCancel="True" />
+                        <Button Content="{x:Static s:Strings.Cancel}" Command="{Binding CancelCommand}" IsCancel="True" />
                         <Button Content="{Binding ConfirmText}" Classes="accent" Command="{Binding ConfirmCommand}" IsDefault="True" />
                     </StackPanel>
                 </Grid>

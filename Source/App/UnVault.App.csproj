@@ -8,7 +8,22 @@
     <Product>UnVault Launcher</Product>
     <AssemblyTitle>UnVault Launcher</AssemblyTitle>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <!-- Strings.resx is English: English Windows uses it directly, other languages fall back to it where no translation exists. -->
+    <NeutralLanguage>en</NeutralLanguage>
   </PropertyGroup>
+
+  <!-- Interface text, by name. The Strings class is generated at build time (no Visual Studio needed); a translation is a
+       Strings.<language>.resx beside it, e.g. Strings.de.resx. -->
+  <ItemGroup>
+    <EmbeddedResource Update="Strings.resx">
+      <Generator>MSBuild:Compile</Generator>
+      <StronglyTypedFileName>$(IntermediateOutputPath)Strings.Designer.cs</StronglyTypedFileName>
+      <StronglyTypedLanguage>CSharp</StronglyTypedLanguage>
+      <StronglyTypedNamespace>UnVault.App</StronglyTypedNamespace>
+      <StronglyTypedClassName>Strings</StronglyTypedClassName>
+      <PublicClass>true</PublicClass>
+    </EmbeddedResource>
+  </ItemGroup>
 
   <ItemGroup>
     <AvaloniaResource Include="Assets\**" />

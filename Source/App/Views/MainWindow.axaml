@@ -1,5 +1,6 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:s="using:UnVault.App"
         xmlns:vm="using:UnVault.App.ViewModels"
         xmlns:views="using:UnVault.App.Views"
         x:Class="UnVault.App.Views.MainWindow"
@@ -22,20 +23,20 @@
                             <TextBlock Text="Launcher" FontSize="18" Classes="muted" VerticalAlignment="Center" Margin="-4,0,0,0" />
                             <!-- The version opens About; a pill beside it tells when a newer release is out -->
                             <Button Classes="subtle" Padding="4,1" Margin="-6,3,0,0" VerticalAlignment="Center" Command="{Binding OpenAboutCommand}"
-                                    ToolTip.Tip="About UnVault Launcher" AutomationProperties.Name="About UnVault Launcher">
+                                    ToolTip.Tip="{x:Static s:Strings.AboutUnVaultLauncher}" AutomationProperties.Name="{x:Static s:Strings.AboutUnVaultLauncher}">
                                 <StackPanel Orientation="Horizontal" Spacing="8">
                                     <TextBlock Text="{Binding VersionText}" Classes="muted small" VerticalAlignment="Center" />
                                     <Border Classes="chip warning" IsVisible="{Binding HasAppUpdate}">
-                                        <TextBlock Text="Update available" />
+                                        <TextBlock Text="{x:Static s:Strings.UpdateAvailable}" />
                                     </Border>
                                 </StackPanel>
                             </Button>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                            <Button Content="Engines" Classes="tab" Classes.active="{Binding IsEnginesTab}" Command="{Binding ShowEnginesCommand}" />
+                            <Button Content="{x:Static s:Strings.Engines}" Classes="tab" Classes.active="{Binding IsEnginesTab}" Command="{Binding ShowEnginesCommand}" />
                             <Button Classes="tab" Classes.active="{Binding IsFabTab}" Command="{Binding ShowFabCommand}" ToolTip.Tip="{Binding LibraryUpdatesText}">
                                 <StackPanel Orientation="Horizontal" Spacing="6">
-                                    <TextBlock Text="Library" />
+                                    <TextBlock Text="{x:Static s:Strings.Library}" />
                                     <!-- Something in the library has a newer build on Fab -->
                                     <Ellipse Width="7" Height="7" Fill="{StaticResource WarningBrush}" VerticalAlignment="Center" IsVisible="{Binding HasLibraryUpdates}" />
                                 </StackPanel>
@@ -44,13 +45,13 @@
                     </StackPanel>
 
                     <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                        <Button Classes="subtle" Command="{Binding RefreshCommand}" ToolTip.Tip="Refresh" AutomationProperties.Name="Refresh" IsEnabled="{Binding !IsLoading}" Padding="8">
+                        <Button Classes="subtle" Command="{Binding RefreshCommand}" ToolTip.Tip="{x:Static s:Strings.Refresh}" AutomationProperties.Name="{x:Static s:Strings.Refresh}" IsEnabled="{Binding !IsLoading}" Padding="8">
                             <!-- A clockwise arrow: a ring around (8,8) open at the top right, ending in an arrowhead -->
                             <PathIcon Width="15" Height="15"
                                       Data="F1 M13.95,8 A5.95,5.95 0 1 1 12.207,3.793 L11.217,4.783 A4.55,4.55 0 1 0 12.55,8 A0.7,0.7 0 0 1 13.95,8 Z M13.4,6 L9.6,5.7 L13.1,2.2 Z" />
                         </Button>
-                        <Button Classes="subtle" Content="Settings" Command="{Binding OpenSettingsCommand}" />
-                        <Button Content="Sign In" Classes="accent" Command="{Binding SignInCommand}" IsVisible="{Binding IsSignedOut}" />
+                        <Button Classes="subtle" Content="{x:Static s:Strings.Settings}" Command="{Binding OpenSettingsCommand}" />
+                        <Button Content="{x:Static s:Strings.SignIn}" Classes="accent" Command="{Binding SignInCommand}" IsVisible="{Binding IsSignedOut}" />
                         <Button Classes="subtle" IsVisible="{Binding IsSignedIn}" Padding="6,4">
                             <StackPanel Orientation="Horizontal" Spacing="8">
                                 <!-- Avatar: a grey circle with a head and shoulders cut out; one shape, so no edges overlap.
@@ -81,7 +82,7 @@
                             </StackPanel>
                             <Button.Flyout>
                                 <MenuFlyout>
-                                    <MenuItem Header="Sign Out" Command="{Binding SignOutCommand}" />
+                                    <MenuItem Header="{x:Static s:Strings.SignOut}" Command="{Binding SignOutCommand}" />
                                 </MenuFlyout>
                             </Button.Flyout>
                         </Button>
@@ -94,7 +95,7 @@
                 <Grid ColumnDefinitions="*,Auto">
                     <TextBlock Text="{Binding Notice}" TextWrapping="Wrap" VerticalAlignment="Center" />
                     <Button Grid.Column="1" Classes="subtle" Content="✕" Command="{Binding DismissNoticeCommand}"
-                            ToolTip.Tip="Dismiss" AutomationProperties.Name="Dismiss" />
+                            ToolTip.Tip="{x:Static s:Strings.Dismiss}" AutomationProperties.Name="{x:Static s:Strings.Dismiss}" />
                 </Grid>
             </Border>
 
@@ -105,28 +106,28 @@
                     <Border Classes="banner" IsVisible="{Binding IsSignedOut}">
                         <Grid ColumnDefinitions="*,Auto">
                             <TextBlock TextWrapping="Wrap" VerticalAlignment="Center"
-                                       Text="Sign in to see every engine version your account can install. Installed engines can be modified and verified without signing in." />
-                            <Button Grid.Column="1" Content="Sign In" Classes="accent" Margin="12,0,0,0" Command="{Binding SignInCommand}" />
+                                       Text="{x:Static s:Strings.EnginesSignInBanner}" />
+                            <Button Grid.Column="1" Content="{x:Static s:Strings.SignIn}" Classes="accent" Margin="12,0,0,0" Command="{Binding SignInCommand}" />
                         </Grid>
                     </Border>
 
                     <Grid Classes="title" ColumnDefinitions="Auto,*,Auto">
-                        <TextBlock Text="Unreal Engine" FontSize="22" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        <TextBlock Text="{x:Static s:Strings.UnrealEngine}" FontSize="22" FontWeight="SemiBold" VerticalAlignment="Center" />
                         <!-- Refresh progress, next to the title -->
                         <DockPanel Grid.Column="1" Margin="20,0,12,0" VerticalAlignment="Center" IsVisible="{Binding IsLoading}">
                             <ProgressBar DockPanel.Dock="Left" IsIndeterminate="True" Width="120" />
                             <TextBlock Text="{Binding LoadingText}" Classes="muted" Margin="12,0,0,0" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
                         </DockPanel>
                         <Button Grid.Column="2" Classes="accent" Command="{Binding InstallEngineCommand}" Padding="10"
-                                ToolTip.Tip="Install Engine" AutomationProperties.Name="Install Engine">
+                                ToolTip.Tip="{x:Static s:Strings.InstallEngine}" AutomationProperties.Name="{x:Static s:Strings.InstallEngine}">
                             <!-- A bold plus: two bars crossing in the middle of a 16 px grid -->
                             <PathIcon Width="14" Height="14" Data="M6.7,2 H9.3 V6.7 H14 V9.3 H9.3 V14 H6.7 V9.3 H2 V6.7 H6.7 Z" />
                         </Button>
                     </Grid>
 
                     <StackPanel IsVisible="{Binding HasNoEngines}" Margin="0,32" Spacing="6" HorizontalAlignment="Center">
-                        <TextBlock Text="No engines installed yet." FontSize="16" HorizontalAlignment="Center" />
-                        <TextBlock Text="Click + to pick a version and only the components you need." Classes="muted" HorizontalAlignment="Center" />
+                        <TextBlock Text="{x:Static s:Strings.NoEngines}" FontSize="16" HorizontalAlignment="Center" />
+                        <TextBlock Text="{x:Static s:Strings.NoEnginesHint}" Classes="muted" HorizontalAlignment="Center" />
                     </StackPanel>
 
                     <ItemsControl ItemsSource="{Binding Engines}">
