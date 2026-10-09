@@ -9,7 +9,7 @@
         <Grid RowDefinitions="*,Auto">
             <StackPanel Margin="24,22,24,0">
                 <Grid ColumnDefinitions="Auto,*">
-                    <Image Source="/Assets/unvault-logo.png" Width="52" Height="52" VerticalAlignment="Center" />
+                    <Image Source="/Assets/unvault-logo.png" Width="52" Height="52" VerticalAlignment="Center" RenderOptions.BitmapInterpolationMode="HighQuality" />
                     <StackPanel Grid.Column="1" Margin="16,0,0,0" VerticalAlignment="Center">
                         <TextBlock Text="UnVault Launcher" FontSize="20" FontWeight="SemiBold" />
                         <TextBlock Text="{Binding VersionText}" Classes="muted" />

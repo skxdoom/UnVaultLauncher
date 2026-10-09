@@ -17,7 +17,7 @@
                 <Grid ColumnDefinitions="Auto,*,Auto">
                     <StackPanel Orientation="Horizontal" Spacing="24" VerticalAlignment="Center">
                         <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-                            <Image Source="/Assets/unvault-logo.png" Width="28" Height="28" />
+                            <Image Source="/Assets/unvault-logo.png" Width="28" Height="28" RenderOptions.BitmapInterpolationMode="HighQuality" />
                             <TextBlock Text="UnVault" FontSize="18" FontWeight="Bold" VerticalAlignment="Center" />
                             <TextBlock Text="Launcher" FontSize="18" Classes="muted" VerticalAlignment="Center" Margin="-4,0,0,0" />
                             <!-- The version opens About; a pill beside it tells when a newer release is out -->
