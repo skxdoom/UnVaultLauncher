@@ -24,6 +24,7 @@ public partial class LoginWindow : Window
     public LoginWindow()
     {
         InitializeComponent();
+        DarkTitleBar.Apply(this);
         Opened += async (_, _) => await StartAsync();
         SizeChanged += (_, _) => UpdateBrowserBounds();
         Closed += (_, _) => _controller?.Close();

@@ -14,6 +14,7 @@ public partial class MainWindow : Window, IUserInteraction
     public MainWindow()
     {
         InitializeComponent();
+        DarkTitleBar.Apply(this);
         // Fetch tile pictures at the size the display actually needs (it can change when moved to another monitor).
         Opened += (_, _) => UseScaling();
         ScalingChanged += (_, _) => UseScaling();

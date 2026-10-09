@@ -110,7 +110,7 @@
                         </Grid>
                     </Border>
 
-                    <Grid ColumnDefinitions="Auto,*,Auto">
+                    <Grid Classes="title" ColumnDefinitions="Auto,*,Auto">
                         <TextBlock Text="Unreal Engine" FontSize="22" FontWeight="SemiBold" VerticalAlignment="Center" />
                         <!-- Refresh progress, next to the title -->
                         <DockPanel Grid.Column="1" Margin="20,0,12,0" VerticalAlignment="Center" IsVisible="{Binding IsLoading}">

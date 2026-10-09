@@ -60,6 +60,10 @@
             <Setter Property="Foreground" Value="{StaticResource MutedTextBrush}" />
             <Setter Property="Margin" Value="0,16,0,6" />
         </Style>
+        <!-- A page's title row: as tall as the Install Engine button beside the Engines title, so both tabs' titles line up -->
+        <Style Selector="Grid.title">
+            <Setter Property="MinHeight" Value="36" />
+        </Style>
 
         <!-- Cards -->
         <Style Selector="Border.card">

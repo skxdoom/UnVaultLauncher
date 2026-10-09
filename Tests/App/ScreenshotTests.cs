@@ -503,15 +503,17 @@ public class ScreenshotTests
                 firstRow.MaxBy(t => t.TranslatePoint(default, window)!.Value.X)!);
             Save(window, $"fab-library-{width}.png");
 
-            // Same left and right edges on both tabs; tiles keep their size and the gaps spread a full row to the page's right edge.
+            // Same left and right edges and title height on both tabs; tiles keep their size and the gaps spread a full row to the page's right edge.
             Assert.Equal(engines.Left, library.Left, 1);
             Assert.Equal(engines.Right, library.Right, 1);
+            Assert.Equal(engines.Top, library.Top, 1);
             Assert.Equal(viewModel.Fab.Columns, firstRow.Count);
             Assert.All(firstRow, t => Assert.Equal((FabRowView.TileWidth, FabRowView.TileHeight), (t.Bounds.Width, t.Bounds.Height)));
         }
 
-        (double Left, double Right) Edges(Control heading, Control rightmost) =>
-            (heading.TranslatePoint(default, window)!.Value.X, rightmost.TranslatePoint(new Point(rightmost.Bounds.Width, 0), window)!.Value.X);
+        (double Left, double Right, double Top) Edges(Control heading, Control rightmost) =>
+            (heading.TranslatePoint(default, window)!.Value.X, rightmost.TranslatePoint(new Point(rightmost.Bounds.Width, 0), window)!.Value.X,
+             heading.TranslatePoint(default, window)!.Value.Y);
     }
 
     /// <summary>The tile height is fixed, so the fullest tile possible must still fit it: no plate or button cut off.</summary>

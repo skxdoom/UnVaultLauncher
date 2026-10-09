@@ -38,7 +38,7 @@
                             ToolTip.Tip="Sign-in, settings, caches and crash.log" />
                 </WrapPanel>
 
-                <TextBlock Text="(c) Dmitry Karpukhin 2026"
+                <TextBlock Text="© Dmitry Karpukhin 2026"
                            Classes="muted small" TextWrapping="Wrap" Margin="0,16,0,0" />
 
                 <TextBlock Text="Not affiliated with or endorsed by Epic Games. Unreal Engine, Epic Games and Fab are trademarks of Epic Games, Inc."

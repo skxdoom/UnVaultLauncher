@@ -9,7 +9,7 @@
     <Grid RowDefinitions="Auto,Auto,*">
 
         <StackPanel Spacing="12" Margin="24,20,24,0" MaxWidth="{StaticResource PageMaxWidth}">
-            <Grid ColumnDefinitions="Auto,*,Auto">
+            <Grid Classes="title" ColumnDefinitions="Auto,*,Auto">
                 <TextBlock Text="Library" FontSize="22" FontWeight="SemiBold" VerticalAlignment="Center" />
                 <!-- Loading progress, next to the title (same place as on the Engines tab) -->
                 <DockPanel Grid.Column="1" Margin="20,0,12,0" VerticalAlignment="Center" IsVisible="{Binding IsLoading}">
