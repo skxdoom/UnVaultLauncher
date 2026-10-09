@@ -14,8 +14,8 @@ public sealed class FabRowView : Panel
 {
     public const double TileWidth = 236;
 
-    /// <summary>A 16:9 picture (133) plus title (2 lines), author, versions, one row of plates and the buttons.</summary>
-    public const double TileHeight = 133 + 157;
+    /// <summary>A 16:9 picture (133) plus title, author, versions with status marks, and the buttons.</summary>
+    public const double TileHeight = 133 + 118;
 
     /// <summary>The least space between tiles; any more the width allows is added to it.</summary>
     public const double MinGap = 14;

@@ -53,7 +53,7 @@ public static class FabKinds
     public static string Label(FabItemKind kind) => kind switch
     {
         FabItemKind.Plugin => "Plugin",
-        FabItemKind.AssetPack => "Asset pack",
+        FabItemKind.AssetPack => "Asset Pack",
         FabItemKind.Project => "Project",
         _ => "Other",
     };

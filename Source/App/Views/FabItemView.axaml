@@ -1,52 +1,65 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:UnVault.App.ViewModels"
+             xmlns:views="using:UnVault.App.Views"
              x:Class="UnVault.App.Views.FabItemView"
              x:DataType="vm:FabItemViewModel">
+
+    <UserControl.Resources>
+        <!-- Status icons on a 12 px grid, drawn as strokes -->
+        <StreamGeometry x:Key="CheckIcon">M2,6.5 L5,9.5 L10.5,3</StreamGeometry>
+        <StreamGeometry x:Key="DownloadIcon">M6,1.5 V8 M3,5.5 L6,8.5 L9,5.5 M2,11 H10</StreamGeometry>
+    </UserControl.Resources>
+    <UserControl.Styles>
+        <Style Selector="Path.status">
+            <Setter Property="Width" Value="12" />
+            <Setter Property="Height" Value="12" />
+            <Setter Property="StrokeThickness" Value="1.5" />
+            <Setter Property="StrokeLineCap" Value="Round" />
+            <Setter Property="StrokeJoin" Value="Round" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+    </UserControl.Styles>
 
     <!-- A fixed size, set by its row (FabRowView); only the gaps between tiles follow the window -->
     <Border Classes="card" Padding="0">
         <Grid RowDefinitions="Auto,*,Auto">
 
-            <!-- Picture, 16:9, with the type as a badge -->
+            <!-- Picture, 16:9, left clear; the type shows in its place until it loads (or when there's none) -->
             <Border x:Name="Picture" Height="133" CornerRadius="10,10,0,0" ClipToBounds="True" Background="{StaticResource PictureBackgroundBrush}">
                 <Panel>
                     <TextBlock Text="{Binding KindLabel}" Classes="muted small" HorizontalAlignment="Center" VerticalAlignment="Center" />
                     <Image Source="{Binding Thumbnail}" Stretch="UniformToFill" />
-                    <Border Classes="chip" Background="#CC141414" Margin="8" HorizontalAlignment="Left" VerticalAlignment="Top">
-                        <TextBlock Text="{Binding KindLabel}" />
-                    </Border>
                 </Panel>
             </Border>
 
-            <!-- What it is, who made it, which engines it's for; then what you have of it. Each part has a fixed
-                 number of lines (title 2, the rest 1, cut with … and shown whole on hover), so tiles stay compact. -->
-            <StackPanel Grid.Row="1" Margin="12,9,12,0" Spacing="6">
-                <StackPanel Spacing="1">
-                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis"
-                               ToolTip.Tip="{Binding Title}" />
-                    <TextBlock Text="{Binding SellerText}" Classes="muted small" TextTrimming="CharacterEllipsis"
-                               IsVisible="{Binding SellerText, Converter={x:Static ObjectConverters.IsNotNull}}" />
+            <!-- The title, who made it, which engines it's for with marks for what you have of it (their versions on hover).
+                 One line each, cut with … and shown whole on hover, so tiles stay compact. The main button says what kind
+                 of item it is by what it does, and names the kind in its tooltip. -->
+            <StackPanel Grid.Row="1" Margin="12,9,12,0" Spacing="1">
+                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="{x:Static views:FabItemView.TitleTrimming}"
+                           ToolTip.Tip="{Binding Title}" Margin="0,0,0,3" />
+                <TextBlock Text="{Binding BylineText}" Classes="muted small" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding BylineText}" />
+                <!-- Docked right to left: the Vault Cache mark ends the line, the installed one comes before it -->
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Right" Text="Working…" Classes="muted small" Margin="8,0,0,0" IsVisible="{Binding IsBusy}" />
+                    <Border DockPanel.Dock="Right" Background="Transparent" Margin="6,0,0,0" IsVisible="{Binding ShowsDownloadedMark}"
+                            ToolTip.Tip="{Binding DownloadedText}">
+                        <Path Classes="status" Data="{StaticResource DownloadIcon}" Stroke="{StaticResource MutedTextBrush}" />
+                    </Border>
+                    <Border DockPanel.Dock="Right" Background="Transparent" Margin="8,0,0,0" IsVisible="{Binding ShowsInstalledMark}"
+                            ToolTip.Tip="{Binding InstalledText}">
+                        <Path Classes="status" Data="{StaticResource CheckIcon}" Stroke="{StaticResource SuccessBrush}" />
+                    </Border>
                     <TextBlock Text="{Binding EngineVersionsText}" Classes="muted small" TextTrimming="CharacterEllipsis"
                                ToolTip.Tip="{Binding EngineVersionsText}" />
-                </StackPanel>
-                <Grid ColumnDefinitions="Auto,Auto,*">
-                    <Border Classes="chip" Margin="0,0,4,0" IsVisible="{Binding IsBusy}">
-                        <TextBlock Text="Working…" />
-                    </Border>
-                    <Border Grid.Column="1" Classes="chip success" Margin="0,0,4,0" IsVisible="{Binding IsInstalled}" ToolTip.Tip="{Binding InstalledText}">
-                        <TextBlock Text="{Binding InstalledText}" TextTrimming="CharacterEllipsis" MaxWidth="120" />
-                    </Border>
-                    <Border Grid.Column="2" Classes="chip" HorizontalAlignment="Left" IsVisible="{Binding IsDownloaded}" ToolTip.Tip="{Binding DownloadedText}">
-                        <TextBlock Text="{Binding DownloadedPlateText}" TextTrimming="CharacterEllipsis" />
-                    </Border>
-                </Grid>
+                </DockPanel>
             </StackPanel>
 
             <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="12,8,12,12">
                 <!-- Yellow Update while Fab has a newer build; the item's usual action is then in the ⋯ menu -->
                 <Button Content="{Binding PrimaryText}" Classes.accent="{Binding !HasUpdate}" Classes.update="{Binding HasUpdate}"
-                        Command="{Binding PrimaryCommand}" IsEnabled="{Binding IsIdle}" ToolTip.Tip="{Binding UpdateText}"
+                        Command="{Binding PrimaryCommand}" IsEnabled="{Binding IsIdle}" ToolTip.Tip="{Binding PrimaryToolTip}"
                         HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
                 <Button Grid.Column="1" Content="⋯" Margin="6,0,0,0" ToolTip.Tip="More" AutomationProperties.Name="More">
                     <Button.Flyout>

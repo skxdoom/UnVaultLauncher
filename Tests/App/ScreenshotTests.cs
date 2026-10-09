@@ -391,6 +391,15 @@ public class ScreenshotTests
         Save(window, "settings-automatic.png");
     }
 
+    [Theory]
+    [InlineData("UE_5.6,UE_5.7,UE_5.8", "5.6–5.8")]
+    [InlineData("UE_5.7,UE_5.8", "5.7, 5.8")] // two in a row read better listed
+    [InlineData("UE_4.27,UE_5.3,UE_5.5,UE_5.6,UE_5.7", "4.27, 5.3, 5.5–5.7")]
+    [InlineData("UE_4.25,UE_4.26,UE_4.27,UE_5.0,UE_5.1", "4.25–5.1")] // 5.0 came right after 4.27
+    [InlineData("UE_4.26,UE_5.0,UE_5.1", "4.26, 5.0, 5.1")]
+    public void Engine_versions_are_listed_as_ranges(string appNames, string expected) =>
+        Assert.Equal(expected, FabItemViewModel.CompactVersions(appNames.Split(',')));
+
     [AvaloniaFact]
     public void Fab_library_tab()
     {
@@ -402,11 +411,19 @@ public class ScreenshotTests
         var fab = viewModel.Fab;
         Assert.Equal(8, fab.Items.Count);
         var blockout = fab.Items.Single(i => i.Title == "Greybox Tools");
-        Assert.Equal("Installed: 4.27, 5.7", blockout.InstalledText);
-        Assert.Equal("Downloaded: 5.6, 5.7", blockout.DownloadedText);
-        Assert.Equal("Downloaded", blockout.DownloadedPlateText); // beside "Installed: …"; versions on hover
-        Assert.Equal("Available for 4.27, 5.3, 5.5–5.7", blockout.EngineVersionsText);
+        Assert.Equal("Installed in 4.27, 5.7", blockout.InstalledText);
+        Assert.Equal("In Vault Cache for 5.6, 5.7", blockout.DownloadedText); // a mark beside "Installed in …"; versions on hover
+        Assert.Equal("UE 4.27, 5.3, 5.5–5.7", blockout.EngineVersionsText);
         Assert.Equal("Northwind Tools", blockout.SellerText);
+        Assert.Equal("Northwind Tools", blockout.BylineText);
+        Assert.Equal("Project", fab.Items.Single(i => i.Title == "Lakeside Temple").BylineText); // only in the Vault Cache: no seller known
+        Assert.Equal((true, true), (blockout.ShowsInstalledMark, blockout.ShowsDownloadedMark));
+
+        // The tile doesn't name the kind, so the main button's tooltip does (or says what an update would refresh).
+        Assert.StartsWith("Newer build on Fab", blockout.PrimaryToolTip);
+        Assert.Equal("Install this plugin to Engine", fab.Items.Single(i => i.Title == "Edge Smoother").PrimaryToolTip);
+        Assert.Equal("Add this asset pack to Project", fab.Items.Single(i => i.Title == "Hillside Village").PrimaryToolTip);
+        Assert.Equal("Create Project", fab.Items.Single(i => i.Title == "Lakeside Temple").PrimaryToolTip);
 
         // Two products named "Garden Pack": told apart by seller, and busy state follows the product, not the name.
         var plants = fab.Items.Where(i => i.Title == "Garden Pack").ToList();
@@ -516,7 +533,7 @@ public class ScreenshotTests
              heading.TranslatePoint(default, window)!.Value.Y);
     }
 
-    /// <summary>The tile height is fixed, so the fullest tile possible must still fit it: no plate or button cut off.</summary>
+    /// <summary>The tile height is fixed, so the fullest tile possible must still fit it: no line or button cut off.</summary>
     [AvaloniaFact]
     public void The_fullest_tile_fits_the_fixed_tile_height()
     {
@@ -535,6 +552,8 @@ public class ScreenshotTests
         tile.Measure(new Size(FabRowView.TileWidth, double.PositiveInfinity));
 
         Assert.InRange(tile.DesiredSize.Height, FabRowView.TileHeight - 2, FabRowView.TileHeight);
+        tile.Width = FabRowView.TileWidth;
+        Save(window, "fab-tile-fullest.png");
     }
 
     [AvaloniaFact]

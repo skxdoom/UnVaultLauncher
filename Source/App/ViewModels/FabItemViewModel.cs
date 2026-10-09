@@ -70,17 +70,21 @@ public partial class FabItemViewModel : ViewModelBase
 
     public string? SellerText => string.IsNullOrWhiteSpace(Library?.Seller) ? null : Library.Seller;
 
+    /// <summary>The tile's line under the title: who made it, or what it is when that's unknown (a Vault Cache copy only).</summary>
+    public string BylineText => SellerText ?? KindLabel;
+
     public string EngineVersionsText =>
-        Versions.Count == 0 ? "No engine versions listed" : "Available for " + CompactVersions(Versions.Select(v => v.EngineAppName));
+        Versions.Count == 0 ? "No engine versions listed" : "UE " + CompactVersions(Versions.Select(v => v.EngineAppName));
 
     public bool IsDownloaded => Versions.Any(v => v.IsDownloaded);
-    public string? DownloadedText => IsDownloaded ? "Downloaded: " + CompactVersions(Versions.Where(v => v.IsDownloaded).Select(v => v.EngineAppName)) : null;
-
-    /// <summary>Next to an "Installed" plate there's room for the word only; the versions are in the tooltip.</summary>
-    public string? DownloadedPlateText => IsInstalled && IsDownloaded ? "Downloaded" : DownloadedText;
+    public string? DownloadedText => IsDownloaded ? "In Vault Cache for " + CompactVersions(Versions.Where(v => v.IsDownloaded).Select(v => v.EngineAppName)) : null;
 
     public bool IsInstalled => Installs.Count > 0;
-    public string? InstalledText => IsInstalled ? "Installed: " + CompactVersions(Installs.Select(i => i.EngineAppName)) : null;
+    public string? InstalledText => IsInstalled ? "Installed in " + CompactVersions(Installs.Select(i => i.EngineAppName)) : null;
+
+    /// <summary>Marks at the end of the tile's versions line, with their versions on hover; "Working…" in their place while busy.</summary>
+    public bool ShowsInstalledMark => IsIdle && IsInstalled;
+    public bool ShowsDownloadedMark => IsIdle && IsDownloaded;
 
     /// <summary>Only plugins go into engines; an installed item of unknown kind can still be removed.</summary>
     public bool ShowsRemove => Kind == FabItemKind.Plugin || IsInstalled;
@@ -124,11 +128,20 @@ public partial class FabItemViewModel : ViewModelBase
     /// <summary>The main button: Update while Fab has a newer build (as in the Epic Games Launcher), otherwise <see cref="ActionText"/>.</summary>
     public string PrimaryText => HasUpdate ? "Update" : ActionText;
 
+    /// <summary>What the main button will do: what an update refreshes, or the action with the kind named, as the tile doesn't name it.</summary>
+    public string PrimaryToolTip => UpdateText ?? Kind switch
+    {
+        FabItemKind.Plugin => "Install this plugin to Engine",
+        FabItemKind.AssetPack => "Add this asset pack to Project",
+        FabItemKind.Project => "Create Project",
+        _ => "Download to Vault Cache",
+    };
+
     [ObservableProperty] public partial Bitmap? Thumbnail { get; set; }
 
     /// <summary>An operation is working on this item's files; nothing else may start on them until it ends.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsIdle))]
+    [NotifyPropertyChangedFor(nameof(IsIdle), nameof(ShowsInstalledMark), nameof(ShowsDownloadedMark))]
     [NotifyCanExecuteChangedFor(nameof(DownloadCommand), nameof(RemoveCommand))]
     public partial bool IsBusy { get; set; }
 
@@ -207,9 +220,7 @@ public partial class FabItemViewModel : ViewModelBase
         for (int i = 0; i < versions.Count; i++)
         {
             int start = i;
-            while (i + 1 < versions.Count
-                   && versions[i + 1].Version.Major == versions[i].Version.Major
-                   && versions[i + 1].Version.Minor == versions[i].Version.Minor + 1)
+            while (i + 1 < versions.Count && Follows(versions[i + 1].Version, versions[i].Version))
                 i++;
             parts.Add(i - start >= 2 ? $"{versions[start].Name}–{versions[i].Name}"
                 : i > start ? $"{versions[start].Name}, {versions[i].Name}"
@@ -217,4 +228,8 @@ public partial class FabItemViewModel : ViewModelBase
         }
         return string.Join(", ", parts);
     }
+
+    /// <summary>The engine release right after another: 5.7 after 5.6, and 5.0 after 4.27, as there was no 4.28.</summary>
+    private static bool Follows(Version next, Version previous) =>
+        next.Major == previous.Major ? next.Minor == previous.Minor + 1 : (previous.Major, previous.Minor, next.Major, next.Minor) == (4, 27, 5, 0);
 }

@@ -1,11 +1,16 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Media;
+using Avalonia.Media.TextFormatting;
 using UnVault.App.ViewModels;
 
 namespace UnVault.App.Views;
 
 public partial class FabItemView : UserControl
 {
+    /// <summary>A title too long for its one line ends at a whole word, then " …".</summary>
+    public static TextTrimming TitleTrimming { get; } = new TextTrailingTrimming(" …", isWordBased: true);
+
     private FabItemViewModel? _shown;
     private bool _attached;
 
