@@ -1,16 +1,40 @@
 using Avalonia.Controls;
+using Avalonia.Threading;
+using UnVault.App.Services;
 using UnVault.App.ViewModels;
 
 namespace UnVault.App.Views;
 
 public partial class FabLibraryView : UserControl
 {
+    /// <summary>Screens' worth of scrolling after which the memory it took is worth handing back.</summary>
+    private const double ScreensBeforeRelief = 5;
+
     private FabLibraryViewModel? _viewModel;
+    private readonly DispatcherTimer _scrollSettled = new() { Interval = TimeSpan.FromSeconds(1.5) };
+    private double _scrolledSinceRelief;
 
     public FabLibraryView()
     {
         InitializeComponent();
         Page.SizeChanged += (_, _) => UpdateColumns();
+
+        // A long scroll loads and drops many pictures. Once it stops, the memory that took goes back to Windows; not
+        // during it, nor after a short one, as handing it back briefly pauses the app.
+        Scroller.ScrollChanged += (_, e) =>
+        {
+            _scrolledSinceRelief += Math.Abs(e.OffsetDelta.Y);
+            _scrollSettled.Stop();
+            _scrollSettled.Start();
+        };
+        _scrollSettled.Tick += (_, _) =>
+        {
+            _scrollSettled.Stop();
+            if (_scrolledSinceRelief < ScreensBeforeRelief * Scroller.Viewport.Height)
+                return;
+            _scrolledSinceRelief = 0;
+            MemoryRelief.Release();
+        };
     }
 
     protected override void OnDataContextChanged(EventArgs e)

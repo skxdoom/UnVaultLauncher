@@ -36,7 +36,7 @@ public sealed class ThumbnailCacheTests : IDisposable
         string file = Path.Combine(Directory.CreateDirectory(Path.Combine(_folder, "Download")).FullName, "Thumb.png");
         await File.WriteAllBytesAsync(file, TinyPNG);
 
-        Assert.NotNull(await NewCache().GetAsync("local://" + file));
+        Assert.NotNull(await NewCache().Get("local://" + file).Picture);
     }
 
     /// <summary>
@@ -51,7 +51,7 @@ public sealed class ThumbnailCacheTests : IDisposable
 
         var cache = NewCache();
         var urls = Core.Vault.VaultCache.Scan(vault).Select(e => e.Thumbnail).OfType<string>().Distinct().ToList();
-        var results = await Task.WhenAll(urls.Select(url => cache.GetAsync(url)));
+        var results = await Task.WhenAll(urls.Select(url => cache.Get(url).Picture));
 
         Assert.NotEmpty(urls);
         Assert.True(results.Count(r => r is not null) > urls.Count / 2, $"Only {results.Count(r => r is not null)} of {urls.Count} thumbnails loaded.");
@@ -87,9 +87,9 @@ public sealed class ThumbnailCacheTests : IDisposable
         File.WriteAllText(perLinkFile, "old");
         var server = new FakePictureServer();
 
-        Assert.NotNull(await NewCache(server).GetAsync("https://media.fab.com/image_previews/gallery_images/a/one.jpg", "fab:item"));
+        Assert.NotNull(await NewCache(server).Get("https://media.fab.com/image_previews/gallery_images/a/one.jpg", "fab:item").Picture);
         // Next start: Fab now links another gallery picture of the same item.
-        Assert.NotNull(await NewCache(server).GetAsync("https://media.fab.com/image_previews/gallery_images/a/two.jpg", "fab:item"));
+        Assert.NotNull(await NewCache(server).Get("https://media.fab.com/image_previews/gallery_images/a/two.jpg", "fab:item").Picture);
 
         Assert.Equal(["https://media.fab.com/cdn-cgi/image/width=240/image_previews/gallery_images/a/one.jpg"], server.Requests);
         await WaitUntil(() => !File.Exists(perLinkFile));
@@ -97,7 +97,7 @@ public sealed class ThumbnailCacheTests : IDisposable
         // A month on, it's fetched again, so a seller's new picture does show up.
         string kept = Directory.GetFiles(Path.Combine(_folder, "items")).Single();
         File.SetLastWriteTimeUtc(kept, DateTime.UtcNow - ThumbnailCache.MaxAge - TimeSpan.FromHours(1));
-        Assert.NotNull(await NewCache(server).GetAsync("https://media.fab.com/image_previews/gallery_images/a/two.jpg", "fab:item"));
+        Assert.NotNull(await NewCache(server).Get("https://media.fab.com/image_previews/gallery_images/a/two.jpg", "fab:item").Picture);
         Assert.Equal("https://media.fab.com/cdn-cgi/image/width=240/image_previews/gallery_images/a/two.jpg", server.Requests[^1]);
     }
 
@@ -109,7 +109,53 @@ public sealed class ThumbnailCacheTests : IDisposable
     [InlineData("not a url at all")]
     [InlineData("")]
     public async Task Unusable_thumbnails_give_a_placeholder_instead_of_an_exception(string url) =>
-        Assert.Null(await NewCache().GetAsync(url));
+        Assert.Null(await NewCache().Get(url).Picture);
+
+    /// <summary>A decoded picture is native memory the GC doesn't see, so the cache frees the ones no tile shows itself.</summary>
+    [AvaloniaFact]
+    public async Task Pictures_no_tile_shows_are_kept_for_scrolling_back_then_freed()
+    {
+        string file = Path.Combine(Directory.CreateDirectory(Path.Combine(_folder, "Download")).FullName, "Thumb.png");
+        await File.WriteAllBytesAsync(file, TinyPNG);
+        var cache = NewCache();
+
+        // Shown, then scrolled away: still in memory, and scrolling back gets the same picture without loading it again.
+        var first = cache.Get("local://" + file, "item 0");
+        var picture = await first.Picture;
+        cache.Release(first);
+        var again = cache.Get("local://" + file, "item 0");
+        Assert.Same(picture, await again.Picture);
+
+        // Scrolled away for good, with many more shown since: freed. Pictures still on screen never are.
+        cache.Release(again);
+        var shown = cache.Get("local://" + file, "on screen");
+        var onScreen = await shown.Picture;
+        for (int i = 1; i <= 100; i++)
+        {
+            var use = cache.Get("local://" + file, $"item {i}");
+            await use.Picture;
+            cache.Release(use);
+        }
+        Assert.ThrowsAny<Exception>(() => picture!.PixelSize); // disposed
+        Assert.True(onScreen!.PixelSize.Width > 0);
+        Assert.NotSame(picture, await cache.Get("local://" + file, "item 0").Picture); // loads afresh
+    }
+
+    [AvaloniaFact]
+    public async Task A_picture_whose_tile_scrolled_away_before_it_loaded_is_not_downloaded()
+    {
+        var server = new FakePictureServer { Delay = TimeSpan.FromMilliseconds(200) };
+        var cache = NewCache(server);
+
+        // Six downloads at a time: the seventh waits, and its tile is gone by the time it could start.
+        var shown = Enumerable.Range(0, 6).Select(i => cache.Get($"https://media.fab.com/image_previews/{i}.jpg", $"item {i}")).ToList();
+        var scrolledPast = cache.Get("https://media.fab.com/image_previews/7.jpg", "item 7");
+        cache.Release(scrolledPast);
+
+        Assert.All(await Task.WhenAll(shown.Select(s => s.Picture)), Assert.NotNull);
+        Assert.Null(await scrolledPast.Picture);
+        Assert.DoesNotContain(server.Requests, r => r.EndsWith("/7.jpg", StringComparison.Ordinal));
+    }
 
     private static async Task WaitUntil(Func<bool> condition)
     {
@@ -121,12 +167,14 @@ public sealed class ThumbnailCacheTests : IDisposable
     private sealed class FakePictureServer : HttpMessageHandler
     {
         public List<string> Requests { get; } = [];
+        public TimeSpan Delay { get; init; }
 
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             lock (Requests)
                 Requests.Add(request.RequestUri!.AbsoluteUri);
-            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(TinyPNG) });
+            await Task.Delay(Delay, cancellationToken);
+            return new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(TinyPNG) };
         }
     }
 }

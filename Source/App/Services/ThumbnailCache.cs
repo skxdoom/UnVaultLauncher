@@ -9,19 +9,25 @@ namespace UnVault.App.Services;
 /// <summary>
 /// Preview images for the Fab tiles. Asks the image CDNs for copies sized to the tiles at the display's scaling
 /// (the originals are many times bigger than a tile shows), keeps them on disk per item, decodes off the UI
-/// thread, and holds only the most recently shown pictures in memory.
+/// thread, and holds in memory only the pictures on screen plus the most recently shown others.
 /// Kept per item rather than per link because Fab sends a different gallery picture as "featured" for many items from
 /// one library fetch to the next: keyed by link, every refresh re-downloaded those pictures and left the old files behind. A picture is fetched again after <see cref="MaxAge"/>, so a seller's new
 /// picture shows up eventually, and pictures not used for that long are deleted.
 /// Best effort throughout: a picture that can't be had just leaves the placeholder.
 /// </summary>
+/// <remarks>
+/// A tile takes a picture with <see cref="Get"/> and gives it back with <see cref="Release"/>. A decoded picture lives in
+/// native memory the garbage collector doesn't see, so leaving dropped ones to it let a long scroll pile them up; the
+/// cache frees them itself once no tile shows them. A picture still loading when every tile that wanted it has scrolled
+/// away isn't downloaded or decoded at all.
+/// </remarks>
 public sealed class ThumbnailCache
 {
     /// <summary>Width of a tile's picture in layout units (FabRowView.TileWidth).</summary>
     private const double TileWidth = 236;
 
-    /// <summary>A few screens' worth, so scrolling back doesn't flash placeholders.</summary>
-    private const int MemoryCapacity = 200;
+    /// <summary>Pictures kept after their tiles scrolled away: a couple of screens' worth, so scrolling back doesn't flash placeholders.</summary>
+    private const int UnusedCapacity = 64;
 
     public static readonly TimeSpan MaxAge = TimeSpan.FromDays(30);
 
@@ -31,11 +37,36 @@ public sealed class ThumbnailCache
     private readonly HttpClient _http;
     private readonly string _folder;
     private readonly Lock _lock = new();
-    private readonly Dictionary<string, Task<Bitmap?>> _pending = new(StringComparer.Ordinal);
-    private readonly LinkedList<(string Key, Bitmap Bitmap)> _recent = new(); // most recently used first
-    private readonly Dictionary<string, LinkedListNode<(string Key, Bitmap Bitmap)>> _recentByKey = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, Entry> _entries = new(StringComparer.Ordinal);
+    private readonly LinkedList<Entry> _unused = new(); // loaded, shown by no tile; most recently shown first
     private readonly HashSet<string> _failed = new(StringComparer.Ordinal);
     private readonly SemaphoreSlim _downloads = new(6);
+    private readonly SemaphoreSlim _decodes = new(Math.Clamp(Environment.ProcessorCount / 2, 1, 4)); // each holds a whole decoded picture meanwhile
+
+    /// <summary>One picture at one width, and how many tiles show it (or wait for it).</summary>
+    internal sealed class Entry(string key)
+    {
+        public string Key { get; } = key;
+        public Task<Bitmap?> Loading { get; set; } = Task.FromResult<Bitmap?>(null);
+        public Bitmap? Bitmap { get; set; }
+        public int Users { get; set; }
+        public LinkedListNode<Entry>? UnusedNode { get; set; }
+    }
+
+    /// <summary>A tile's hold on a picture; give it back with <see cref="Release"/> once the tile stops showing it.</summary>
+    public sealed class Use
+    {
+        internal Use(Entry? entry, Task<Bitmap?> picture)
+        {
+            Entry = entry;
+            Picture = picture;
+        }
+
+        internal Entry? Entry { get; set; }
+
+        /// <summary>The picture, or null for a placeholder.</summary>
+        public Task<Bitmap?> Picture { get; }
+    }
 
     /// <param name="folder">Where pictures are kept; normally %LOCALAPPDATA%\UnVaultLauncher\thumbnails.</param>
     public ThumbnailCache(HttpClient http, string? folder = null)
@@ -54,24 +85,70 @@ public sealed class ThumbnailCache
 
     public void UseScaling(double scaling) => Width = Math.Clamp((int)Math.Ceiling(TileWidth * scaling / 80) * 80, 240, 480);
 
+    /// <summary>Takes a picture for a tile: from memory, or loaded from disk or the web.</summary>
     /// <param name="key">What the picture belongs to (e.g. the Fab item), so a changing link doesn't mean a new download. Defaults to the link.</param>
-    public Task<Bitmap?> GetAsync(string url, string? key = null)
+    public Use Get(string url, string? key = null)
     {
         int width = Width;
         string memoryKey = $"{key ?? url}|{width}";
         lock (_lock)
         {
-            if (_recentByKey.TryGetValue(memoryKey, out var node))
-            {
-                _recent.Remove(node);
-                _recent.AddFirst(node);
-                return Task.FromResult<Bitmap?>(node.Value.Bitmap);
-            }
             if (_failed.Contains(memoryKey))
-                return Task.FromResult<Bitmap?>(null);
-            if (!_pending.TryGetValue(memoryKey, out var pending))
-                _pending[memoryKey] = pending = Task.Run(() => LoadAsync(url, key ?? url, width, memoryKey));
-            return pending;
+                return new Use(null, Task.FromResult<Bitmap?>(null));
+            if (!_entries.TryGetValue(memoryKey, out var entry))
+            {
+                _entries[memoryKey] = entry = new Entry(memoryKey);
+                entry.Loading = Task.Run(() => LoadAsync(entry, url, key ?? url, width));
+            }
+            if (entry.UnusedNode is not null)
+            {
+                _unused.Remove(entry.UnusedNode);
+                entry.UnusedNode = null;
+            }
+            entry.Users++;
+            return new Use(entry, entry.Loading);
+        }
+    }
+
+    /// <summary>The tile no longer shows the picture. Kept a while for scrolling back; the oldest unused ones are freed.</summary>
+    public void Release(Use use)
+    {
+        lock (_lock)
+        {
+            if (use.Entry is not { } entry)
+                return;
+            use.Entry = null; // a second release changes nothing
+            if (--entry.Users == 0 && entry.Bitmap is not null)
+                KeepUnused(entry);
+        }
+    }
+
+    /// <summary>Under the lock: no tile shows the picture; it's kept as the most recent unused one, the oldest beyond the limit are freed.</summary>
+    private void KeepUnused(Entry entry)
+    {
+        entry.UnusedNode = _unused.AddFirst(entry);
+        while (_unused.Count > UnusedCapacity)
+        {
+            var oldest = _unused.Last!.Value;
+            _unused.RemoveLast();
+            _entries.Remove(oldest.Key);
+            // No tile shows it any more; one drawn in the last frame keeps the pixels it needs until then.
+            oldest.Bitmap?.Dispose();
+        }
+    }
+
+    /// <summary>
+    /// Under the lock: whether a tile still wants the picture. If none does, it's forgotten instead of downloaded or decoded,
+    /// and the next tile to want it loads it afresh.
+    /// </summary>
+    private bool StillWanted(Entry entry)
+    {
+        lock (_lock)
+        {
+            if (entry.Users > 0)
+                return true;
+            _entries.Remove(entry.Key);
+            return false;
         }
     }
 
@@ -86,7 +163,7 @@ public sealed class ThumbnailCache
         _ => uri,
     };
 
-    private async Task<Bitmap?> LoadAsync(string url, string key, int width, string memoryKey)
+    private async Task<Bitmap?> LoadAsync(Entry entry, string url, string key, int width)
     {
         Bitmap? bitmap = null;
         try
@@ -94,12 +171,22 @@ public sealed class ThumbnailCache
             string? file = url.StartsWith(LocalScheme, StringComparison.OrdinalIgnoreCase)
                 ? url[LocalScheme.Length..]
                 : Uri.TryCreate(url, UriKind.Absolute, out var uri) && (uri.Scheme == Uri.UriSchemeHttps || uri.Scheme == Uri.UriSchemeHttp)
-                    ? await DownloadAsync(uri, key, width)
+                    ? await DownloadAsync(uri, key, width, entry)
                     : null;
             if (file is not null && File.Exists(file))
             {
-                await using var stream = File.OpenRead(file);
-                bitmap = Bitmap.DecodeToWidth(stream, width);
+                await _decodes.WaitAsync();
+                try
+                {
+                    if (!StillWanted(entry))
+                        return null;
+                    await using var stream = File.OpenRead(file);
+                    bitmap = Bitmap.DecodeToWidth(stream, width);
+                }
+                finally
+                {
+                    _decodes.Release();
+                }
             }
         }
         catch (Exception)
@@ -109,26 +196,28 @@ public sealed class ThumbnailCache
 
         lock (_lock)
         {
-            _pending.Remove(memoryKey);
+            if (!_entries.TryGetValue(entry.Key, out var current) || current != entry)
+            {
+                bitmap?.Dispose(); // forgotten meanwhile: nobody can be handed it
+                return null;
+            }
             if (bitmap is null)
             {
-                _failed.Add(memoryKey);
+                _entries.Remove(entry.Key);
+                _failed.Add(entry.Key);
             }
             else
             {
-                _recentByKey[memoryKey] = _recent.AddFirst((memoryKey, bitmap));
-                if (_recent.Count > MemoryCapacity)
-                {
-                    // Not disposed: a tile may still be drawing it. The GC frees it once nothing does.
-                    _recentByKey.Remove(_recent.Last!.Value.Key);
-                    _recent.RemoveLast();
-                }
+                entry.Bitmap = bitmap;
+                if (entry.Users == 0)
+                    KeepUnused(entry); // its tiles scrolled away while it loaded
             }
         }
         return bitmap;
     }
 
-    private async Task<string> DownloadAsync(Uri uri, string key, int width)
+    /// <returns>The picture's file, or null when no tile wants it any more by the time a download could start.</returns>
+    private async Task<string?> DownloadAsync(Uri uri, string key, int width, Entry entry)
     {
         string file = Path.Combine(ItemsFolder, $"{Convert.ToHexString(SHA1.HashData(Encoding.UTF8.GetBytes(key)))}-{width}.thumb");
         if (File.Exists(file) && DateTime.UtcNow - File.GetLastWriteTimeUtc(file) < MaxAge)
@@ -137,6 +226,8 @@ public sealed class ThumbnailCache
         await _downloads.WaitAsync();
         try
         {
+            if (!StillWanted(entry))
+                return null;
             var resized = Resized(uri, width);
             byte[] data;
             try

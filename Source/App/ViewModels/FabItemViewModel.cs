@@ -34,6 +34,7 @@ public partial class FabItemViewModel : ViewModelBase
     private readonly FabLibraryViewModel _owner;
     private readonly string? _thumbnailURL;
     private int _viewers;
+    private Services.ThumbnailCache.Use? _thumbnailUse; // the picture held for the tiles showing this item
 
     public FabItemViewModel(FabLibraryViewModel owner, string key, string title, FabItemKind kind, FabLibraryItem? library,
         IReadOnlyList<FabVersion> versions, IReadOnlyList<FabInstall> installs, string? thumbnailURL)
@@ -152,10 +153,11 @@ public partial class FabItemViewModel : ViewModelBase
     {
         if (++_viewers > 1 || _thumbnailURL is null)
             return;
+        var use = _thumbnailUse = _owner.Owner.Services.Thumbnails.Get(_thumbnailURL, Key); // by item: Fab rotates the link
         try
         {
-            var bitmap = await _owner.Owner.Services.Thumbnails.GetAsync(_thumbnailURL, Key); // by item: Fab rotates the link
-            if (_viewers > 0)
+            var bitmap = await use.Picture;
+            if (_thumbnailUse == use) // not scrolled away meanwhile
                 Thumbnail = bitmap;
         }
         catch (Exception)
@@ -164,11 +166,17 @@ public partial class FabItemViewModel : ViewModelBase
         }
     }
 
-    /// <summary>No tile shows this item any more. The cache keeps recent pictures, so scrolling back is instant.</summary>
+    /// <summary>No tile shows this item any more: the picture goes back to the cache, which keeps recent ones for scrolling back.</summary>
     internal void HideThumbnail()
     {
-        if (_viewers > 0 && --_viewers == 0)
-            Thumbnail = null;
+        if (_viewers == 0 || --_viewers > 0)
+            return;
+        Thumbnail = null; // first, as the cache may free the picture once it's back
+        if (_thumbnailUse is { } use)
+        {
+            _thumbnailUse = null;
+            _owner.Owner.Services.Thumbnails.Release(use);
+        }
     }
 
     public bool Matches(string search) =>
