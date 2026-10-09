@@ -111,19 +111,19 @@ public partial class OperationViewModel : ViewModelBase
         {
             Message = await Task.Run(() => work(this, _status, _cancellation.Token));
             State = OperationState.Completed;
-            Phase = "Done";
+            Phase = Strings.PhaseDone;
             _work = null; // nothing to retry
         }
         catch (OperationCanceledException)
         {
             State = OperationState.Cancelled;
-            Phase = "Paused";
-            Message = "Stopped. Retry continues where it left off.";
+            Phase = Strings.PhasePaused;
+            Message = Strings.StoppedRetry;
         }
         catch (Exception ex)
         {
             State = OperationState.Failed;
-            Phase = "Failed";
+            Phase = Strings.PhaseFailed;
             Message = ex.Message;
             if (ex is NotLoggedInException ended)
                 _owner.SessionEnded(ended);
@@ -174,8 +174,8 @@ public partial class OperationViewModel : ViewModelBase
 
         IsIndeterminate = total == 0;
         Progress = total == 0 ? 0 : 100.0 * done / total;
-        ProgressText = total == 0 ? "" : $"{ByteSize.Format(done)} of {ByteSize.Format(total)}" +
-                                        (status.FilesTotal > 0 ? $"  ·  {status.FilesDone:N0}/{status.FilesTotal:N0} files" : "");
+        ProgressText = total == 0 ? "" : Localized.Format(Strings.ProgressOf, ByteSize.Format(done), ByteSize.Format(total)) +
+            (status.FilesTotal > 0 ? "  ·  " + Localized.Plural(nameof(Strings.ProgressFiles_Other), status.FilesTotal, status.FilesDone) : "");
 
         double seconds = _speedClock.Elapsed.TotalSeconds;
         if (seconds >= 1 && IsRunning)
@@ -186,15 +186,15 @@ public partial class OperationViewModel : ViewModelBase
             _lastBytes = done;
             _speedClock.Restart();
 
-            string eta = _bytesPerSecond > 0 && total > done ? $"  ·  {FormatETA((total - done) / _bytesPerSecond)} left" : "";
-            SpeedText = $"{ByteSize.Format((long)_bytesPerSecond)}/s{eta}";
+            string eta = _bytesPerSecond > 0 && total > done ? "  ·  " + Localized.Format(Strings.TimeLeft, FormatETA((total - done) / _bytesPerSecond)) : "";
+            SpeedText = Localized.Format(Strings.PerSecond, ByteSize.Format((long)_bytesPerSecond)) + eta;
         }
     }
 
     private static string FormatETA(double seconds) => seconds switch
     {
-        < 60 => $"{seconds:0}s",
-        < 3600 => $"{seconds / 60:0}m",
-        _ => $"{(int)(seconds / 3600)}h {(int)(seconds % 3600 / 60)}m",
+        < 60 => Localized.Format(Strings.DurationSeconds, seconds),
+        < 3600 => Localized.Format(Strings.DurationMinutes, seconds / 60),
+        _ => Localized.Format(Strings.DurationHoursMinutes, (int)(seconds / 3600), (int)(seconds % 3600 / 60)),
     };
 }

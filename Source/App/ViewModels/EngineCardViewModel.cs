@@ -39,21 +39,21 @@ public partial class EngineCardViewModel : ViewModelBase
     public string Title => "Unreal Engine " + EngineLibrary.ShortBuildVersion(Local?.BuildVersion ?? Owned?.BuildVersion ?? StaleRecord?.BuildVersion ?? VersionLabel);
 
     public string StatusText =>
-        HasUpdate ? $"Update available: {EngineLibrary.ShortBuildVersion(Owned!.BuildVersion)}"
-        : IsInstalled ? "Installed"
-        : IsStale ? "Files missing"
-        : "Not installed";
+        HasUpdate ? Localized.Format(Strings.EngineUpdateAvailable, EngineLibrary.ShortBuildVersion(Owned!.BuildVersion))
+        : IsInstalled ? Strings.Installed
+        : IsStale ? Strings.FilesMissing
+        : Strings.NotInstalled;
 
     public string? Details =>
         Local is not null ? $"{Local.Directory}  ·  {ByteSize.Format(Local.InstallSize)}"
-        : IsStale ? $"The Epic Games Launcher lists it at {StaleRecord!.Directory}, but that folder is gone."
+        : IsStale ? Localized.Format(Strings.EGLFolderGone, StaleRecord!.Directory)
         : null;
 
     public string? OriginText => Local?.Kind switch
     {
-        LocalInstallKind.UnVault => "Installed by UnVault Launcher",
-        LocalInstallKind.AdoptedFromEGL => "Installed by Epic Games Launcher, managed by UnVault Launcher",
-        LocalInstallKind.EGL => "Installed by Epic Games Launcher",
+        LocalInstallKind.UnVault => Strings.OriginUnVault,
+        LocalInstallKind.AdoptedFromEGL => Strings.OriginAdoptedFromEGL,
+        LocalInstallKind.EGL => Strings.OriginEGL,
         _ => null,
     };
 

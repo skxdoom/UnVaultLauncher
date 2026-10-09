@@ -67,7 +67,13 @@ public partial class FabItemViewModel : ViewModelBase
     public IReadOnlyList<FabInstall> Installs { get; }
     public string SearchText { get; }
 
-    public string KindLabel => FabKinds.Label(Kind);
+    public string KindLabel => Kind switch
+    {
+        FabItemKind.Plugin => Strings.KindPlugin,
+        FabItemKind.AssetPack => Strings.KindAssetPack,
+        FabItemKind.Project => Strings.KindProject,
+        _ => Strings.KindOther,
+    };
 
     public string? SellerText => string.IsNullOrWhiteSpace(Library?.Seller) ? null : Library.Seller;
 
@@ -75,13 +81,13 @@ public partial class FabItemViewModel : ViewModelBase
     public string BylineText => SellerText ?? KindLabel;
 
     public string EngineVersionsText =>
-        Versions.Count == 0 ? "No engine versions listed" : "UE " + CompactVersions(Versions.Select(v => v.EngineAppName));
+        Versions.Count == 0 ? Strings.NoEngineVersions : "UE " + CompactVersions(Versions.Select(v => v.EngineAppName));
 
     public bool IsDownloaded => Versions.Any(v => v.IsDownloaded);
-    public string? DownloadedText => IsDownloaded ? "In Vault Cache for " + CompactVersions(Versions.Where(v => v.IsDownloaded).Select(v => v.EngineAppName)) : null;
+    public string? DownloadedText => IsDownloaded ? Localized.Format(Strings.InVaultCacheFor, CompactVersions(Versions.Where(v => v.IsDownloaded).Select(v => v.EngineAppName))) : null;
 
     public bool IsInstalled => Installs.Count > 0;
-    public string? InstalledText => IsInstalled ? "Installed in " + CompactVersions(Installs.Select(i => i.EngineAppName)) : null;
+    public string? InstalledText => IsInstalled ? Localized.Format(Strings.InstalledIn, CompactVersions(Installs.Select(i => i.EngineAppName))) : null;
 
     /// <summary>Marks at the end of the tile's versions line, with their versions on hover; "Working…" in their place while busy.</summary>
     public bool ShowsInstalledMark => IsIdle && IsInstalled;
@@ -105,12 +111,14 @@ public partial class FabItemViewModel : ViewModelBase
         {
             if (!HasUpdate)
                 return null;
-            var parts = new List<string>();
-            if (OutdatedInstalls.Count > 0)
-                parts.Add("installed in UE " + CompactVersions(OutdatedInstalls.Select(i => i.EngineAppName)));
-            if (OutdatedDownloads.Count > 0)
-                parts.Add("Vault Cache copy for " + CompactVersions(OutdatedDownloads.Select(v => v.EngineAppName)));
-            return "Newer build on Fab: " + string.Join("; ", parts);
+            string installed = CompactVersions(OutdatedInstalls.Select(i => i.EngineAppName));
+            string downloaded = CompactVersions(OutdatedDownloads.Select(v => v.EngineAppName));
+            return (OutdatedInstalls.Count > 0, OutdatedDownloads.Count > 0) switch
+            {
+                (true, true) => Localized.Format(Strings.NewerBuildInstalledAndCopy, installed, downloaded),
+                (true, false) => Localized.Format(Strings.NewerBuildInstalled, installed),
+                _ => Localized.Format(Strings.NewerBuildCopy, downloaded),
+            };
         }
     }
 
@@ -120,22 +128,22 @@ public partial class FabItemViewModel : ViewModelBase
     /// <summary>What the tile's main button does for this kind of item.</summary>
     public string ActionText => Kind switch
     {
-        FabItemKind.Plugin => "Install to Engine",
-        FabItemKind.AssetPack => "Add to Project",
-        FabItemKind.Project => "Create Project",
-        _ => "Download",
+        FabItemKind.Plugin => Strings.ActionInstallToEngine,
+        FabItemKind.AssetPack => Strings.ActionAddToProject,
+        FabItemKind.Project => Strings.ActionCreateProject,
+        _ => Strings.ActionDownload,
     };
 
     /// <summary>The main button: Update while Fab has a newer build (as in the Epic Games Launcher), otherwise <see cref="ActionText"/>.</summary>
-    public string PrimaryText => HasUpdate ? "Update" : ActionText;
+    public string PrimaryText => HasUpdate ? Strings.Update : ActionText;
 
     /// <summary>What the main button will do: what an update refreshes, or the action with the kind named, as the tile doesn't name it.</summary>
     public string PrimaryToolTip => UpdateText ?? Kind switch
     {
-        FabItemKind.Plugin => "Install this plugin to Engine",
-        FabItemKind.AssetPack => "Add this asset pack to Project",
-        FabItemKind.Project => "Create Project",
-        _ => "Download to Vault Cache",
+        FabItemKind.Plugin => Strings.TipInstallPlugin,
+        FabItemKind.AssetPack => Strings.TipAddAssetPack,
+        FabItemKind.Project => Strings.ActionCreateProject,
+        _ => Strings.DownloadToVaultCache,
     };
 
     [ObservableProperty] public partial Bitmap? Thumbnail { get; set; }

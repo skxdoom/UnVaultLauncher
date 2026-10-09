@@ -50,14 +50,6 @@ public static class FabKinds
         return FabItemKind.Unknown;
     }
 
-    public static string Label(FabItemKind kind) => kind switch
-    {
-        FabItemKind.Plugin => "Plugin",
-        FabItemKind.AssetPack => "Asset Pack",
-        FabItemKind.Project => "Project",
-        _ => "Other",
-    };
-
     /// <summary>"5.7.0-48201490" or "5.7.0-…+++UE5+Dev-Marketplace-Windows" → "UE_5.7".</summary>
     public static string? EngineAppFromBuild(string build)
     {

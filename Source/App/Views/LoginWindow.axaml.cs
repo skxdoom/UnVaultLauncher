@@ -42,7 +42,7 @@ public partial class LoginWindow : Window
     {
         if (!OperatingSystem.IsWindows())
         {
-            ShowFallback("The built-in sign-in window needs Windows.");
+            ShowFallback(Strings.SignInNeedsWindows);
             return;
         }
 
@@ -69,7 +69,7 @@ public partial class LoginWindow : Window
         }
         catch (Exception ex) when (ex is WebView2RuntimeNotFoundException or InvalidOperationException or System.Runtime.InteropServices.COMException)
         {
-            ShowFallback($"The built-in browser isn't available ({ex.Message}).");
+            ShowFallback(Localized.Format(Strings.BrowserUnavailable, ex.Message));
         }
     }
 
@@ -112,7 +112,7 @@ public partial class LoginWindow : Window
         string code = EpicAuthClient.ExtractAuthorizationCode(CodeBox.Text ?? "");
         if (!IsCode(code))
         {
-            FallbackReason.Text = "That doesn't look like the code. Copy the whole text the page shows, including \"authorizationCode\".";
+            FallbackReason.Text = Strings.NotTheCode;
             return;
         }
         _code = code;

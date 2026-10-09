@@ -48,19 +48,19 @@ public partial class FabActionViewModel : ViewModelBase
         Mode = mode;
         Title = mode switch
         {
-            FabActionMode.InstallPlugin => $"Install {item.Title}",
-            FabActionMode.AddToProject => $"Add {item.Title} to a project",
-            FabActionMode.CreateProject => $"Create a project from {item.Title}",
-            FabActionMode.RemovePlugin => $"Remove {item.Title}",
-            _ => $"Download {item.Title}",
+            FabActionMode.InstallPlugin => Localized.Format(Strings.ActionTitleInstall, item.Title),
+            FabActionMode.AddToProject => Localized.Format(Strings.ActionTitleAddToProject, item.Title),
+            FabActionMode.CreateProject => Localized.Format(Strings.ActionTitleCreateProject, item.Title),
+            FabActionMode.RemovePlugin => Localized.Format(Strings.ActionTitleRemove, item.Title),
+            _ => Localized.Format(Strings.ActionTitleDownload, item.Title),
         };
         ConfirmText = mode switch
         {
-            FabActionMode.InstallPlugin => "Install",
-            FabActionMode.AddToProject => "Add to Project",
-            FabActionMode.CreateProject => "Create Project",
-            FabActionMode.RemovePlugin => "Remove",
-            _ => "Download",
+            FabActionMode.InstallPlugin => Strings.Install,
+            FabActionMode.AddToProject => Strings.ActionAddToProject,
+            FabActionMode.CreateProject => Strings.ActionCreateProject,
+            FabActionMode.RemovePlugin => Strings.Remove,
+            _ => Strings.ActionDownload,
         };
         Subtitle = $"{item.KindLabel}  ·  {(mode == FabActionMode.RemovePlugin ? item.InstalledText : item.EngineVersionsText)}";
     }
@@ -75,7 +75,7 @@ public partial class FabActionViewModel : ViewModelBase
     public bool ShowsProjectLocation => Mode == FabActionMode.CreateProject;
     public bool CanBrowseProject => Mode == FabActionMode.AddToProject;
     public bool ShowsProjectSearch => Mode == FabActionMode.AddToProject;
-    public string TargetsHeading => Mode == FabActionMode.AddToProject ? "PROJECT" : "ENGINE";
+    public string TargetsHeading => Mode == FabActionMode.AddToProject ? Strings.SectionProject : Strings.SectionEngine;
 
     public ObservableCollection<FabTargetViewModel> Targets { get; } = [];
 
@@ -149,7 +149,7 @@ public partial class FabActionViewModel : ViewModelBase
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            EmptyText = $"Couldn't look for targets: {ex.Message}";
+            EmptyText = Localized.Format(Strings.TargetsLookupFailed, ex.Message);
         }
         finally
         {
@@ -163,15 +163,15 @@ public partial class FabActionViewModel : ViewModelBase
         {
             var version = BestVersion(_item.Versions.Where(v => SameEngine(v.EngineAppName, engine.AppName)));
             bool installed = _item.Installs.Any(i => SamePath(i.EngineDirectory, engine.Directory));
-            string? badge = installed ? "Installed"
-                : version is null ? "No version for this engine"
-                : !CanGet(version) ? "Sign in to download"
+            string? badge = installed ? Strings.Installed
+                : version is null ? Strings.BadgeNoVersionForEngine
+                : !CanGet(version) ? Strings.BadgeSignInToDownload
                 : null;
             Targets.Add(new FabTargetViewModel($"Unreal Engine {engine.AppName[3..]}", engine.Directory, badge, version,
                 isAvailable: badge is null, engine, project: null));
         }
         SelectedTarget = Targets.FirstOrDefault(t => t.IsAvailable);
-        EmptyText = Targets.Count == 0 ? "No installed engines found." : SelectedTarget is null ? "This plugin can't go into any of your installed engines." : null;
+        EmptyText = Targets.Count == 0 ? Strings.NoInstalledEngines : SelectedTarget is null ? Strings.PluginFitsNoEngine : null;
     }
 
     private async Task LoadInstallsAsync()
@@ -182,15 +182,15 @@ public partial class FabActionViewModel : ViewModelBase
         {
             var install = installs[i];
             // Removing works the same whoever installed it, so the note below says that; a badge only says why a row is off.
-            string? badge = install.CanRemove ? null : "Remove with EGL";
-            string where = !install.CanRemove ? "Installed by EGL outside Engine\\Plugins\\Marketplace"
+            string? badge = install.CanRemove ? null : Strings.BadgeRemoveWithEGL;
+            string where = !install.CanRemove ? Strings.InstalledOutsideMarketplace
                 : sizes[i] > 0 ? $"{install.Folder}  ·  {ByteSize.Format(sizes[i])}"
                 : install.Folder;
             Targets.Add(new FabTargetViewModel($"Unreal Engine {install.EngineAppName[3..]}", where,
                 badge, version: null, isAvailable: install.CanRemove, engine: null, project: null) { Install = install });
         }
         SelectedTarget = Targets.FirstOrDefault(t => t.IsAvailable) ?? Targets.FirstOrDefault();
-        EmptyText = Targets.Count == 0 ? "This plugin isn't in any of your engines." : null;
+        EmptyText = Targets.Count == 0 ? Strings.PluginInNoEngine : null;
     }
 
     private async Task LoadProjectsAsync()
@@ -217,8 +217,8 @@ public partial class FabActionViewModel : ViewModelBase
         foreach (var target in _projects.Where(t => t.Title.Contains(search, StringComparison.OrdinalIgnoreCase)))
             Targets.Add(target);
         SelectedTarget = selected is not null && Targets.Contains(selected) ? selected : null;
-        EmptyText = _projects.Count == 0 ? "No projects found. Use \"Choose a .uproject…\" to pick one."
-            : Targets.Count == 0 ? "No projects match the search."
+        EmptyText = _projects.Count == 0 ? Localized.Format(Strings.NoProjectsFound, Strings.ChooseProjectFile)
+            : Targets.Count == 0 ? Strings.NoProjectsMatch
             : null;
     }
 
@@ -236,15 +236,15 @@ public partial class FabActionViewModel : ViewModelBase
         {
             var custom = CustomEngines.Find(_customEngines, project.EngineAssociation);
             engine = custom?.Version is { } customVersion ? "UE_" + customVersion : null;
-            engineName = engine is null ? "Custom Engine" : $"Custom Engine {Short(engine)}";
+            engineName = engine is null ? Strings.CustomEngine : Localized.Format(Strings.CustomEngineVersion, Short(engine));
             if (engine is null)
             {
                 // No telling which version it could open, and assets saved by a newer engine don't open in an older one.
                 string why = custom is null
-                    ? "This project's custom engine isn't registered on this PC, so there's no telling which version of this item would open in it."
-                    : $"Couldn't read the version of the custom engine in {custom.Directory}, so there's no telling which version of this item would open in it.";
+                    ? Strings.CustomEngineNotRegistered
+                    : Localized.Format(Strings.CustomEngineVersionUnreadable, custom.Directory);
                 return new FabTargetViewModel(project.Name, $"{engineName}  ·  {project.Directory}",
-                    custom is null ? "Engine version not installed" : "Engine version unknown", version: null, isAvailable: false, engine: null, project)
+                    custom is null ? Strings.BadgeEngineNotInstalled : Strings.BadgeEngineVersionUnknown, version: null, isAvailable: false, engine: null, project)
                 {
                     BadgeTip = why,
                 };
@@ -261,20 +261,20 @@ public partial class FabActionViewModel : ViewModelBase
         string? badge = null, tip = null;
         if (version is not null && !SameEngine(version.EngineAppName, engine))
         {
-            badge = $"Last available from UE {Short(version.EngineAppName)}";
-            tip = $"This item has no {Short(engine)} version, so its {Short(version.EngineAppName)} version can be added.";
+            badge = Localized.Format(Strings.BadgeLastAvailableFrom, Short(version.EngineAppName));
+            tip = Localized.Format(Strings.TipOlderVersionCanBeAdded, Short(engine), Short(version.EngineAppName));
         }
         else if (version is null && !SignedIn && _item.Versions.Any(v => EngineLibrary.ParseVersion(v.EngineAppName) <= engineVersion))
         {
-            badge = "Sign in to download";
-            tip = "A version that fits this project isn't in your Vault Cache yet.";
+            badge = Strings.BadgeSignInToDownload;
+            tip = Strings.TipNotInVaultYet;
         }
         else if (version is null)
         {
             // Every version is made for a newer engine, and an engine can't open assets saved by a newer one.
             string? oldest = _item.Versions.Select(v => v.EngineAppName).Where(EngineLibrary.IsEngineApp).MinBy(EngineLibrary.ParseVersion);
-            badge = "Unsupported engine version";
-            tip = oldest is null ? "This item is made for a newer engine version." : $"This item is made for a newer {Short(oldest)} engine version.";
+            badge = Strings.BadgeUnsupportedEngine;
+            tip = oldest is null ? Strings.TipMadeForNewerEngine : Localized.Format(Strings.TipMadeForNewerEngineVersion, Short(oldest));
         }
 
         return new FabTargetViewModel(project.Name, $"{engineName}  ·  {project.Directory}", badge, version,
@@ -291,13 +291,15 @@ public partial class FabActionViewModel : ViewModelBase
                      .GroupBy(v => v.ArtifactID).Select(g => BestVersion(g)!)
                      .OrderByDescending(v => EngineLibrary.ParseVersion(v.EngineAppName)))
         {
-            string state = version.IsOutdated ? "  (update available)" : version.IsDownloaded ? "  (downloaded)" : "";
-            VersionChoices.Add(new FabVersionOption(version, $"Unreal Engine {Short(version.EngineAppName)}{state}"));
+            string engine = $"Unreal Engine {Short(version.EngineAppName)}";
+            VersionChoices.Add(new FabVersionOption(version, version.IsOutdated ? Localized.Format(Strings.VersionUpdateAvailable, engine)
+                : version.IsDownloaded ? Localized.Format(Strings.VersionDownloaded, engine)
+                : engine));
         }
         SelectedVersion = Mode == FabActionMode.Download
             ? VersionChoices.FirstOrDefault(o => !o.Version.IsDownloaded || o.Version.IsOutdated) ?? VersionChoices.FirstOrDefault()
             : VersionChoices.FirstOrDefault();
-        EmptyText = VersionChoices.Count == 0 ? (SignedIn ? "No downloadable versions." : "Sign in to download this item.") : null;
+        EmptyText = VersionChoices.Count == 0 ? (SignedIn ? Strings.NoDownloadableVersions : Strings.SignInToDownloadItem) : null;
     }
 
     private void SetProjectDefaults()
@@ -311,7 +313,7 @@ public partial class FabActionViewModel : ViewModelBase
     {
         if (_library.Owner.Interaction is null)
             return;
-        string? file = await _library.Owner.Interaction.PickFileAsync("Choose a project", null, "Unreal project", "*.uproject");
+        string? file = await _library.Owner.Interaction.PickFileAsync(Strings.PickProject, null, Strings.UnrealProjectFileType, "*.uproject");
         if (file is null || ProjectLocator.Read(file) is not { } project)
             return;
         // The project just picked goes first, whatever its name, and shows even if the search wouldn't find it.
@@ -328,7 +330,7 @@ public partial class FabActionViewModel : ViewModelBase
     private async Task BrowseProjectParentAsync()
     {
         if (_library.Owner.Interaction is not null
-            && await _library.Owner.Interaction.PickFolderAsync("Where to create the project", ProjectParent) is { } folder)
+            && await _library.Owner.Interaction.PickFolderAsync(Strings.PickProjectLocation, ProjectParent) is { } folder)
             ProjectParent = folder;
     }
 
@@ -371,25 +373,25 @@ public partial class FabActionViewModel : ViewModelBase
     private string? DescribeSource(FabVersion version) =>
         version.IsOutdated
             ? Mode == FabActionMode.InstallPlugin
-                ? "Your Vault Cache copy is an older build, so Fab's latest downloads straight into the engine."
-                : "Your Vault Cache copy is an older build: it's updated first, downloading only the files that changed."
-        : version.IsDownloaded ? $"Already in your Vault Cache ({Short(version.EngineAppName)} version): nothing to download."
+                ? Strings.NoteOlderCopyInstall
+                : Strings.NoteOlderCopyUpdate
+        : version.IsDownloaded ? Localized.Format(Strings.NoteAlreadyInVault, Short(version.EngineAppName))
         : Mode switch
         {
             FabActionMode.InstallPlugin => null,
-            FabActionMode.AddToProject => "Downloads into your Vault Cache and adds it to the project.",
-            FabActionMode.CreateProject => "Downloads into your Vault Cache and creates the project.",
-            _ => "Downloads into your Vault Cache, ready to add to projects.",
+            FabActionMode.AddToProject => Strings.NoteDownloadsAndAdds,
+            FabActionMode.CreateProject => Strings.NoteDownloadsAndCreates,
+            _ => Strings.NoteDownloadsReady,
         };
 
     private static string DescribeRemoval(FabInstall install) => !install.CanRemove
-        ? "EGL put this plugin among the engine's own folders, so there's no telling which files are its. Remove it with the Epic Games Launcher."
+        ? Strings.RemovalAmongEngineFolders
         : install.Source switch
     {
-        PluginSource.UnVault => "Deletes the plugin installed by UnVault Launcher.",
-        PluginSource.EGL => "Deletes the plugin installed by the Epic Games Launcher.",
-        _ => "Deletes the plugin copied in by hand or by another tool.",
-    } + " Projects that use the plugin won't find it any more.";
+        PluginSource.UnVault => Strings.RemovalByUnVault,
+        PluginSource.EGL => Strings.RemovalByEGL,
+        _ => Strings.RemovalByOther,
+    };
 
     /// <summary>Prefer a downloaded copy (no network) over one that has to be fetched.</summary>
     private static FabVersion? BestVersion(IEnumerable<FabVersion> versions) =>

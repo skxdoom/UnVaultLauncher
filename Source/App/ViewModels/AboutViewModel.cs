@@ -9,7 +9,7 @@ public partial class AboutViewModel(MainViewModel owner) : ViewModelBase
     /// <summary>Update status and the newer release live on the main view model, which checks at startup.</summary>
     public MainViewModel Owner => owner;
 
-    public string VersionText { get; } = "Version " + ProductInfo.Version;
+    public string VersionText { get; } = Localized.Format(Strings.VersionValue, ProductInfo.Version);
 
     public string RepositoryURL => UpdateChecker.RepositoryURL;
     public string ReleasesURL => UpdateChecker.RepositoryURL + "/releases";

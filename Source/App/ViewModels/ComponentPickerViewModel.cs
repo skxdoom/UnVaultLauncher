@@ -57,7 +57,7 @@ public partial class ComponentPickerViewModel : ViewModelBase
         _engine = engine;
         _fetch = fetch ?? ((asset, cancellationToken) => InstallWorkflow.FetchAsync(owner.Services.API, asset, cancellationToken));
         IsModify = engine is not null;
-        Title = engine is not null ? "Modify " + engine.Title : "Install Unreal Engine";
+        Title = engine is not null ? Localized.Format(Strings.ModifyTitle, engine.Title) : Strings.InstallUnrealEngine;
         Directory = engine?.Local?.Directory ?? "";
     }
 
@@ -111,7 +111,7 @@ public partial class ComponentPickerViewModel : ViewModelBase
     public bool IsReady => !IsLoading && Error is null;
 
     [ObservableProperty] public partial string Directory { get; set; }
-    [ObservableProperty] public partial string Subtitle { get; set; } = "Reading the build manifest…";
+    [ObservableProperty] public partial string Subtitle { get; set; } = Strings.ReadingManifestShort;
     [ObservableProperty] public partial string CoreSizeText { get; set; } = "";
     [ObservableProperty] public partial string SummaryText { get; set; } = "";
     [ObservableProperty] public partial string FreeSpaceText { get; set; } = "";
@@ -126,7 +126,7 @@ public partial class ComponentPickerViewModel : ViewModelBase
     public partial bool CanConfirm { get; set; }
 
     /// <summary>The same whatever is ticked: what the choice does is in the summary beside it.</summary>
-    public string ConfirmText => IsModify ? "Apply" : "Install";
+    public string ConfirmText => IsModify ? Strings.Apply : Strings.Install;
 
     partial void OnDirectoryChanged(string value) => Recalculate();
 
@@ -140,13 +140,13 @@ public partial class ComponentPickerViewModel : ViewModelBase
         {
             if (IsModify)
             {
-                var install = await Task.Run(() => _engine!.Local!.Load()) ?? throw new InvalidOperationException("The install's manifest couldn't be read.");
+                var install = await Task.Run(() => _engine!.Local!.Load()) ?? throw new InvalidOperationException(Strings.ManifestUnreadable);
                 await ShowInstallAsync(install);
             }
             else if (_initialVersion is null)
             {
                 IsLoading = false;
-                Error = "You already have every engine version your account can install.";
+                Error = Strings.HaveEveryEngine;
             }
             else
             {
@@ -168,7 +168,7 @@ public partial class ComponentPickerViewModel : ViewModelBase
         Error = null;
         CanConfirm = false;
         SummaryText = "";
-        Subtitle = "Reading the build manifest…";
+        Subtitle = Strings.ReadingManifestShort;
         ClearOptions();
 
         // The folder follows the version (…\UE_5.8) unless the user chose their own.
@@ -211,7 +211,7 @@ public partial class ComponentPickerViewModel : ViewModelBase
     {
         _install = install;
         if (install.IsEGLOnly)
-            Note = "Installed by the Epic Games Launcher. After this change, let UnVault Launcher manage it: an EGL verify or update may bring removed components back.";
+            Note = Strings.NoteEGLInstall;
         return ShowManifestAsync(install.Manifest, install.InstallTags);
     }
 
@@ -232,7 +232,7 @@ public partial class ComponentPickerViewModel : ViewModelBase
         CoreSizeText = ByteSize.Format(core.InstallBytes);
         foreach (var impact in impacts.OrderBy(i => ComponentNames.GetDisplayName(i.Tag), StringComparer.OrdinalIgnoreCase))
         {
-            string detail = impact.Installed ? "on disk" : $"{ByteSize.Format(impact.DownloadBytes)} download";
+            string detail = impact.Installed ? Strings.OnDisk : Localized.Format(Strings.DownloadSize, ByteSize.Format(impact.DownloadBytes));
             var option = new ComponentOptionViewModel(this, impact.Tag, impact.Installed, ByteSize.Format(impact.DiskBytes), detail);
             if (!IsModify && DefaultTags.Contains(impact.Tag))
                 option.IsSelected = true;
@@ -273,7 +273,7 @@ public partial class ComponentPickerViewModel : ViewModelBase
                 Dispatcher.UIThread.Post(() =>
                 {
                     if (request == _recalculation)
-                        Warning = $"Couldn't work out the sizes: {ex.Message}";
+                        Warning = Localized.Format(Strings.SizesFailed, ex.Message);
                 });
             }
         });
@@ -289,26 +289,26 @@ public partial class ComponentPickerViewModel : ViewModelBase
         if (IsModify)
         {
             var plan = InstallWorkflow.PlanModify(_install!, tags);
-            summary = plan.IsEmpty ? "No changes"
+            summary = plan.IsEmpty ? Strings.NoChanges
                 : string.Join("  ·  ", new[]
                 {
-                    plan.ToRemove.Count > 0 ? $"Frees {ByteSize.Format(plan.BytesFreed)}" : null,
-                    plan.ToAdd is { } add ? $"Downloads {ByteSize.Format(add.DownloadBytes)} (+{ByteSize.Format(add.InstallBytes)} on disk)" : null,
+                    plan.ToRemove.Count > 0 ? Localized.Format(Strings.Frees, ByteSize.Format(plan.BytesFreed)) : null,
+                    plan.ToAdd is { } add ? Localized.Format(Strings.DownloadsPlusDisk, ByteSize.Format(add.DownloadBytes), ByteSize.Format(add.InstallBytes)) : null,
                 }.Where(s => s is not null));
             canConfirm = !plan.IsEmpty;
             if (plan.ToAdd is { } adding && free >= 0 && free < adding.InstallBytes)
-                warning = "Not enough free space for the added components.";
+                warning = Strings.NotEnoughSpaceForAdded;
         }
         else
         {
             var size = _manifest!.MeasureSelection(tags);
-            summary = $"Download {ByteSize.Format(size.DownloadBytes)}  ·  {ByteSize.Format(size.InstallBytes)} on disk";
+            summary = Localized.Format(Strings.InstallSummary, ByteSize.Format(size.DownloadBytes), ByteSize.Format(size.InstallBytes));
             canConfirm = !string.IsNullOrWhiteSpace(directory);
             if (free >= 0 && free < size.InstallBytes)
-                warning = "Not enough free space on that drive.";
+                warning = Strings.NotEnoughSpaceOnDrive;
         }
 
-        freeSpace = free >= 0 ? $"{ByteSize.Format(free)} free on {Path.GetPathRoot(directory)}" : "";
+        freeSpace = free >= 0 ? Localized.Format(Strings.FreeOnDrive, ByteSize.Format(free), Path.GetPathRoot(directory)) : "";
 
         Dispatcher.UIThread.Post(() =>
         {
@@ -327,7 +327,7 @@ public partial class ComponentPickerViewModel : ViewModelBase
         if (_owner.Interaction is null)
             return;
         string? parent = Path.GetDirectoryName(Directory);
-        string? picked = await _owner.Interaction.PickFolderAsync("Choose where to install", parent);
+        string? picked = await _owner.Interaction.PickFolderAsync(Strings.PickInstallLocation, parent);
         if (picked is not null)
             Directory = Path.Combine(picked, _engine?.AppName ?? SelectedVersion?.Asset.AppName ?? "UnrealEngine");
     }

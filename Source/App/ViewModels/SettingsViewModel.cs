@@ -49,13 +49,12 @@ public partial class SettingsViewModel : ViewModelBase
         var automatic = new AppSettings();
         var engineRoot = automatic.ResolveEngineInstallRoot(egl);
         var vault = automatic.ResolveVaultCache(egl);
-        EngineRootPlaceholder = $"Automatic: {engineRoot.Path}";
-        EngineRootHint = Describe(engineRoot.Source, "New engines go into a subfolder here, e.g. UE_5.8.");
-        VaultPlaceholder = $"Automatic: {vault.Path}";
+        EngineRootPlaceholder = Localized.Format(Strings.AutomaticPath, engineRoot.Path);
+        EngineRootHint = Describe(engineRoot.Source, Strings.EngineRootPurpose);
+        VaultPlaceholder = Localized.Format(Strings.AutomaticPath, vault.Path);
         var projects = automatic.ResolveProjectFolders(egl);
-        ProjectFoldersAutomatic = "Automatic: " + string.Join(", ", projects.Paths);
-        ProjectFoldersHint = "When adding assets, the projects in these folders are offered (besides the ones the editor opened recently); new projects are created in the default one. "
-            + (projects.Source == SettingSource.EpicGamesLauncher ? "Leave empty to use the Epic Games Launcher's project folders." : @"Leave empty for Documents\Unreal Projects.");
+        ProjectFoldersAutomatic = Localized.Format(Strings.AutomaticPath, string.Join(", ", projects.Paths));
+        ProjectFoldersHint = projects.Source == SettingSource.EpicGamesLauncher ? Strings.ProjectFoldersHintEGL : Strings.ProjectFoldersHintDocuments;
 
         var current = owner.Settings;
         EngineInstallRoot = current.EngineInstallRoot ?? "";
@@ -109,19 +108,19 @@ public partial class SettingsViewModel : ViewModelBase
         {
             string text;
             if (!Directory.Exists(folder.Path))
-                text = "This folder doesn't exist yet; it will be created on the first Fab download.";
+                text = Strings.VaultFolderMissing;
             else
             {
                 var summary = VaultCache.Summarize(folder.Path);
                 text = summary.Count == 0
-                    ? "No downloaded assets here yet."
-                    : $"{summary.Count} downloaded {(summary.Count == 1 ? "asset" : "assets")} ({ByteSize.Format(summary.TotalBytes)}). UnVault reuses them instead of downloading again.";
+                    ? Strings.VaultNoAssets
+                    : Localized.Plural(nameof(Strings.VaultAssets_Other), summary.Count, ByteSize.Format(summary.TotalBytes));
             }
-            string source = folder.Source == SettingSource.EpicGamesLauncher ? " Same folder the Epic Games Launcher uses." : "";
+            string source = folder.Source == SettingSource.EpicGamesLauncher ? " " + Strings.VaultSameAsEGL : "";
             Dispatcher.UIThread.Post(() =>
             {
                 if (request == _summaryRequest)
-                    VaultSummary = "Fab asset packs and plugins are downloaded and kept here. " + text + source;
+                    VaultSummary = Strings.VaultPurpose + " " + text + source;
             });
         });
     }
@@ -129,21 +128,21 @@ public partial class SettingsViewModel : ViewModelBase
     [RelayCommand]
     private async Task BrowseEngineRootAsync()
     {
-        if (await PickAsync("Folder for new engines", EngineInstallRoot) is { } picked)
+        if (await PickAsync(Strings.PickEngineFolder, EngineInstallRoot) is { } picked)
             EngineInstallRoot = picked;
     }
 
     [RelayCommand]
     private async Task BrowseVaultCacheAsync()
     {
-        if (await PickAsync("Vault Cache folder", VaultCacheDirectory) is { } picked)
+        if (await PickAsync(Strings.PickVaultFolder, VaultCacheDirectory) is { } picked)
             VaultCacheDirectory = picked;
     }
 
     [RelayCommand]
     private async Task AddProjectFolderAsync()
     {
-        if (await PickAsync("Folder with Unreal projects", ProjectFolders.LastOrDefault()?.Path ?? "") is { } picked
+        if (await PickAsync(Strings.PickProjectFolder, ProjectFolders.LastOrDefault()?.Path ?? "") is { } picked
             && !ProjectFolders.Any(f => string.Equals(Normalize(f.Path), Normalize(picked), StringComparison.OrdinalIgnoreCase)))
             AddProjectFolder(picked);
     }
@@ -170,7 +169,7 @@ public partial class SettingsViewModel : ViewModelBase
         {
             if (folder is not null && !Path.IsPathFullyQualified(folder))
             {
-                Error = $"\"{folder}\" isn't a full folder path (like E:\\Epic Games).";
+                Error = Localized.Format(Strings.NotFullPath, folder);
                 return;
             }
         }
@@ -187,7 +186,7 @@ public partial class SettingsViewModel : ViewModelBase
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            Error = $"Couldn't save settings: {ex.Message}";
+            Error = Localized.Format(Strings.SettingsSaveFailed, ex.Message);
             return;
         }
         _owner.CloseDialog();
@@ -201,8 +200,8 @@ public partial class SettingsViewModel : ViewModelBase
 
     private static string Describe(SettingSource source, string purpose) => source switch
     {
-        SettingSource.EpicGamesLauncher => $"{purpose} Leave empty to use the Epic Games Launcher's install folder.",
-        SettingSource.ExistingInstalls => $"{purpose} Leave empty to install next to your existing engines.",
-        _ => $"{purpose} Leave empty for the default.",
+        SettingSource.EpicGamesLauncher => $"{purpose} {Strings.LeaveEmptyEGLInstallFolder}",
+        SettingSource.ExistingInstalls => $"{purpose} {Strings.LeaveEmptyExistingEngines}",
+        _ => $"{purpose} {Strings.LeaveEmptyDefault}",
     };
 }

@@ -49,7 +49,7 @@ public partial class InstalledPluginsViewModel(MainViewModel owner, LocalEngine 
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            EmptyText = $"Couldn't look for plugins: {ex.Message}";
+            EmptyText = Localized.Format(Strings.PluginsLookupFailed, ex.Message);
         }
         finally
         {
@@ -57,15 +57,15 @@ public partial class InstalledPluginsViewModel(MainViewModel owner, LocalEngine 
         }
     }
 
-    private void ShowIfEmpty() => EmptyText = Plugins.Count == 0 ? "No Fab plugins in this engine." : null;
+    private void ShowIfEmpty() => EmptyText = Plugins.Count == 0 ? Strings.NoFabPlugins : null;
 
     private InstalledPluginViewModel Row(EnginePlugin plugin, PluginDescriptor? descriptor, long size, Bitmap? icon)
     {
         // The library's title is the one the Library tab shows; the plugin's own name is next best.
         var item = owner.Fab.FindItem(plugin.ArtifactID);
         string title = item?.Title ?? descriptor?.FriendlyName ?? plugin.ArtifactID;
-        string version = descriptor?.VersionName is { } name ? "Version " + WithoutV(name) : "Version unknown";
-        string details = !plugin.CanRemove ? "Installed by the Epic Games Launcher"
+        string version = descriptor?.VersionName is { } name ? Localized.Format(Strings.VersionValue, WithoutV(name)) : Strings.VersionUnknown;
+        string details = !plugin.CanRemove ? Strings.InstalledByEGL
             : size > 0 ? $"{version}  ·  {ByteSize.Format(size)}"
             : version;
         var install = new FabInstall(engine.AppName, engine.Directory, plugin.ArtifactID, plugin.Source, plugin.Folder, plugin.CanRemove, plugin.BuildVersion);
@@ -107,8 +107,8 @@ public partial class InstalledPluginsViewModel(MainViewModel owner, LocalEngine 
 
     /// <summary>Asked over this list, which stays in sight; Remove starts the removal and the row follows it.</summary>
     internal void ConfirmRemove(InstalledPluginViewModel plugin) =>
-        owner.Prompt = new ConfirmViewModel(owner, $"Remove {plugin.Title}?",
-            $"Deletes it from {engineTitle}. Projects that use the plugin won't find it any more.", "Remove", () => Remove(plugin));
+        owner.Prompt = new ConfirmViewModel(owner, Localized.Format(Strings.ConfirmRemoveTitle, plugin.Title),
+            Localized.Format(Strings.ConfirmRemoveMessage, engineTitle), Strings.Remove, () => Remove(plugin));
 
     private void Remove(InstalledPluginViewModel plugin)
     {
@@ -149,7 +149,7 @@ public partial class InstalledPluginViewModel(InstalledPluginsViewModel owner, F
     [NotifyCanExecuteChangedFor(nameof(RemoveCommand))]
     public partial bool IsRemoving { get; set; }
 
-    public string Details => IsRemoving ? "Removing…" : details;
+    public string Details => IsRemoving ? Strings.Removing : details;
 
     public bool HasFolder => Directory.Exists(Install.Folder);
 
@@ -157,8 +157,8 @@ public partial class InstalledPluginViewModel(InstalledPluginsViewModel owner, F
     public bool CanRemove => Install.CanRemove && !isBusy && !IsRemoving;
 
     public string? RemoveTip =>
-        !Install.CanRemove ? "There's no telling which of the engine's files are this plugin's. Remove it with the Epic Games Launcher."
-        : isBusy || IsRemoving ? "Something is already working on this plugin."
+        !Install.CanRemove ? Strings.CantTellPluginFiles
+        : isBusy || IsRemoving ? Strings.PluginBusy
         : null;
 
     [RelayCommand]

@@ -3,8 +3,11 @@
   The app's interface text, in English. A translation is a copy of this file named for its language, e.g. Strings.de.resx,
   with the values translated and the names left as they are; anything it leaves out shows in English.
   Not here, as they stay the same in every language: the product name (UnVault Launcher), names like GitHub, Fab and
-  Epic Games where they stand alone, and symbols such as ⋯ and ✕.
+  Epic Games where they stand alone, engine names with their version (Unreal Engine 5.7, UE 5.7), and symbols such as ⋯ and ✕.
   Section headings are written in capitals, as they show; a language without capitals writes them as it normally would.
+  {0}, {1}… are values put in (each entry's comment says which); a translation keeps them, in whatever order its grammar
+  needs, along with what follows the colon: {0:N0} writes a number the user's way. Texts with a count come in forms, see
+  "Counted texts" below.
 -->
 <root>
   <resheader name="resmimetype">
@@ -296,5 +299,798 @@
   </data>
   <data name="SectionLinks" xml:space="preserve">
     <value>LINKS</value>
+  </data>
+
+  <!-- Counted texts: X_One for one, X_Other for the rest; a language with more forms adds X_Few and X_Many. {0} is the count. -->
+  <data name="ItemsHaveUpdates_One" xml:space="preserve">
+    <value>{0:N0} item has an update on Fab</value>
+    <comment>Tooltip of the Library tab.</comment>
+  </data>
+  <data name="ItemsHaveUpdates_Other" xml:space="preserve">
+    <value>{0:N0} items have updates on Fab</value>
+  </data>
+  <data name="InstalledCheckingEpic_One" xml:space="preserve">
+    <value>{0:N0} installed  ·  checking Epic for versions and updates…</value>
+    <comment>{0}: engines found on this PC.</comment>
+  </data>
+  <data name="InstalledCheckingEpic_Other" xml:space="preserve">
+    <value>{0:N0} installed  ·  checking Epic for versions and updates…</value>
+  </data>
+  <data name="ModifyDoneAdded_One" xml:space="preserve">
+    <value>Done: added {0:N0} file.</value>
+    <comment>After changing an engine's components.</comment>
+  </data>
+  <data name="ModifyDoneAdded_Other" xml:space="preserve">
+    <value>Done: added {0:N0} files.</value>
+  </data>
+  <data name="ModifyDoneFreedAdded_One" xml:space="preserve">
+    <value>Done: freed {1}, added {0:N0} file.</value>
+    <comment>{1}: disk space freed, e.g. "1.2 GB".</comment>
+  </data>
+  <data name="ModifyDoneFreedAdded_Other" xml:space="preserve">
+    <value>Done: freed {1}, added {0:N0} files.</value>
+  </data>
+  <data name="VerifyAllOK_One" xml:space="preserve">
+    <value>{0:N0} file is OK.</value>
+  </data>
+  <data name="VerifyAllOK_Other" xml:space="preserve">
+    <value>All {0:N0} files are OK.</value>
+  </data>
+  <data name="VerifyBad_One" xml:space="preserve">
+    <value>{0:N0} of {1:N0} files is missing or damaged.</value>
+    <comment>{0}: bad files, {1}: all files checked.</comment>
+  </data>
+  <data name="VerifyBad_Other" xml:space="preserve">
+    <value>{0:N0} of {1:N0} files are missing or damaged.</value>
+  </data>
+  <data name="Repaired_One" xml:space="preserve">
+    <value>Repaired {0:N0} file.</value>
+  </data>
+  <data name="Repaired_Other" xml:space="preserve">
+    <value>Repaired {0:N0} files.</value>
+  </data>
+  <data name="LibrarySummary_One" xml:space="preserve">
+    <value>{0:N0} item  ·  {1:N0} downloaded</value>
+    <comment>{0}: items in the library, {1}: of them in the Vault Cache.</comment>
+  </data>
+  <data name="LibrarySummary_Other" xml:space="preserve">
+    <value>{0:N0} items  ·  {1:N0} downloaded</value>
+  </data>
+  <data name="LibraryFiltered_One" xml:space="preserve">
+    <value>{1:N0} of {0:N0} item</value>
+    <comment>{0}: items in the library, {1}: items the search and filters leave.</comment>
+  </data>
+  <data name="LibraryFiltered_Other" xml:space="preserve">
+    <value>{1:N0} of {0:N0} items</value>
+  </data>
+  <data name="AddedFiles_One" xml:space="preserve">
+    <value>Added {0:N0} file to {1}\Content.</value>
+    <comment>{1}: the project folder.</comment>
+  </data>
+  <data name="AddedFiles_Other" xml:space="preserve">
+    <value>Added {0:N0} files to {1}\Content.</value>
+  </data>
+  <data name="UpdatedCopies_One" xml:space="preserve">
+    <value>Updated {0:N0} copy to Fab's latest build.</value>
+    <comment>Copies of a Fab item: in the Vault Cache or installed into engines.</comment>
+  </data>
+  <data name="UpdatedCopies_Other" xml:space="preserve">
+    <value>Updated {0:N0} copies to Fab's latest build.</value>
+  </data>
+  <data name="VaultAssets_One" xml:space="preserve">
+    <value>{0:N0} downloaded asset ({1}). UnVault reuses it instead of downloading again.</value>
+    <comment>{1}: their total size, e.g. "12.3 GB".</comment>
+  </data>
+  <data name="VaultAssets_Other" xml:space="preserve">
+    <value>{0:N0} downloaded assets ({1}). UnVault reuses them instead of downloading again.</value>
+  </data>
+  <data name="ProgressFiles_One" xml:space="preserve">
+    <value>{1:N0}/{0:N0} file</value>
+    <comment>{0}: files to write, {1}: files written so far.</comment>
+  </data>
+  <data name="ProgressFiles_Other" xml:space="preserve">
+    <value>{1:N0}/{0:N0} files</value>
+  </data>
+
+  <!-- Engines -->
+  <data name="UpdateChecking" xml:space="preserve">
+    <value>Checking for updates…</value>
+  </data>
+  <data name="UpdateUpToDate" xml:space="preserve">
+    <value>You have the latest version.</value>
+  </data>
+  <data name="UpdateAvailableVersion" xml:space="preserve">
+    <value>Version {0} is available.</value>
+    <comment>{0}: the newer release of UnVault Launcher, e.g. 0.7.0.</comment>
+  </data>
+  <data name="UpdateCheckFailed" xml:space="preserve">
+    <value>Couldn't check for updates: {0}</value>
+    <comment>{0}: what went wrong, possibly in English.</comment>
+  </data>
+  <data name="UpdateNotChecked" xml:space="preserve">
+    <value>Not checked for updates yet.</value>
+  </data>
+  <data name="UpdateCheckOff" xml:space="preserve">
+    <value>Checking for updates at startup is turned off in Settings.</value>
+  </data>
+  <data name="GitHubNoAnswer" xml:space="preserve">
+    <value>GitHub didn't answer.</value>
+  </data>
+  <data name="LookingForEngines" xml:space="preserve">
+    <value>Looking for installed engines…</value>
+  </data>
+  <data name="CouldNotReachEpic" xml:space="preserve">
+    <value>Couldn't reach Epic: {0}</value>
+    <comment>{0}: what went wrong, possibly in English.</comment>
+  </data>
+  <data name="SignInFailed" xml:space="preserve">
+    <value>Sign-in failed: {0}</value>
+    <comment>{0}: what went wrong, possibly in English.</comment>
+  </data>
+  <data name="NoEngineVersionsListed" xml:space="preserve">
+    <value>Epic didn't list any engine versions for your account. Try Refresh.</value>
+  </data>
+  <data name="NoEditorFound" xml:space="preserve">
+    <value>No editor executable found in {0}.</value>
+    <comment>{0}: the engine folder.</comment>
+  </data>
+  <data name="EngineUpdateAvailable" xml:space="preserve">
+    <value>Update available: {0}</value>
+    <comment>{0}: the newer engine version, e.g. 5.8.3.</comment>
+  </data>
+  <data name="FilesMissing" xml:space="preserve">
+    <value>Files missing</value>
+  </data>
+  <data name="NotInstalled" xml:space="preserve">
+    <value>Not installed</value>
+  </data>
+  <data name="EGLFolderGone" xml:space="preserve">
+    <value>The Epic Games Launcher lists it at {0}, but that folder is gone.</value>
+    <comment>{0}: a folder.</comment>
+  </data>
+  <data name="OriginUnVault" xml:space="preserve">
+    <value>Installed by UnVault Launcher</value>
+  </data>
+  <data name="OriginAdoptedFromEGL" xml:space="preserve">
+    <value>Installed by Epic Games Launcher, managed by UnVault Launcher</value>
+  </data>
+  <data name="OriginEGL" xml:space="preserve">
+    <value>Installed by Epic Games Launcher</value>
+  </data>
+  <data name="ManifestUnreadable" xml:space="preserve">
+    <value>The install's manifest couldn't be read.</value>
+    <comment>The manifest is Epic's list of an engine's files.</comment>
+  </data>
+  <data name="NoDownloadLocation" xml:space="preserve">
+    <value>No download location is known for this install.</value>
+  </data>
+  <data name="Repair" xml:space="preserve">
+    <value>Repair</value>
+    <comment>Button after a verify that found bad files.</comment>
+  </data>
+
+  <!-- Install and Options windows (engine components) -->
+  <data name="InstallUnrealEngine" xml:space="preserve">
+    <value>Install Unreal Engine</value>
+  </data>
+  <data name="ModifyTitle" xml:space="preserve">
+    <value>Modify {0}</value>
+    <comment>{0}: the engine, e.g. "Unreal Engine 5.7.4".</comment>
+  </data>
+  <data name="Install" xml:space="preserve">
+    <value>Install</value>
+  </data>
+  <data name="Apply" xml:space="preserve">
+    <value>Apply</value>
+  </data>
+  <data name="ReadingManifestShort" xml:space="preserve">
+    <value>Reading the build manifest…</value>
+  </data>
+  <data name="HaveEveryEngine" xml:space="preserve">
+    <value>You already have every engine version your account can install.</value>
+  </data>
+  <data name="NoteEGLInstall" xml:space="preserve">
+    <value>Installed by the Epic Games Launcher. After this change, let UnVault Launcher manage it: an EGL verify or update may bring removed components back.</value>
+    <comment>EGL: the Epic Games Launcher.</comment>
+  </data>
+  <data name="OnDisk" xml:space="preserve">
+    <value>on disk</value>
+    <comment>Under a component that's already installed.</comment>
+  </data>
+  <data name="DownloadSize" xml:space="preserve">
+    <value>{0} download</value>
+    <comment>{0}: a size, e.g. "2.0 GB".</comment>
+  </data>
+  <data name="SizesFailed" xml:space="preserve">
+    <value>Couldn't work out the sizes: {0}</value>
+    <comment>{0}: what went wrong, possibly in English.</comment>
+  </data>
+  <data name="NoChanges" xml:space="preserve">
+    <value>No changes</value>
+  </data>
+  <data name="Frees" xml:space="preserve">
+    <value>Frees {0}</value>
+    <comment>{0}: disk space, e.g. "1.2 GB".</comment>
+  </data>
+  <data name="DownloadsPlusDisk" xml:space="preserve">
+    <value>Downloads {0} (+{1} on disk)</value>
+    <comment>{0}: download size, {1}: space it takes once installed.</comment>
+  </data>
+  <data name="NotEnoughSpaceForAdded" xml:space="preserve">
+    <value>Not enough free space for the added components.</value>
+  </data>
+  <data name="InstallSummary" xml:space="preserve">
+    <value>Download {0}  ·  {1} on disk</value>
+    <comment>{0}: download size, {1}: space it takes once installed.</comment>
+  </data>
+  <data name="NotEnoughSpaceOnDrive" xml:space="preserve">
+    <value>Not enough free space on that drive.</value>
+  </data>
+  <data name="FreeOnDrive" xml:space="preserve">
+    <value>{0} free on {1}</value>
+    <comment>{0}: free space, {1}: a drive, e.g. "E:\".</comment>
+  </data>
+  <data name="PickInstallLocation" xml:space="preserve">
+    <value>Choose where to install</value>
+    <comment>Title of the folder picker.</comment>
+  </data>
+
+  <!-- Downloads and other work in progress -->
+  <data name="OperationInstalling" xml:space="preserve">
+    <value>Installing {0}</value>
+    <comment>{0}: what, e.g. "Unreal Engine 5.8.3".</comment>
+  </data>
+  <data name="OperationChangingComponents" xml:space="preserve">
+    <value>Changing components of {0}</value>
+    <comment>{0}: the engine, e.g. "Unreal Engine 5.7.4".</comment>
+  </data>
+  <data name="OperationVerifying" xml:space="preserve">
+    <value>Verifying {0}</value>
+    <comment>{0}: the engine.</comment>
+  </data>
+  <data name="OperationRepairing" xml:space="preserve">
+    <value>Repairing {0}</value>
+    <comment>{0}: the engine.</comment>
+  </data>
+  <data name="OperationInstallingInto" xml:space="preserve">
+    <value>Installing {0} into UE {1}</value>
+    <comment>{0}: a Fab plugin, {1}: the engine version, e.g. 5.7.</comment>
+  </data>
+  <data name="OperationAdding" xml:space="preserve">
+    <value>Adding {0} to {1}</value>
+    <comment>{0}: a Fab item, {1}: a project.</comment>
+  </data>
+  <data name="OperationCreatingProject" xml:space="preserve">
+    <value>Creating project from {0}</value>
+    <comment>{0}: a Fab project.</comment>
+  </data>
+  <data name="OperationDownloadingItem" xml:space="preserve">
+    <value>Downloading {0} ({1})</value>
+    <comment>{0}: a Fab item, {1}: the engine version it's for.</comment>
+  </data>
+  <data name="OperationRemoving" xml:space="preserve">
+    <value>Removing {0} from UE {1}</value>
+    <comment>{0}: a Fab plugin, {1}: the engine version.</comment>
+  </data>
+  <data name="OperationUpdating" xml:space="preserve">
+    <value>Updating {0}</value>
+    <comment>{0}: a Fab item.</comment>
+  </data>
+  <data name="PhaseDownloading" xml:space="preserve">
+    <value>Downloading</value>
+  </data>
+  <data name="PhaseRemovingFiles" xml:space="preserve">
+    <value>Removing files</value>
+  </data>
+  <data name="PhaseReadingManifest" xml:space="preserve">
+    <value>Reading manifest</value>
+  </data>
+  <data name="PhaseVerifying" xml:space="preserve">
+    <value>Verifying</value>
+  </data>
+  <data name="PhaseCopyingFromVault" xml:space="preserve">
+    <value>Copying from Vault Cache</value>
+  </data>
+  <data name="PhaseCopyingIntoProject" xml:space="preserve">
+    <value>Copying into project</value>
+  </data>
+  <data name="PhaseCopyingProject" xml:space="preserve">
+    <value>Copying project</value>
+  </data>
+  <data name="PhaseDeletingFiles" xml:space="preserve">
+    <value>Deleting files</value>
+  </data>
+  <data name="PhaseUpdatingVaultCopy" xml:space="preserve">
+    <value>Updating Vault Cache copy</value>
+  </data>
+  <data name="PhaseUpdatingVaultCopyFor" xml:space="preserve">
+    <value>Updating Vault Cache copy ({0})</value>
+    <comment>{0}: the engine version it's for.</comment>
+  </data>
+  <data name="PhaseCheckingEngine" xml:space="preserve">
+    <value>Checking UE {0}</value>
+    <comment>{0}: an engine version.</comment>
+  </data>
+  <data name="PhaseUpdatingInEngine" xml:space="preserve">
+    <value>Updating in UE {0}</value>
+    <comment>{0}: an engine version.</comment>
+  </data>
+  <data name="PhaseDone" xml:space="preserve">
+    <value>Done</value>
+  </data>
+  <data name="PhasePaused" xml:space="preserve">
+    <value>Paused</value>
+  </data>
+  <data name="PhaseFailed" xml:space="preserve">
+    <value>Failed</value>
+  </data>
+  <data name="StoppedRetry" xml:space="preserve">
+    <value>Stopped. Retry continues where it left off.</value>
+  </data>
+  <data name="EngineInstalled" xml:space="preserve">
+    <value>Installed to {0}. Projects for {1} now open with it.</value>
+    <comment>{0}: a folder, {1}: the engine version, e.g. 5.8.</comment>
+  </data>
+  <data name="ModifyDone" xml:space="preserve">
+    <value>Done.</value>
+  </data>
+  <data name="ModifyDoneFreed" xml:space="preserve">
+    <value>Done: freed {0}.</value>
+    <comment>{0}: disk space, e.g. "1.2 GB".</comment>
+  </data>
+  <data name="PluginInstalledInto" xml:space="preserve">
+    <value>Installed into {0}.</value>
+    <comment>{0}: the engine folder.</comment>
+  </data>
+  <data name="ProjectCreated" xml:space="preserve">
+    <value>Created {0}.</value>
+    <comment>{0}: the new project's .uproject file.</comment>
+  </data>
+  <data name="InVaultCacheAt" xml:space="preserve">
+    <value>In your Vault Cache: {0} ({1}).</value>
+    <comment>{0}: a folder, {1}: its size.</comment>
+  </data>
+  <data name="RemovedFreed" xml:space="preserve">
+    <value>Removed from UE {0}; freed {1}.</value>
+    <comment>{0}: an engine version, {1}: disk space.</comment>
+  </data>
+  <data name="ProgressOf" xml:space="preserve">
+    <value>{0} of {1}</value>
+    <comment>Download progress, e.g. "1.2 GB of 10.9 GB".</comment>
+  </data>
+  <data name="TimeLeft" xml:space="preserve">
+    <value>{0} left</value>
+    <comment>{0}: a duration, e.g. "5m".</comment>
+  </data>
+  <data name="PerSecond" xml:space="preserve">
+    <value>{0}/s</value>
+    <comment>Download speed; {0}: a size, e.g. "12.5 MB".</comment>
+  </data>
+  <data name="DurationSeconds" xml:space="preserve">
+    <value>{0:0}s</value>
+    <comment>Seconds, short.</comment>
+  </data>
+  <data name="DurationMinutes" xml:space="preserve">
+    <value>{0:0}m</value>
+    <comment>Minutes, short.</comment>
+  </data>
+  <data name="DurationHoursMinutes" xml:space="preserve">
+    <value>{0}h {1}m</value>
+    <comment>Hours and minutes, short.</comment>
+  </data>
+
+  <!-- Library tab and its items -->
+  <data name="AllEngines" xml:space="preserve">
+    <value>All Engines</value>
+    <comment>Filter: items for any engine version.</comment>
+  </data>
+  <data name="AllTypes" xml:space="preserve">
+    <value>All Types</value>
+    <comment>Filter: every kind of item.</comment>
+  </data>
+  <data name="KindPlugins" xml:space="preserve">
+    <value>Plugins</value>
+    <comment>Filter.</comment>
+  </data>
+  <data name="KindAssetPacks" xml:space="preserve">
+    <value>Asset Packs</value>
+    <comment>Filter.</comment>
+  </data>
+  <data name="KindProjects" xml:space="preserve">
+    <value>Projects</value>
+    <comment>Filter.</comment>
+  </data>
+  <data name="KindPlugin" xml:space="preserve">
+    <value>Plugin</value>
+  </data>
+  <data name="KindAssetPack" xml:space="preserve">
+    <value>Asset Pack</value>
+  </data>
+  <data name="KindProject" xml:space="preserve">
+    <value>Project</value>
+  </data>
+  <data name="KindOther" xml:space="preserve">
+    <value>Other</value>
+    <comment>An item whose kind isn't known.</comment>
+  </data>
+  <data name="UpdateAvailableFilter" xml:space="preserve">
+    <value>Update Available</value>
+    <comment>Filter: items with a newer build on Fab.</comment>
+  </data>
+  <data name="UpdateAvailableFilterCount" xml:space="preserve">
+    <value>Update Available ({0:N0})</value>
+    <comment>The same filter, with how many items it would show.</comment>
+  </data>
+  <data name="ScanningDownloads" xml:space="preserve">
+    <value>Scanning downloads and installs…</value>
+  </data>
+  <data name="VaultCacheUnreadable" xml:space="preserve">
+    <value>Couldn't read the Vault Cache in {0}: {1}</value>
+    <comment>{0}: a folder, {1}: what went wrong, possibly in English.</comment>
+  </data>
+  <data name="LoadingLibrary" xml:space="preserve">
+    <value>Loading your library…</value>
+  </data>
+  <data name="UpdatingLibrary" xml:space="preserve">
+    <value>Updating…</value>
+  </data>
+  <data name="LoadingLibraryRead" xml:space="preserve">
+    <value>Loading… {0:N0} read</value>
+    <comment>{0}: library items received from Fab so far.</comment>
+  </data>
+  <data name="UpdatingLibraryRead" xml:space="preserve">
+    <value>Updating… {0:N0} read</value>
+    <comment>{0}: library items received from Fab so far.</comment>
+  </data>
+  <data name="LibraryLoadFailed" xml:space="preserve">
+    <value>Couldn't load your library from Fab: {0}</value>
+    <comment>{0}: what went wrong, possibly in English.</comment>
+  </data>
+  <data name="LibraryUpdateFailed" xml:space="preserve">
+    <value>Couldn't update your library from Fab, so this is the list from {0:g}: {1}</value>
+    <comment>{0}: when the shown list was loaded, {1}: what went wrong.</comment>
+  </data>
+  <data name="NothingMatches" xml:space="preserve">
+    <value>Nothing matches. Try another search or filter.</value>
+  </data>
+  <data name="VaultCacheEmpty" xml:space="preserve">
+    <value>Your Vault Cache is empty.</value>
+  </data>
+  <data name="FabLibraryEmpty" xml:space="preserve">
+    <value>Your Fab library is empty.</value>
+  </data>
+  <data name="NoEngineVersions" xml:space="preserve">
+    <value>No engine versions listed</value>
+    <comment>An item Fab lists no engine versions for.</comment>
+  </data>
+  <data name="InVaultCacheFor" xml:space="preserve">
+    <value>In Vault Cache for {0}</value>
+    <comment>{0}: engine versions, e.g. "5.3–5.7".</comment>
+  </data>
+  <data name="InstalledIn" xml:space="preserve">
+    <value>Installed in {0}</value>
+    <comment>{0}: engine versions, e.g. "4.27, 5.7".</comment>
+  </data>
+  <data name="NewerBuildInstalled" xml:space="preserve">
+    <value>Newer build on Fab: installed in UE {0}</value>
+    <comment>{0}: engine versions.</comment>
+  </data>
+  <data name="NewerBuildCopy" xml:space="preserve">
+    <value>Newer build on Fab: Vault Cache copy for {0}</value>
+    <comment>{0}: engine versions.</comment>
+  </data>
+  <data name="NewerBuildInstalledAndCopy" xml:space="preserve">
+    <value>Newer build on Fab: installed in UE {0}; Vault Cache copy for {1}</value>
+    <comment>{0}, {1}: engine versions.</comment>
+  </data>
+  <data name="ActionInstallToEngine" xml:space="preserve">
+    <value>Install to Engine</value>
+    <comment>Main button of a plugin.</comment>
+  </data>
+  <data name="ActionAddToProject" xml:space="preserve">
+    <value>Add to Project</value>
+    <comment>Main button of an asset pack.</comment>
+  </data>
+  <data name="ActionCreateProject" xml:space="preserve">
+    <value>Create Project</value>
+    <comment>Main button of a project.</comment>
+  </data>
+  <data name="ActionDownload" xml:space="preserve">
+    <value>Download</value>
+    <comment>Main button of an item of unknown kind: downloads it to the Vault Cache.</comment>
+  </data>
+  <data name="Update" xml:space="preserve">
+    <value>Update</value>
+    <comment>Brings a Fab item up to Fab's newer build.</comment>
+  </data>
+  <data name="TipInstallPlugin" xml:space="preserve">
+    <value>Install this plugin to Engine</value>
+    <comment>Tooltip of a plugin's main button.</comment>
+  </data>
+  <data name="TipAddAssetPack" xml:space="preserve">
+    <value>Add this asset pack to Project</value>
+    <comment>Tooltip of an asset pack's main button.</comment>
+  </data>
+  <data name="ConfirmUpdateTitle" xml:space="preserve">
+    <value>Update {0}?</value>
+    <comment>{0}: a Fab item.</comment>
+  </data>
+  <data name="ConfirmUpdateMessage" xml:space="preserve">
+    <value>Only files that changed are downloaded.</value>
+  </data>
+  <data name="SignInToDownloadItem" xml:space="preserve">
+    <value>Sign in to download this item.</value>
+  </data>
+
+  <!-- Install / Add to Project / Create Project / Download / Remove windows -->
+  <data name="ActionTitleInstall" xml:space="preserve">
+    <value>Install {0}</value>
+    <comment>{0}: a Fab plugin.</comment>
+  </data>
+  <data name="ActionTitleAddToProject" xml:space="preserve">
+    <value>Add {0} to a project</value>
+    <comment>{0}: a Fab asset pack.</comment>
+  </data>
+  <data name="ActionTitleCreateProject" xml:space="preserve">
+    <value>Create a project from {0}</value>
+    <comment>{0}: a Fab project.</comment>
+  </data>
+  <data name="ActionTitleRemove" xml:space="preserve">
+    <value>Remove {0}</value>
+    <comment>{0}: a Fab plugin.</comment>
+  </data>
+  <data name="ActionTitleDownload" xml:space="preserve">
+    <value>Download {0}</value>
+    <comment>{0}: a Fab item.</comment>
+  </data>
+  <data name="SectionProject" xml:space="preserve">
+    <value>PROJECT</value>
+    <comment>Section heading.</comment>
+  </data>
+  <data name="SectionEngine" xml:space="preserve">
+    <value>ENGINE</value>
+    <comment>Section heading.</comment>
+  </data>
+  <data name="TargetsLookupFailed" xml:space="preserve">
+    <value>Couldn't look for targets: {0}</value>
+    <comment>{0}: what went wrong, possibly in English.</comment>
+  </data>
+  <data name="BadgeNoVersionForEngine" xml:space="preserve">
+    <value>No version for this engine</value>
+  </data>
+  <data name="BadgeSignInToDownload" xml:space="preserve">
+    <value>Sign in to download</value>
+  </data>
+  <data name="NoInstalledEngines" xml:space="preserve">
+    <value>No installed engines found.</value>
+  </data>
+  <data name="PluginFitsNoEngine" xml:space="preserve">
+    <value>This plugin can't go into any of your installed engines.</value>
+  </data>
+  <data name="BadgeRemoveWithEGL" xml:space="preserve">
+    <value>Remove with EGL</value>
+    <comment>EGL: the Epic Games Launcher.</comment>
+  </data>
+  <data name="InstalledOutsideMarketplace" xml:space="preserve">
+    <value>Installed by EGL outside Engine\Plugins\Marketplace</value>
+    <comment>Engine\Plugins\Marketplace is a folder and stays as it is.</comment>
+  </data>
+  <data name="PluginInNoEngine" xml:space="preserve">
+    <value>This plugin isn't in any of your engines.</value>
+  </data>
+  <data name="NoProjectsFound" xml:space="preserve">
+    <value>No projects found. Use "{0}" to pick one.</value>
+    <comment>{0}: the "Choose a .uproject…" button.</comment>
+  </data>
+  <data name="NoProjectsMatch" xml:space="preserve">
+    <value>No projects match the search.</value>
+  </data>
+  <data name="CustomEngine" xml:space="preserve">
+    <value>Custom Engine</value>
+    <comment>An engine built from source.</comment>
+  </data>
+  <data name="CustomEngineVersion" xml:space="preserve">
+    <value>Custom Engine {0}</value>
+    <comment>{0}: its version, e.g. 5.7.</comment>
+  </data>
+  <data name="CustomEngineNotRegistered" xml:space="preserve">
+    <value>This project's custom engine isn't registered on this PC, so there's no telling which version of this item would open in it.</value>
+  </data>
+  <data name="CustomEngineVersionUnreadable" xml:space="preserve">
+    <value>Couldn't read the version of the custom engine in {0}, so there's no telling which version of this item would open in it.</value>
+    <comment>{0}: the engine's folder.</comment>
+  </data>
+  <data name="BadgeEngineNotInstalled" xml:space="preserve">
+    <value>Engine version not installed</value>
+  </data>
+  <data name="BadgeEngineVersionUnknown" xml:space="preserve">
+    <value>Engine version unknown</value>
+  </data>
+  <data name="BadgeLastAvailableFrom" xml:space="preserve">
+    <value>Last available from UE {0}</value>
+    <comment>{0}: an engine version, e.g. 5.4.</comment>
+  </data>
+  <data name="TipOlderVersionCanBeAdded" xml:space="preserve">
+    <value>This item has no {0} version, so its {1} version can be added.</value>
+    <comment>{0}: the project's engine version, {1}: an older one.</comment>
+  </data>
+  <data name="TipNotInVaultYet" xml:space="preserve">
+    <value>A version that fits this project isn't in your Vault Cache yet.</value>
+  </data>
+  <data name="BadgeUnsupportedEngine" xml:space="preserve">
+    <value>Unsupported engine version</value>
+  </data>
+  <data name="TipMadeForNewerEngine" xml:space="preserve">
+    <value>This item is made for a newer engine version.</value>
+  </data>
+  <data name="TipMadeForNewerEngineVersion" xml:space="preserve">
+    <value>This item is made for a newer {0} engine version.</value>
+    <comment>{0}: an engine version, e.g. 5.8.</comment>
+  </data>
+  <data name="VersionUpdateAvailable" xml:space="preserve">
+    <value>{0}  (update available)</value>
+    <comment>{0}: e.g. "Unreal Engine 5.7".</comment>
+  </data>
+  <data name="VersionDownloaded" xml:space="preserve">
+    <value>{0}  (downloaded)</value>
+    <comment>{0}: e.g. "Unreal Engine 5.7".</comment>
+  </data>
+  <data name="NoDownloadableVersions" xml:space="preserve">
+    <value>No downloadable versions.</value>
+  </data>
+  <data name="PickProject" xml:space="preserve">
+    <value>Choose a project</value>
+    <comment>Title of the file picker.</comment>
+  </data>
+  <data name="UnrealProjectFileType" xml:space="preserve">
+    <value>Unreal project</value>
+    <comment>File type shown in the file picker.</comment>
+  </data>
+  <data name="PickProjectLocation" xml:space="preserve">
+    <value>Where to create the project</value>
+    <comment>Title of the folder picker.</comment>
+  </data>
+  <data name="NoteOlderCopyInstall" xml:space="preserve">
+    <value>Your Vault Cache copy is an older build, so Fab's latest downloads straight into the engine.</value>
+  </data>
+  <data name="NoteOlderCopyUpdate" xml:space="preserve">
+    <value>Your Vault Cache copy is an older build: it's updated first, downloading only the files that changed.</value>
+  </data>
+  <data name="NoteAlreadyInVault" xml:space="preserve">
+    <value>Already in your Vault Cache ({0} version): nothing to download.</value>
+    <comment>{0}: an engine version, e.g. 5.7.</comment>
+  </data>
+  <data name="NoteDownloadsAndAdds" xml:space="preserve">
+    <value>Downloads into your Vault Cache and adds it to the project.</value>
+  </data>
+  <data name="NoteDownloadsAndCreates" xml:space="preserve">
+    <value>Downloads into your Vault Cache and creates the project.</value>
+  </data>
+  <data name="NoteDownloadsReady" xml:space="preserve">
+    <value>Downloads into your Vault Cache, ready to add to projects.</value>
+  </data>
+  <data name="RemovalAmongEngineFolders" xml:space="preserve">
+    <value>EGL put this plugin among the engine's own folders, so there's no telling which files are its. Remove it with the Epic Games Launcher.</value>
+    <comment>EGL: the Epic Games Launcher.</comment>
+  </data>
+  <data name="RemovalByUnVault" xml:space="preserve">
+    <value>Deletes the plugin installed by UnVault Launcher. Projects that use the plugin won't find it any more.</value>
+  </data>
+  <data name="RemovalByEGL" xml:space="preserve">
+    <value>Deletes the plugin installed by the Epic Games Launcher. Projects that use the plugin won't find it any more.</value>
+  </data>
+  <data name="RemovalByOther" xml:space="preserve">
+    <value>Deletes the plugin copied in by hand or by another tool. Projects that use the plugin won't find it any more.</value>
+  </data>
+
+  <!-- Installed Plugins -->
+  <data name="PluginsLookupFailed" xml:space="preserve">
+    <value>Couldn't look for plugins: {0}</value>
+    <comment>{0}: what went wrong, possibly in English.</comment>
+  </data>
+  <data name="NoFabPlugins" xml:space="preserve">
+    <value>No Fab plugins in this engine.</value>
+  </data>
+  <data name="VersionValue" xml:space="preserve">
+    <value>Version {0}</value>
+    <comment>{0}: a version number, e.g. 1.2.0.</comment>
+  </data>
+  <data name="VersionUnknown" xml:space="preserve">
+    <value>Version unknown</value>
+  </data>
+  <data name="InstalledByEGL" xml:space="preserve">
+    <value>Installed by the Epic Games Launcher</value>
+  </data>
+  <data name="ConfirmRemoveTitle" xml:space="preserve">
+    <value>Remove {0}?</value>
+    <comment>{0}: a plugin.</comment>
+  </data>
+  <data name="ConfirmRemoveMessage" xml:space="preserve">
+    <value>Deletes it from {0}. Projects that use the plugin won't find it any more.</value>
+    <comment>{0}: the engine, e.g. "Unreal Engine 5.7.4".</comment>
+  </data>
+  <data name="Removing" xml:space="preserve">
+    <value>Removing…</value>
+  </data>
+  <data name="CantTellPluginFiles" xml:space="preserve">
+    <value>There's no telling which of the engine's files are this plugin's. Remove it with the Epic Games Launcher.</value>
+  </data>
+  <data name="PluginBusy" xml:space="preserve">
+    <value>Something is already working on this plugin.</value>
+  </data>
+
+  <!-- Settings -->
+  <data name="AutomaticPath" xml:space="preserve">
+    <value>Automatic: {0}</value>
+    <comment>{0}: a folder, or several separated by commas.</comment>
+  </data>
+  <data name="EngineRootPurpose" xml:space="preserve">
+    <value>New engines go into a subfolder here, e.g. UE_5.8.</value>
+    <comment>UE_5.8 is a folder name and stays as it is.</comment>
+  </data>
+  <data name="LeaveEmptyEGLInstallFolder" xml:space="preserve">
+    <value>Leave empty to use the Epic Games Launcher's install folder.</value>
+  </data>
+  <data name="LeaveEmptyExistingEngines" xml:space="preserve">
+    <value>Leave empty to install next to your existing engines.</value>
+  </data>
+  <data name="LeaveEmptyDefault" xml:space="preserve">
+    <value>Leave empty for the default.</value>
+  </data>
+  <data name="ProjectFoldersHintEGL" xml:space="preserve">
+    <value>When adding assets, the projects in these folders are offered (besides the ones the editor opened recently); new projects are created in the default one. Leave empty to use the Epic Games Launcher's project folders.</value>
+  </data>
+  <data name="ProjectFoldersHintDocuments" xml:space="preserve">
+    <value>When adding assets, the projects in these folders are offered (besides the ones the editor opened recently); new projects are created in the default one. Leave empty for Documents\Unreal Projects.</value>
+    <comment>Documents\Unreal Projects is a folder; use the name Windows shows for it in the language.</comment>
+  </data>
+  <data name="VaultPurpose" xml:space="preserve">
+    <value>Fab asset packs and plugins are downloaded and kept here.</value>
+  </data>
+  <data name="VaultFolderMissing" xml:space="preserve">
+    <value>This folder doesn't exist yet; it will be created on the first Fab download.</value>
+  </data>
+  <data name="VaultNoAssets" xml:space="preserve">
+    <value>No downloaded assets here yet.</value>
+  </data>
+  <data name="VaultSameAsEGL" xml:space="preserve">
+    <value>Same folder the Epic Games Launcher uses.</value>
+  </data>
+  <data name="PickEngineFolder" xml:space="preserve">
+    <value>Folder for new engines</value>
+    <comment>Title of the folder picker.</comment>
+  </data>
+  <data name="PickVaultFolder" xml:space="preserve">
+    <value>Vault Cache folder</value>
+    <comment>Title of the folder picker.</comment>
+  </data>
+  <data name="PickProjectFolder" xml:space="preserve">
+    <value>Folder with Unreal projects</value>
+    <comment>Title of the folder picker.</comment>
+  </data>
+  <data name="NotFullPath" xml:space="preserve">
+    <value>"{0}" isn't a full folder path (like E:\Epic Games).</value>
+    <comment>{0}: what was typed.</comment>
+  </data>
+  <data name="SettingsSaveFailed" xml:space="preserve">
+    <value>Couldn't save settings: {0}</value>
+    <comment>{0}: what went wrong, possibly in English.</comment>
+  </data>
+
+  <!-- Sign-in window, errors -->
+  <data name="SignInNeedsWindows" xml:space="preserve">
+    <value>The built-in sign-in window needs Windows.</value>
+  </data>
+  <data name="BrowserUnavailable" xml:space="preserve">
+    <value>The built-in browser isn't available ({0}).</value>
+    <comment>{0}: why, possibly in English.</comment>
+  </data>
+  <data name="NotTheCode" xml:space="preserve">
+    <value>That doesn't look like the code. Copy the whole text the page shows, including "authorizationCode".</value>
+    <comment>authorizationCode is text on Epic's page and stays as it is.</comment>
+  </data>
+  <data name="SomethingWentWrong" xml:space="preserve">
+    <value>Something went wrong: {0} Details were saved to {1}.</value>
+    <comment>{0}: the error, possibly in English, {1}: the log file.</comment>
   </data>
 </root>

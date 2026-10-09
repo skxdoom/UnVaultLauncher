@@ -40,7 +40,7 @@ public partial class App : Application
         Dispatcher.UIThread.UnhandledException += (_, e) =>
         {
             CrashLog.Write("UI thread", e.Exception);
-            viewModel.Notice = $"Something went wrong: {e.Exception.Message} Details were saved to {CrashLog.FilePath}.";
+            viewModel.Notice = Localized.Format(Strings.SomethingWentWrong, e.Exception.Message, CrashLog.FilePath);
             e.Handled = true;
         };
         TaskScheduler.UnobservedTaskException += (_, e) =>

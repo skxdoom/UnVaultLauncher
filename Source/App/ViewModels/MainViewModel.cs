@@ -46,12 +46,8 @@ public partial class MainViewModel : ViewModelBase
     /// <summary>Shows the dot on the Library tab.</summary>
     public bool HasLibraryUpdates => Fab.UpdateCount > 0;
 
-    public string? LibraryUpdatesText => Fab.UpdateCount switch
-    {
-        0 => null,
-        1 => "1 item has an update on Fab",
-        var n => $"{n:N0} items have updates on Fab",
-    };
+    public string? LibraryUpdatesText =>
+        Fab.UpdateCount == 0 ? null : Localized.Plural(nameof(Strings.ItemsHaveUpdates_Other), Fab.UpdateCount);
 
     /// <summary>Engine installs found by the last refresh (also used by the Fab tab to pick plugin targets).</summary>
     public IReadOnlyList<LocalEngine> LocalEngines => _local;
@@ -140,11 +136,11 @@ public partial class MainViewModel : ViewModelBase
 
     public string UpdateStatusText => UpdateCheck switch
     {
-        UpdateCheckState.Checking => "Checking for updates…",
-        UpdateCheckState.UpToDate => "You have the latest version.",
-        UpdateCheckState.Available => $"Version {AppUpdate?.Version} is available.",
-        UpdateCheckState.Failed => $"Couldn't check for updates: {UpdateCheckError}",
-        _ => Settings.CheckForUpdates ? "Not checked for updates yet." : "Checking for updates at startup is turned off in Settings.",
+        UpdateCheckState.Checking => Strings.UpdateChecking,
+        UpdateCheckState.UpToDate => Strings.UpdateUpToDate,
+        UpdateCheckState.Available => Localized.Format(Strings.UpdateAvailableVersion, AppUpdate?.Version),
+        UpdateCheckState.Failed => Localized.Format(Strings.UpdateCheckFailed, UpdateCheckError),
+        _ => Settings.CheckForUpdates ? Strings.UpdateNotChecked : Strings.UpdateCheckOff,
     };
 
     /// <summary>Asks GitHub for the latest release; at startup (unless turned off in Settings) and from About.</summary>
@@ -161,7 +157,7 @@ public partial class MainViewModel : ViewModelBase
         }
         catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException)
         {
-            UpdateCheckError = ex is OperationCanceledException ? "GitHub didn't answer." : ex.Message;
+            UpdateCheckError = ex is OperationCanceledException ? Strings.GitHubNoAnswer : ex.Message;
             UpdateCheck = UpdateCheckState.Failed;
         }
     }
@@ -220,7 +216,7 @@ public partial class MainViewModel : ViewModelBase
     private async Task RefreshCoreAsync(bool includeOwned)
     {
         IsLoading = true;
-        LoadingText = "Looking for installed engines…";
+        LoadingText = Strings.LookingForEngines;
         try
         {
             _local = await Task.Run(EngineLibrary.ScanLocal);
@@ -236,7 +232,7 @@ public partial class MainViewModel : ViewModelBase
             if (includeOwned && accountID is not null)
             {
                 int installed = _local.Where(l => l.Exists).Select(l => l.AppName).Distinct(StringComparer.OrdinalIgnoreCase).Count();
-                LoadingText = $"{installed:N0} installed  ·  checking Epic for versions and updates…";
+                LoadingText = Localized.Plural(nameof(Strings.InstalledCheckingEpic_Other), installed);
                 try
                 {
                     var owned = (await Services.API.GetAssetsAsync()).Where(a => a.IsEngine).ToList();
@@ -255,7 +251,7 @@ public partial class MainViewModel : ViewModelBase
                 catch (Exception ex) when (ex is EpicAPIException or HttpRequestException or TaskCanceledException)
                 {
                     if (CurrentAccountID == accountID)
-                        Notice = $"Couldn't reach Epic: {ex.Message}";
+                        Notice = Localized.Format(Strings.CouldNotReachEpic, ex.Message);
                 }
                 SetEngines(_local, _owned);
             }
@@ -336,7 +332,7 @@ public partial class MainViewModel : ViewModelBase
         }
         catch (Exception ex) when (ex is EpicAPIException or HttpRequestException)
         {
-            Notice = $"Sign-in failed: {ex.Message}";
+            Notice = Localized.Format(Strings.SignInFailed, ex.Message);
             return;
         }
 
@@ -412,7 +408,7 @@ public partial class MainViewModel : ViewModelBase
         if (_owned.Count == 0)
         {
             // Epic couldn't be reached (the notice says why): the picker would claim every version is installed.
-            Notice ??= "Epic didn't list any engine versions for your account. Try Refresh.";
+            Notice ??= Strings.NoEngineVersionsListed;
             return;
         }
 
@@ -437,27 +433,29 @@ public partial class MainViewModel : ViewModelBase
 
     internal void StartInstall(string appName, string title, InstallSource source, IReadOnlySet<string> tags, string directory)
     {
-        StartOperation(new OperationViewModel(this, $"Installing {title}", async (operation, status, cancellationToken) =>
+        StartOperation(new OperationViewModel(this, Localized.Format(Strings.OperationInstalling, title), async (operation, status, cancellationToken) =>
         {
             var plan = InstallWorkflow.PlanInstall(source, tags);
-            operation.SetPhase("Downloading");
+            operation.SetPhase(Strings.PhaseDownloading);
             await InstallWorkflow.InstallAsync(source, plan, tags, null, directory, CreateInstaller(), status, register: true, cancellationToken);
-            return $"Installed to {directory}. Projects for {appName[3..]} now open with it.";
+            return Localized.Format(Strings.EngineInstalled, directory, appName[3..]);
         }, appName));
     }
 
     internal void StartModify(EngineCardViewModel engine, ModifyPlan plan)
     {
-        StartOperation(new OperationViewModel(this, $"Changing components of {engine.Title}", async (operation, status, cancellationToken) =>
+        StartOperation(new OperationViewModel(this, Localized.Format(Strings.OperationChangingComponents, engine.Title), async (operation, status, cancellationToken) =>
         {
-            operation.SetPhase(plan.ToAdd is null ? "Removing files" : "Downloading");
+            operation.SetPhase(plan.ToAdd is null ? Strings.PhaseRemovingFiles : Strings.PhaseDownloading);
             var cleaned = await InstallWorkflow.ApplyModifyAsync(plan, CreateInstaller(), status, cancellationToken);
-            var parts = new List<string>();
-            if (cleaned.FilesDeleted > 0)
-                parts.Add($"freed {ByteSize.Format(cleaned.BytesFreed)}");
-            if (plan.ToAdd is { } added)
-                parts.Add($"added {added.Files.Count:N0} files");
-            return parts.Count > 0 ? "Done: " + string.Join(", ", parts) + "." : "Done.";
+            string freed = ByteSize.Format(cleaned.BytesFreed);
+            return (cleaned.FilesDeleted > 0, plan.ToAdd) switch
+            {
+                (true, { } added) => Localized.Plural(nameof(Strings.ModifyDoneFreedAdded_Other), added.Files.Count, freed),
+                (false, { } added) => Localized.Plural(nameof(Strings.ModifyDoneAdded_Other), added.Files.Count),
+                (true, null) => Localized.Format(Strings.ModifyDoneFreed, freed),
+                _ => Strings.ModifyDone,
+            };
         }, engine.AppName));
     }
 
@@ -466,32 +464,32 @@ public partial class MainViewModel : ViewModelBase
         if (engine.Local is null)
             return;
         var local = engine.Local;
-        StartOperation(new OperationViewModel(this, $"Verifying {engine.Title}", async (operation, status, cancellationToken) =>
+        StartOperation(new OperationViewModel(this, Localized.Format(Strings.OperationVerifying, engine.Title), async (operation, status, cancellationToken) =>
         {
-            operation.SetPhase("Reading manifest");
-            var install = local.Load() ?? throw new InvalidOperationException("The install's manifest couldn't be read.");
+            operation.SetPhase(Strings.PhaseReadingManifest);
+            var install = local.Load() ?? throw new InvalidOperationException(Strings.ManifestUnreadable);
             var files = install.SelectFiles(null).ToList();
 
-            operation.SetPhase("Verifying");
+            operation.SetPhase(Strings.PhaseVerifying);
             var bad = await Verifier.FindBadFilesAsync(files, install.Directory, status, cancellationToken: cancellationToken);
             if (bad.Count == 0)
-                return $"All {files.Count:N0} files are OK.";
+                return Localized.Plural(nameof(Strings.VerifyAllOK_Other), files.Count);
 
-            operation.OfferFollowUp("Repair", () => StartRepair(engine, install, bad)); // the message beside it says how many
-            return $"{bad.Count:N0} of {files.Count:N0} files are missing or damaged.";
+            operation.OfferFollowUp(Strings.Repair, () => StartRepair(engine, install, bad)); // the message beside it says how many
+            return Localized.Plural(nameof(Strings.VerifyBad_Other), bad.Count, files.Count);
         }, engine.AppName));
     }
 
     private void StartRepair(EngineCardViewModel engine, ExistingInstall install, IReadOnlyList<BadFile> bad)
     {
-        StartOperation(new OperationViewModel(this, $"Repairing {engine.Title}", async (operation, status, cancellationToken) =>
+        StartOperation(new OperationViewModel(this, Localized.Format(Strings.OperationRepairing, engine.Title), async (operation, status, cancellationToken) =>
         {
             if (install.Sources.Count == 0)
-                throw new InstallException("No download location is known for this install.");
-            operation.SetPhase("Downloading");
+                throw new InstallException(Strings.NoDownloadLocation);
+            operation.SetPhase(Strings.PhaseDownloading);
             var plan = InstallPlan.Create(install.Manifest, bad.Select(b => b.File));
             await CreateInstaller().InstallAsync(plan, install.Directory, install.Sources, new Dictionary<string, string>(), status, cancellationToken);
-            return $"Repaired {plan.Files.Count:N0} files.";
+            return Localized.Plural(nameof(Strings.Repaired_Other), plan.Files.Count);
         }, engine.AppName));
     }
 
@@ -524,7 +522,7 @@ public partial class MainViewModel : ViewModelBase
             .FirstOrDefault(File.Exists);
         if (editor is null)
         {
-            Notice = $"No editor executable found in {engine.Local.Directory}.";
+            Notice = Localized.Format(Strings.NoEditorFound, engine.Local.Directory);
             return;
         }
         Process.Start(new ProcessStartInfo(editor) { UseShellExecute = true, WorkingDirectory = Path.GetDirectoryName(editor) });

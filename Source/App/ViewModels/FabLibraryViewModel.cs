@@ -20,7 +20,7 @@ public sealed record FabItemRow(IReadOnlyList<FabItemViewModel> Items, int Colum
 /// </summary>
 public partial class FabLibraryViewModel : ViewModelBase
 {
-    private const string AllEngines = "All Engines";
+    private static string AllEngines => Strings.AllEngines;
 
     private List<FabItemViewModel> _all = [];
     private IReadOnlyList<FabLibraryItem>? _library;
@@ -64,7 +64,7 @@ public partial class FabLibraryViewModel : ViewModelBase
             BuildRows();
         }
     }
-    public IReadOnlyList<string> KindOptions { get; } = ["All Types", "Plugins", "Asset Packs", "Projects"];
+    public IReadOnlyList<string> KindOptions { get; } = [Strings.AllTypes, Strings.KindPlugins, Strings.KindAssetPacks, Strings.KindProjects];
     public ObservableCollection<string> EngineOptions { get; } = [AllEngines];
 
     public bool IsSignedOut => !Owner.IsSignedIn;
@@ -81,7 +81,7 @@ public partial class FabLibraryViewModel : ViewModelBase
     [NotifyPropertyChangedFor(nameof(UpdatesFilterText))]
     public partial int UpdateCount { get; private set; }
 
-    public string UpdatesFilterText => UpdateCount > 0 ? $"Update Available ({UpdateCount:N0})" : "Update Available";
+    public string UpdatesFilterText => UpdateCount > 0 ? Localized.Format(Strings.UpdateAvailableFilterCount, UpdateCount) : Strings.UpdateAvailableFilter;
     [ObservableProperty] public partial bool IsLoading { get; set; }
     [ObservableProperty] public partial string? LoadingText { get; set; }
     [ObservableProperty] public partial string Summary { get; set; } = "";
@@ -144,7 +144,7 @@ public partial class FabLibraryViewModel : ViewModelBase
     public async Task LoadAsync(bool includeLibrary)
     {
         IsLoading = true;
-        LoadingText = "Scanning downloads and installs…";
+        LoadingText = Strings.ScanningDownloads;
         try
         {
             string vaultDirectory = Owner.Settings.ResolveVaultCache().Path;
@@ -158,7 +158,7 @@ public partial class FabLibraryViewModel : ViewModelBase
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
                 vault = [];
-                Owner.Notice = $"Couldn't read the Vault Cache in {vaultDirectory}: {ex.Message}";
+                Owner.Notice = Localized.Format(Strings.VaultCacheUnreadable, vaultDirectory, ex.Message);
             }
             var installs = await finding;
 
@@ -210,10 +210,10 @@ public partial class FabLibraryViewModel : ViewModelBase
 
     private async Task RefreshLibraryAsync(string accountID)
     {
-        LoadingText = _library is null ? "Loading your library…" : "Updating…";
+        LoadingText = _library is null ? Strings.LoadingLibrary : Strings.UpdatingLibrary;
         try
         {
-            var progress = new Progress<int>(read => LoadingText = $"{(_library is null ? "Loading" : "Updating")}… {read:N0} read");
+            var progress = new Progress<int>(read => LoadingText = Localized.Format(_library is null ? Strings.LoadingLibraryRead : Strings.UpdatingLibraryRead, read));
             var library = await Owner.Services.API.GetFabLibraryAsync(progress);
             if (Owner.CurrentAccountID != accountID)
                 return;
@@ -241,8 +241,8 @@ public partial class FabLibraryViewModel : ViewModelBase
             if (Owner.CurrentAccountID != accountID)
                 return;
             Error = _library is null
-                ? $"Couldn't load your library from Fab: {ex.Message}"
-                : $"Couldn't update your library from Fab, so this is the list from {_libraryFetchedAt?.ToLocalTime():g}: {ex.Message}";
+                ? Localized.Format(Strings.LibraryLoadFailed, ex.Message)
+                : Localized.Format(Strings.LibraryUpdateFailed, _libraryFetchedAt?.ToLocalTime(), ex.Message);
         }
     }
 
@@ -334,12 +334,14 @@ public partial class FabLibraryViewModel : ViewModelBase
 
         int downloaded = _all.Count(i => i.IsDownloaded);
         UpdateCount = _all.Count(i => i.HasUpdate);
-        Summary = Items.Count == _all.Count ? $"{_all.Count:N0} items  ·  {downloaded:N0} downloaded" : $"{Items.Count:N0} of {_all.Count:N0} items";
+        Summary = Items.Count == _all.Count
+            ? Localized.Plural(nameof(Strings.LibrarySummary_Other), _all.Count, downloaded)
+            : Localized.Plural(nameof(Strings.LibraryFiltered_Other), _all.Count, Items.Count);
         IsEmpty = !IsLoading && Items.Count == 0;
-        EmptyText = _all.Count > 0 ? "Nothing matches. Try another search or filter."
+        EmptyText = _all.Count > 0 ? Strings.NothingMatches
             : HasError ? "" // the banner above says what went wrong
-            : IsSignedOut ? "Your Vault Cache is empty."
-            : "Your Fab library is empty.";
+            : IsSignedOut ? Strings.VaultCacheEmpty
+            : Strings.FabLibraryEmpty;
     }
 
     private void BuildRows() => Rows = Items.Chunk(_columns).Select(row => new FabItemRow(row, _columns)).ToList();
@@ -399,52 +401,52 @@ public partial class FabLibraryViewModel : ViewModelBase
 
     internal void StartPluginInstall(FabItemViewModel item, FabVersion version, LocalEngine engine)
     {
-        Owner.StartOperation(new OperationViewModel(Owner, $"Installing {item.Title} into UE {engine.AppName[3..]}", async (operation, status, cancellationToken) =>
+        Owner.StartOperation(new OperationViewModel(Owner, Localized.Format(Strings.OperationInstallingInto, item.Title, engine.AppName[3..]), async (operation, status, cancellationToken) =>
         {
             if (version.IsDownloaded && !version.IsOutdated)
             {
-                operation.SetPhase("Copying from Vault Cache");
+                operation.SetPhase(Strings.PhaseCopyingFromVault);
                 await FabWorkflow.InstallPluginFromVaultAsync(version.Vault!, engine.Directory, status, cancellationToken);
             }
             else
             {
-                operation.SetPhase("Downloading");
+                operation.SetPhase(Strings.PhaseDownloading);
                 var artifact = Artifact(item, version);
                 var source = await FabWorkflow.FetchAsync(Owner.Services.API, artifact, cancellationToken);
                 await FabWorkflow.InstallPluginAsync(source, artifact, engine.Directory, Owner.CreateInstaller(), status, cancellationToken);
             }
-            return $"Installed into {engine.Directory}.";
+            return Localized.Format(Strings.PluginInstalledInto, engine.Directory);
         }, engineAppName: engine.AppName, fabItemKey: item.Key));
     }
 
     internal void StartAddToProject(FabItemViewModel item, FabVersion version, UnrealProject project)
     {
-        Owner.StartOperation(new OperationViewModel(Owner, $"Adding {item.Title} to {project.Name}", async (operation, status, cancellationToken) =>
+        Owner.StartOperation(new OperationViewModel(Owner, Localized.Format(Strings.OperationAdding, item.Title, project.Name), async (operation, status, cancellationToken) =>
         {
             var entry = await EnsureInVaultAsync(item, version, operation, status, cancellationToken);
-            var copy = operation.BeginPhase("Copying into project");
+            var copy = operation.BeginPhase(Strings.PhaseCopyingIntoProject);
             int files = await FabWorkflow.AddToProjectAsync(entry, project.Directory, copy, cancellationToken);
-            return $"Added {files:N0} files to {project.Directory}\\Content.";
+            return Localized.Plural(nameof(Strings.AddedFiles_Other), files, project.Directory);
         }, fabItemKey: item.Key));
     }
 
     internal void StartCreateProject(FabItemViewModel item, FabVersion version, string targetDirectory)
     {
-        Owner.StartOperation(new OperationViewModel(Owner, $"Creating project from {item.Title}", async (operation, status, cancellationToken) =>
+        Owner.StartOperation(new OperationViewModel(Owner, Localized.Format(Strings.OperationCreatingProject, item.Title), async (operation, status, cancellationToken) =>
         {
             var entry = await EnsureInVaultAsync(item, version, operation, status, cancellationToken);
-            var copy = operation.BeginPhase("Copying project");
+            var copy = operation.BeginPhase(Strings.PhaseCopyingProject);
             string uproject = await FabWorkflow.CreateProjectAsync(entry, targetDirectory, copy, cancellationToken);
-            return $"Created {uproject}.";
+            return Localized.Format(Strings.ProjectCreated, uproject);
         }, fabItemKey: item.Key));
     }
 
     internal void StartDownload(FabItemViewModel item, FabVersion version)
     {
-        Owner.StartOperation(new OperationViewModel(Owner, $"Downloading {item.Title} ({version.EngineAppName[3..]})", async (operation, status, cancellationToken) =>
+        Owner.StartOperation(new OperationViewModel(Owner, Localized.Format(Strings.OperationDownloadingItem, item.Title, version.EngineAppName[3..]), async (operation, status, cancellationToken) =>
         {
             var entry = await EnsureInVaultAsync(item, version, operation, status, cancellationToken);
-            return $"In your Vault Cache: {entry.Directory} ({ByteSize.Format(entry.Size)}).";
+            return Localized.Format(Strings.InVaultCacheAt, entry.Directory, ByteSize.Format(entry.Size));
         }, fabItemKey: item.Key));
     }
 
@@ -453,11 +455,11 @@ public partial class FabLibraryViewModel : ViewModelBase
     internal OperationViewModel StartRemove(string title, string? itemKey, FabInstall install)
     {
         string engine = install.EngineAppName[3..];
-        var removal = new OperationViewModel(Owner, $"Removing {title} from UE {engine}", async (operation, _, _) =>
+        var removal = new OperationViewModel(Owner, Localized.Format(Strings.OperationRemoving, title, engine), async (operation, _, _) =>
         {
-            operation.SetPhase("Deleting files");
+            operation.SetPhase(Strings.PhaseDeletingFiles);
             var removed = await Task.Run(() => FabWorkflow.UninstallPlugin(install.EngineDirectory, install.ArtifactID));
-            return $"Removed from UE {engine}; freed {ByteSize.Format(removed.BytesFreed)}.";
+            return Localized.Format(Strings.RemovedFreed, engine, ByteSize.Format(removed.BytesFreed));
         }, engineAppName: install.EngineAppName, fabItemKey: itemKey);
         Owner.StartOperation(removal);
         return removal;
@@ -473,7 +475,7 @@ public partial class FabLibraryViewModel : ViewModelBase
         if (version.IsDownloaded && !version.IsOutdated)
             return version.Vault!;
 
-        operation.SetPhase(version.IsOutdated ? "Updating Vault Cache copy" : "Downloading");
+        operation.SetPhase(version.IsOutdated ? Strings.PhaseUpdatingVaultCopy : Strings.PhaseDownloading);
         var artifact = Artifact(item, version);
         var source = await FabWorkflow.FetchAsync(Owner.Services.API, artifact, cancellationToken);
         return await FabWorkflow.DownloadToVaultAsync(source, artifact, Owner.Settings.ResolveVaultCache().Path, Owner.CreateInstaller(), status, cancellationToken);
@@ -483,18 +485,18 @@ public partial class FabLibraryViewModel : ViewModelBase
     {
         if (!item.HasUpdate || item.IsBusy)
             return;
-        Owner.Dialog = new ConfirmViewModel(Owner, $"Update {item.Title}?", "Only files that changed are downloaded.",
-            "Update", () => StartUpdate(item, item.OutdatedDownloads, item.OutdatedInstalls));
+        Owner.Dialog = new ConfirmViewModel(Owner, Localized.Format(Strings.ConfirmUpdateTitle, item.Title), Strings.ConfirmUpdateMessage,
+            Strings.Update, () => StartUpdate(item, item.OutdatedDownloads, item.OutdatedInstalls));
     }
 
     /// <summary>Brings outdated copies of an item up to Fab's build, one after another.</summary>
     internal void StartUpdate(FabItemViewModel item, IReadOnlyList<FabVersion> downloads, IReadOnlyList<FabInstall> installs)
     {
-        Owner.StartOperation(new OperationViewModel(Owner, $"Updating {item.Title}", async (operation, _, cancellationToken) =>
+        Owner.StartOperation(new OperationViewModel(Owner, Localized.Format(Strings.OperationUpdating, item.Title), async (operation, _, cancellationToken) =>
         {
             foreach (var version in downloads)
             {
-                var status = operation.BeginPhase($"Updating Vault Cache copy ({version.EngineAppName[3..]})");
+                var status = operation.BeginPhase(Localized.Format(Strings.PhaseUpdatingVaultCopyFor, version.EngineAppName[3..]));
                 var artifact = Artifact(item, version);
                 var source = await FabWorkflow.FetchAsync(Owner.Services.API, artifact, cancellationToken);
                 await FabWorkflow.DownloadToVaultAsync(source, artifact, Owner.Settings.ResolveVaultCache().Path, Owner.CreateInstaller(), status, cancellationToken);
@@ -504,19 +506,19 @@ public partial class FabLibraryViewModel : ViewModelBase
                 string engine = install.EngineAppName[3..];
                 var version = item.Versions.First(v => string.Equals(v.ArtifactID, install.ArtifactID, StringComparison.OrdinalIgnoreCase));
                 var artifact = Artifact(item, version);
-                var checking = operation.BeginPhase($"Checking UE {engine}");
+                var checking = operation.BeginPhase(Localized.Format(Strings.PhaseCheckingEngine, engine));
                 var source = await FabWorkflow.FetchAsync(Owner.Services.API, artifact, cancellationToken);
                 var update = await FabWorkflow.PlanPluginUpdateAsync(source, artifact, install.EngineDirectory, checking, cancellationToken);
-                var status = operation.BeginPhase($"Updating in UE {engine}");
+                var status = operation.BeginPhase(Localized.Format(Strings.PhaseUpdatingInEngine, engine));
                 await FabWorkflow.ApplyPluginUpdateAsync(update, Owner.CreateInstaller(), status, cancellationToken);
             }
             int count = downloads.Count + installs.Count;
-            return $"Updated {count} {(count == 1 ? "copy" : "copies")} to Fab's latest build.";
+            return Localized.Plural(nameof(Strings.UpdatedCopies_Other), count);
         }, fabItemKey: item.Key));
     }
 
     private static FabArtifact Artifact(FabItemViewModel item, FabVersion version) =>
         item.Library is not null && version.Library is not null
             ? new FabArtifact(item.Library, version.Library)
-            : throw new InstallException("Sign in to download this item.");
+            : throw new InstallException(Strings.SignInToDownloadItem);
 }
