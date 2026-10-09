@@ -359,7 +359,7 @@ public partial class FabActionViewModel : ViewModelBase
                 _library.StartCreateProject(_item, SelectedVersion!.Version, Path.Combine(ProjectParent, ProjectName.Trim()));
                 break;
             case FabActionMode.RemovePlugin:
-                _library.StartRemove(_item, SelectedTarget!.Install!);
+                _library.StartRemove(_item.Title, _item.Key, SelectedTarget!.Install!);
                 break;
             default:
                 _library.StartDownload(_item, SelectedVersion!.Version);

@@ -77,6 +77,9 @@ public partial class EngineCardViewModel : ViewModelBase
     private void Verify() => _owner.StartVerify(this);
 
     [RelayCommand]
+    private Task OpenPluginsAsync() => _owner.OpenInstalledPluginsAsync(this);
+
+    [RelayCommand]
     private void Launch() => _owner.Launch(this);
 
     [RelayCommand]

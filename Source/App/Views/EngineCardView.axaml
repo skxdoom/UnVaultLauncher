@@ -31,6 +31,7 @@
                     <Button Content="⋯" IsVisible="{Binding IsInstalled}" ToolTip.Tip="More" AutomationProperties.Name="More">
                         <Button.Flyout>
                             <MenuFlyout>
+                                <MenuItem Header="Installed Plugins" Command="{Binding OpenPluginsCommand}" />
                                 <MenuItem Header="Verify Files" Command="{Binding VerifyCommand}" />
                                 <MenuItem Header="Show in Folder" Command="{Binding OpenFolderCommand}" />
                             </MenuFlyout>

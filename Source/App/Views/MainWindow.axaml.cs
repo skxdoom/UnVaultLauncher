@@ -23,6 +23,7 @@ public partial class MainWindow : Window, IUserInteraction
 
     private ViewModels.MainViewModel? _watched;
     private IInputElement? _focusBeforeDialog;
+    private IInputElement? _focusBeforePrompt;
 
     private void WatchDialogs()
     {
@@ -35,23 +36,34 @@ public partial class MainWindow : Window, IUserInteraction
             Dispatcher.UIThread.Post(FocusDialog, DispatcherPriority.Loaded); // already open
     }
 
-    /// <summary>A dialog takes the keyboard while it's open; afterwards focus goes back to where it was (e.g. the button that opened it).</summary>
+    /// <summary>
+    /// A dialog takes the keyboard while it's open, and a question asked over it takes it from the dialog; afterwards focus
+    /// goes back to where it was (the button that opened it), or to the dialog when that button is gone or disabled.
+    /// </summary>
     private void OnViewModelChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName != nameof(ViewModels.MainViewModel.Dialog))
-            return;
-        if (_watched?.HasDialog == true)
+        if (e.PropertyName == nameof(ViewModels.MainViewModel.Dialog))
+            Follow(_watched?.HasDialog == true, ref _focusBeforeDialog, FocusDialog, fallback: null);
+        else if (e.PropertyName == nameof(ViewModels.MainViewModel.Prompt))
+            Follow(_watched?.HasPrompt == true, ref _focusBeforePrompt, FocusPrompt, fallback: FocusDialog);
+    }
+
+    private void Follow(bool open, ref IInputElement? before, Action focus, Action? fallback)
+    {
+        if (open)
         {
-            _focusBeforeDialog ??= FocusManager?.GetFocusedElement();
-            Dispatcher.UIThread.Post(FocusDialog, DispatcherPriority.Loaded);
+            before ??= FocusManager?.GetFocusedElement();
+            Dispatcher.UIThread.Post(focus, DispatcherPriority.Loaded);
         }
-        else if (_focusBeforeDialog is { } previous)
+        else if (before is { } previous)
         {
-            _focusBeforeDialog = null;
+            before = null;
             Dispatcher.UIThread.Post(() =>
             {
                 if (previous is Visual visual && TopLevel.GetTopLevel(visual) is not null && previous.IsEffectivelyEnabled)
                     previous.Focus();
+                else
+                    fallback?.Invoke();
             }, DispatcherPriority.Loaded);
         }
     }
@@ -60,7 +72,13 @@ public partial class MainWindow : Window, IUserInteraction
     /// Focus to the dialog itself, not to one of its fields: nothing looks selected after a click, Esc and Enter answer the
     /// dialog, and Tab goes to its first field. Left on the page, focus would let Enter press the button behind it again.
     /// </summary>
-    internal void FocusDialog() => DialogHost.Focus(NavigationMethod.Unspecified);
+    internal void FocusDialog()
+    {
+        if (_watched?.HasDialog == true)
+            DialogHost.Focus(NavigationMethod.Unspecified);
+    }
+
+    private void FocusPrompt() => PromptHost.Focus(NavigationMethod.Unspecified);
 
     private void UseScaling() => (DataContext as ViewModels.MainViewModel)?.Services.Thumbnails.UseScaling(RenderScaling);
 

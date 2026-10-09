@@ -99,9 +99,26 @@ public partial class MainViewModel : ViewModelBase
 
     partial void OnDialogChanged(ViewModelBase? oldValue, ViewModelBase? newValue)
     {
+        Prompt = null; // a question belongs to the dialog it was asked over
         // These read build manifests (an engine's is large); give that memory back once they're closed.
         if (oldValue is ComponentPickerViewModel or FabActionViewModel)
             MemoryRelief.Release();
+    }
+
+    /// <summary>A question asked over the open dialog (Remove? in Installed Plugins); the dialog stays in sight behind it, dimmed.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasPrompt))]
+    public partial ViewModelBase? Prompt { get; set; }
+
+    public bool HasPrompt => Prompt is not null;
+
+    /// <summary>Closes a dialog, or a question asked over one.</summary>
+    internal void Close(ViewModelBase dialog)
+    {
+        if (Prompt == dialog)
+            Prompt = null;
+        else if (Dialog == dialog)
+            Dialog = null;
     }
 
     /// <summary>Shown next to the name in the header, e.g. "0.5.0"; it opens About.</summary>
@@ -517,5 +534,14 @@ public partial class MainViewModel : ViewModelBase
     {
         if (engine.Local is not null && Directory.Exists(engine.Local.Directory))
             Process.Start(new ProcessStartInfo(engine.Local.Directory) { UseShellExecute = true });
+    }
+
+    internal async Task OpenInstalledPluginsAsync(EngineCardViewModel engine)
+    {
+        if (engine.Local is null)
+            return;
+        var dialog = new InstalledPluginsViewModel(this, engine.Local, engine.Title);
+        Dialog = dialog;
+        await dialog.LoadAsync();
     }
 }

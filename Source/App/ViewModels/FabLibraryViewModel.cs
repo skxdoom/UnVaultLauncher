@@ -448,16 +448,24 @@ public partial class FabLibraryViewModel : ViewModelBase
         }, fabItemKey: item.Key));
     }
 
-    internal void StartRemove(FabItemViewModel item, FabInstall install)
+    /// <param name="itemKey">The library item it belongs to, kept busy meanwhile; null for a plugin the library doesn't list.</param>
+    /// <returns>The removal, already started, for anything that shows its outcome (Installed Plugins).</returns>
+    internal OperationViewModel StartRemove(string title, string? itemKey, FabInstall install)
     {
         string engine = install.EngineAppName[3..];
-        Owner.StartOperation(new OperationViewModel(Owner, $"Removing {item.Title} from UE {engine}", async (operation, _, _) =>
+        var removal = new OperationViewModel(Owner, $"Removing {title} from UE {engine}", async (operation, _, _) =>
         {
             operation.SetPhase("Deleting files");
             var removed = await Task.Run(() => FabWorkflow.UninstallPlugin(install.EngineDirectory, install.ArtifactID));
             return $"Removed from UE {engine}; freed {ByteSize.Format(removed.BytesFreed)}.";
-        }, engineAppName: install.EngineAppName, fabItemKey: item.Key));
+        }, engineAppName: install.EngineAppName, fabItemKey: itemKey);
+        Owner.StartOperation(removal);
+        return removal;
     }
+
+    /// <summary>The library or Vault Cache item an artifact belongs to; null when it's in neither (or the library hasn't loaded).</summary>
+    internal FabItemViewModel? FindItem(string artifactID) =>
+        _all.FirstOrDefault(i => i.Versions.Any(v => string.Equals(v.ArtifactID, artifactID, StringComparison.OrdinalIgnoreCase)));
 
     /// <summary>Uses the Vault Cache copy if it's current; otherwise downloads (or updates) it there first.</summary>
     private async Task<VaultEntry> EnsureInVaultAsync(FabItemViewModel item, FabVersion version, OperationViewModel operation, InstallStatus status, CancellationToken cancellationToken)

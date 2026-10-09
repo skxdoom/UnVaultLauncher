@@ -573,6 +573,62 @@ public class ScreenshotTests
     }
 
     [AvaloniaFact]
+    public async Task Installed_plugins_lists_each_plugin_with_its_own_version()
+    {
+        // A made-up engine folder: a plugin the library knows, one it doesn't, and one without a .uplugin.
+        string engineDir = Path.Combine(Path.GetTempPath(), "unvault-screenshot-engine");
+        if (Directory.Exists(engineDir))
+            Directory.Delete(engineDir, recursive: true);
+        void Plugin(string artifact, string? uplugin, bool icon = false)
+        {
+            string folder = Path.Combine(EnginePlugins.MarketplaceDirectory(engineDir), artifact);
+            Directory.CreateDirectory(Path.Combine(folder, @"Binaries\Win64"));
+            File.WriteAllBytes(Path.Combine(folder, @"Binaries\Win64\Plugin.dll"), new byte[2 * 1024 * 1024]);
+            if (uplugin is not null)
+                File.WriteAllText(Path.Combine(folder, "Plugin.uplugin"), uplugin);
+            if (icon)
+            {
+                Directory.CreateDirectory(Path.Combine(folder, "Resources"));
+                File.WriteAllBytes(Path.Combine(folder, @"Resources\Icon128.png"), ThumbnailCacheTests.TinyPNG);
+            }
+        }
+        Plugin("Greybox_57", """{ "FriendlyName": "Greybox Runtime", "VersionName": "v2.4" }""", icon: true);
+        Plugin("TerrainBrushes9a8b7c6d5eV3", """{ "FriendlyName": "Terrain Brushes", "Version": 12 }""");
+        Plugin("Loose4f3e2d1c0bV1", null);
+        // Enough more that the list scrolls
+        foreach (string name in new[] { "Cloud Layers", "Decal Painter", "Foliage Wind", "Mesh Tools", "Road Splines", "Water Edges" })
+            Plugin(name.Replace(" ", "") + "0a1b2c3dV1", $$"""{ "FriendlyName": "{{name}}", "VersionName": "1.0" }""");
+
+        var viewModel = SampleMainViewModel();
+        SampleFab(viewModel);
+        var engine = new LocalEngine("UE_5.7", engineDir, "5.7.4-51494982+++UE5+Release-5.7-Windows", 26 * GB, LocalInstallKind.UnVault);
+        var dialog = new InstalledPluginsViewModel(viewModel, engine, "Unreal Engine 5.7.4");
+        viewModel.Dialog = dialog;
+        var window = Show(viewModel);
+        await dialog.LoadAsync(launcherInstalled: []);
+
+        // The library's title where it has one, else the plugin's own name, else its folder; the version as the plugin gives it.
+        Assert.Equal(
+            [("Greybox Tools", "Version 2.4", true), ("Loose4f3e2d1c0bV1", "Version unknown", false), ("Terrain Brushes", "Version 12", false)],
+            dialog.Plugins.Where(p => p.Title is "Greybox Tools" or "Loose4f3e2d1c0bV1" or "Terrain Brushes")
+                .Select(p => (p.Title, p.Details.Split("  ·  ")[0], p.HasIcon)));
+        Assert.All(dialog.Plugins, p => Assert.True(p.RemoveCommand.CanExecute(null)));
+        Save(window, "installed-plugins.png");
+
+        // Remove asks over the list, which stays in sight; Esc answers the question, not the list's own Close.
+        dialog.Plugins.Single(p => p.Title == "Greybox Tools").RemoveCommand.Execute(null);
+        Dispatcher.UIThread.RunJobs();
+        var confirm = Assert.IsType<ConfirmViewModel>(viewModel.Prompt);
+        Assert.Equal("Remove Greybox Tools?", confirm.Title);
+        Assert.Same(dialog, viewModel.Dialog);
+        Save(window, "installed-plugins-remove.png");
+        window.KeyPressQwerty(PhysicalKey.Escape, RawInputModifiers.None);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Null(viewModel.Prompt);
+        Assert.Same(dialog, viewModel.Dialog);
+    }
+
+    [AvaloniaFact]
     public async Task Fab_remove_plugin_dialog()
     {
         var viewModel = SampleMainViewModel();

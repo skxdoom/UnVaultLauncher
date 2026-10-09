@@ -170,24 +170,44 @@
 
         <!-- Dialog overlay: Tab goes round the dialog's controls and never reaches the page behind -->
         <Border Background="{StaticResource OverlayBrush}" IsVisible="{Binding HasDialog}" KeyboardNavigation.TabNavigation="Cycle">
-            <!-- Takes the focus when a dialog opens (see FocusDialog), but isn't a stop for Tab itself -->
-            <ContentControl x:Name="DialogHost" Content="{Binding Dialog}" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="24"
+            <Panel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="24">
+                <!-- Takes the focus when a dialog opens (see FocusDialog), but isn't a stop for Tab itself. Disabled under a
+                     question, so its own Enter and Esc buttons don't answer for the question's. -->
+                <ContentControl x:Name="DialogHost" Content="{Binding Dialog}"
+                                Focusable="True" KeyboardNavigation.IsTabStop="False" IsEnabled="{Binding !HasPrompt}">
+                    <ContentControl.DataTemplates>
+                        <DataTemplate DataType="vm:ComponentPickerViewModel">
+                            <views:ComponentPickerView />
+                        </DataTemplate>
+                        <DataTemplate DataType="vm:SettingsViewModel">
+                            <views:SettingsView />
+                        </DataTemplate>
+                        <DataTemplate DataType="vm:FabActionViewModel">
+                            <views:FabActionView />
+                        </DataTemplate>
+                        <DataTemplate DataType="vm:ConfirmViewModel">
+                            <views:ConfirmView />
+                        </DataTemplate>
+                        <DataTemplate DataType="vm:AboutViewModel">
+                            <views:AboutView />
+                        </DataTemplate>
+                        <DataTemplate DataType="vm:InstalledPluginsViewModel">
+                            <views:InstalledPluginsView />
+                        </DataTemplate>
+                    </ContentControl.DataTemplates>
+                </ContentControl>
+                <!-- Under a question, the dialog is dimmed as the page is under it; the page isn't dimmed a second time -->
+                <Border Background="{StaticResource OverlayBrush}" CornerRadius="10" IsVisible="{Binding HasPrompt}" />
+            </Panel>
+        </Border>
+
+        <!-- A question over the dialog. Clear, but it still takes the clicks, so nothing behind it can be used meanwhile. -->
+        <Border Background="Transparent" IsVisible="{Binding HasPrompt}" KeyboardNavigation.TabNavigation="Cycle">
+            <ContentControl x:Name="PromptHost" Content="{Binding Prompt}" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="24"
                             Focusable="True" KeyboardNavigation.IsTabStop="False">
                 <ContentControl.DataTemplates>
-                    <DataTemplate DataType="vm:ComponentPickerViewModel">
-                        <views:ComponentPickerView />
-                    </DataTemplate>
-                    <DataTemplate DataType="vm:SettingsViewModel">
-                        <views:SettingsView />
-                    </DataTemplate>
-                    <DataTemplate DataType="vm:FabActionViewModel">
-                        <views:FabActionView />
-                    </DataTemplate>
                     <DataTemplate DataType="vm:ConfirmViewModel">
                         <views:ConfirmView />
-                    </DataTemplate>
-                    <DataTemplate DataType="vm:AboutViewModel">
-                        <views:AboutView />
                     </DataTemplate>
                 </ContentControl.DataTemplates>
             </ContentControl>

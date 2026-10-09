@@ -243,6 +243,51 @@ public sealed class FabTests : IDisposable
     }
 
     [Theory]
+    [InlineData("EdgeSmoother.uplugin", """{ "FileVersion": 3, "Version": 7, "VersionName": "1.2.0", "FriendlyName": "Edge Smoother" }""", "Edge Smoother", "1.2.0")]
+    [InlineData(@"Source\EdgeSmoother.uplugin", """{ "VersionName": "2.0", "FriendlyName": "Edge Smoother" }""", "Edge Smoother", "2.0")] // one folder down
+    [InlineData("EdgeSmoother.uplugin", """
+        {
+            // as the engine allows
+            "Version": 7,
+            "FriendlyName": "Edge Smoother",
+        }
+        """, "Edge Smoother", "7")] // no VersionName: the release number
+    [InlineData("EdgeSmoother.uplugin", """{ "FriendlyName": "  ", "VersionName": "" }""", null, null)]
+    public void Reads_the_name_and_version_a_plugin_gives_itself(string file, string json, string? name, string? version)
+    {
+        string folder = Path.Combine(_dir, "EdgeSmoo0a1b2c3d4e5fV6");
+        Directory.CreateDirectory(Path.GetDirectoryName(Path.Combine(folder, file))!);
+        File.WriteAllText(Path.Combine(folder, file), json, new UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
+
+        Assert.Equal(new PluginDescriptor(name, version), EnginePlugins.ReadDescriptor(folder));
+    }
+
+    [Fact]
+    public void A_plugin_icon_is_where_the_engine_looks_for_it()
+    {
+        string folder = Path.Combine(_dir, "EdgeSmoo0a1b2c3d4e5fV6");
+        Directory.CreateDirectory(Path.Combine(folder, "Resources"));
+        File.WriteAllText(Path.Combine(folder, "EdgeSmoother.uplugin"), """{ "FriendlyName": "Edge Smoother" }""");
+        File.WriteAllBytes(Path.Combine(folder, @"Resources\Icon128.png"), [0]);
+
+        Assert.Equal(Path.Combine(folder, @"Resources\Icon128.png"), EnginePlugins.ReadDescriptor(folder)?.IconPath);
+    }
+
+    [Theory]
+    [InlineData(null)] // no .uplugin
+    [InlineData("not JSON")]
+    [InlineData("[1, 2]")]
+    public void A_plugin_without_a_readable_uplugin_has_no_descriptor(string? content)
+    {
+        string folder = Directory.CreateDirectory(Path.Combine(_dir, "EdgeSmoo0a1b2c3d4e5fV6")).FullName;
+        if (content is not null)
+            File.WriteAllText(Path.Combine(folder, "EdgeSmoother.uplugin"), content);
+
+        Assert.Null(EnginePlugins.ReadDescriptor(folder));
+        Assert.Null(EnginePlugins.ReadDescriptor(Path.Combine(_dir, "missing")));
+    }
+
+    [Theory]
     [InlineData("..")]
     [InlineData(@"..\..\Engine")]
     [InlineData("")]

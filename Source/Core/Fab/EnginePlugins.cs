@@ -1,3 +1,4 @@
+using System.Text.Json;
 using UnVault.Core.EGL;
 using UnVault.Core.Install;
 using UnVault.Core.Util;
@@ -24,6 +25,9 @@ public enum PluginSource
 /// </param>
 /// <param name="BuildVersion">The installed build (as Fab lists it), when UnVault or EGL recorded one; unknown for a bare folder.</param>
 public sealed record EnginePlugin(string ArtifactID, PluginSource Source, string Folder, bool CanRemove, string? BuildVersion = null);
+
+/// <summary>What a plugin's .uplugin file says about it: the name and version its author gave it, and its icon if it has one.</summary>
+public sealed record PluginDescriptor(string? FriendlyName, string? VersionName, string? IconPath = null);
 
 /// <summary>Fab plugins inside an engine. Nearly all live in Engine\Plugins\Marketplace\{ArtifactID}, whoever installed them.</summary>
 public static class EnginePlugins
@@ -84,6 +88,44 @@ public static class EnginePlugins
 
         return [.. found.Values];
     }
+
+    /// <summary>
+    /// Reads the .uplugin in a plugin's folder, or one folder down where some plugins keep it. Null when there's none or
+    /// it can't be read: the engine is the judge of a plugin, this is only for showing it.
+    /// </summary>
+    public static PluginDescriptor? ReadDescriptor(string folder)
+    {
+        try
+        {
+            if (!Directory.Exists(folder))
+                return null;
+            string? path = Directory.EnumerateFiles(folder, "*.uplugin").FirstOrDefault()
+                ?? Directory.EnumerateDirectories(folder).SelectMany(d => Directory.EnumerateFiles(d, "*.uplugin")).FirstOrDefault();
+            if (path is null)
+                return null;
+
+            // The engine's own reader takes trailing commas and comments, so some plugins have them.
+            using var json = JsonDocument.Parse(File.ReadAllText(path), new JsonDocumentOptions { AllowTrailingCommas = true, CommentHandling = JsonCommentHandling.Skip });
+            var root = json.RootElement;
+            if (root.ValueKind != JsonValueKind.Object)
+                return null;
+            // VersionName is what authors show ("1.2.0"); Version is only a number that goes up with each release.
+            string? versionName = Text(root, "VersionName")
+                ?? (root.TryGetProperty("Version", out var number) && number.ValueKind == JsonValueKind.Number ? number.GetRawText() : null);
+            // Where the engine's Plugins window looks for it too
+            string icon = Path.Combine(Path.GetDirectoryName(path)!, "Resources", "Icon128.png");
+            return new PluginDescriptor(Text(root, "FriendlyName"), versionName, File.Exists(icon) ? icon : null);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
+        {
+            return null;
+        }
+    }
+
+    private static string? Text(JsonElement json, string name) =>
+        json.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String && value.GetString() is { } text && !string.IsNullOrWhiteSpace(text)
+            ? text.Trim()
+            : null;
 
     /// <summary>Bytes in a plugin's folder (0 if it's gone).</summary>
     public static long FolderSize(string folder)
