@@ -641,11 +641,19 @@
   <data name="PhasePaused" xml:space="preserve">
     <value>Paused</value>
   </data>
+  <data name="PhaseWaiting" xml:space="preserve">
+    <value>Waiting</value>
+    <comment>An operation that didn't start because another one works on the same engine or item.</comment>
+  </data>
   <data name="PhaseFailed" xml:space="preserve">
     <value>Failed</value>
   </data>
   <data name="StoppedRetry" xml:space="preserve">
     <value>Stopped. Retry continues where it left off.</value>
+  </data>
+  <data name="WaitsForOther" xml:space="preserve">
+    <value>"{0}" is working on the same files. Retry once it's done.</value>
+    <comment>{0}: the other operation, as the downloads list names it, e.g. Changing components of Unreal Engine 5.7.</comment>
   </data>
   <data name="EngineInstalled" xml:space="preserve">
     <value>Installed to {0}. Projects for {1} now open with it.</value>
@@ -887,6 +895,10 @@
   <data name="PluginFitsNoEngine" xml:space="preserve">
     <value>This plugin can't go into any of your installed engines.</value>
   </data>
+  <data name="BadgeEngineBusy" xml:space="preserve">
+    <value>Busy with another operation</value>
+    <comment>Beside an engine that a download, install or other operation is working on right now.</comment>
+  </data>
   <data name="BadgeRemoveWithEGL" xml:space="preserve">
     <value>Remove with EGL</value>
     <comment>EGL: the Epic Games Launcher.</comment>
@@ -1036,7 +1048,7 @@
     <value>There's no telling which of the engine's files are this plugin's. Remove it with the Epic Games Launcher.</value>
   </data>
   <data name="PluginBusy" xml:space="preserve">
-    <value>Something is already working on this plugin.</value>
+    <value>Something is already working on this plugin or its engine.</value>
   </data>
 
   <!-- Settings -->

@@ -283,7 +283,7 @@ public class ScreenshotTests
     public void Engines_page_with_downloads()
     {
         var viewModel = SampleMainViewModel();
-        viewModel.Operations.Add(new OperationViewModel(viewModel, "Installing Unreal Engine 5.8.3", (_, _, _) => Task.FromResult<string?>(null), "UE_5.8")
+        viewModel.Operations.Add(new OperationViewModel(viewModel, "Installing Unreal Engine 5.8.3", (_, _, _) => Task.FromResult<string?>(null), ["UE_5.8"])
         {
             Phase = "Downloading",
             IsIndeterminate = false,
@@ -446,12 +446,15 @@ public class ScreenshotTests
         // Two products named "Garden Pack": told apart by seller, and busy state follows the product, not the name.
         var plants = fab.Items.Where(i => i.Title == "Garden Pack").ToList();
         Assert.Equal(["Contoso Art", "Fabrikam Studio"], plants.Select(i => i.SellerText).Order());
-        fab.SetBusy(plants[0].Key, true);
+        var working = new OperationViewModel(fab.Owner, "Downloading Garden Pack", (_, _, _) => Task.FromResult<string?>(null), fabItemKey: plants[0].Key);
+        fab.Owner.Operations.Add(working); // listed, not run: running is how an operation starts out
+        fab.UpdateBusy();
         Assert.Equal([true, false], plants.Select(i => i.IsBusy));
         // Nothing else starts on a busy item's files: two operations on them would collide.
         Assert.Equal((false, false), (plants[0].DownloadCommand.CanExecute(null), plants[0].RemoveCommand.CanExecute(null)));
         Assert.True(plants[1].DownloadCommand.CanExecute(null));
-        fab.SetBusy(plants[0].Key, false);
+        fab.Owner.Operations.Remove(working);
+        fab.UpdateBusy();
         Assert.Single(fab.Items, i => i.Matches("Fabrikam")); // search covers the seller
         WaitFor(() => fab.Items.Single(i => i.Title.StartsWith("Modular Warehouse")).Thumbnail is not null); // local:// picture loaded
         Save(window, "fab-library.png");
@@ -633,6 +636,15 @@ public class ScreenshotTests
         Assert.All(dialog.Plugins, p => Assert.True(p.RemoveCommand.CanExecute(null)));
         Save(window, "installed-plugins.png");
 
+        // While an operation works on the engine nothing is removed, and once it ends Remove is back, list still open.
+        var modify = new OperationViewModel(viewModel, "Changing components of Unreal Engine 5.7", (_, _, _) => Task.FromResult<string?>(null), ["UE_5.7"]);
+        viewModel.Operations.Add(modify); // listed as running, as an operation starts out
+        viewModel.UpdateBusy();
+        Assert.All(dialog.Plugins, p => Assert.False(p.RemoveCommand.CanExecute(null)));
+        modify.State = OperationState.Completed;
+        viewModel.UpdateBusy();
+        Assert.All(dialog.Plugins, p => Assert.True(p.RemoveCommand.CanExecute(null)));
+
         // Remove asks over the list, which stays in sight; Esc answers the question, not the list's own Close.
         dialog.Plugins.Single(p => p.Title == "Greybox Tools").RemoveCommand.Execute(null);
         Dispatcher.UIThread.RunJobs();
@@ -693,6 +705,32 @@ public class ScreenshotTests
         Assert.Equal((true, false), (notDownloaded.IsAvailable, notDownloaded.Version?.IsDownloaded));
         dialog.SelectedTarget = notDownloaded;
         Assert.Null(dialog.Note);
+
+        // An operation works on 5.5 meanwhile: it can't be installed into, the pick stays, and it's back once that ends.
+        var modify = new OperationViewModel(viewModel, "Changing components of Unreal Engine 5.5", (_, _, _) => Task.FromResult<string?>(null), ["UE_5.5"]);
+        viewModel.Operations.Add(modify); // listed as running, as an operation starts out
+        viewModel.UpdateBusy();
+        Assert.Equal(("Busy with another operation", false), (notDownloaded.Badge, notDownloaded.IsAvailable));
+        Assert.Same(notDownloaded, dialog.SelectedTarget);
+        Assert.False(dialog.ConfirmCommand.CanExecute(null));
+        modify.State = OperationState.Completed;
+        viewModel.UpdateBusy();
+        Assert.Equal((null, true), (notDownloaded.Badge, notDownloaded.IsAvailable));
+        Assert.True(dialog.ConfirmCommand.CanExecute(null));
+
+        // Opened while every engine it fits is busy, nothing is picked; the first to be free is.
+        var update = new OperationViewModel(viewModel, "Updating Greybox Tools", (_, _, _) => Task.FromResult<string?>(null),
+            [.. dialog.Targets.Where(t => t.IsUsable).Select(t => t.EngineAppName!)]);
+        viewModel.Operations.Add(update);
+        var waiting = new FabActionViewModel(viewModel.Fab, item, FabActionMode.InstallPlugin);
+        viewModel.Dialog = waiting;
+        await waiting.LoadAsync();
+        Assert.Null(waiting.SelectedTarget);
+        Assert.Null(waiting.EmptyText); // they fit; they're only busy, as their badges say
+        update.State = OperationState.Completed;
+        viewModel.UpdateBusy();
+        Assert.Equal("Unreal Engine 5.6", waiting.SelectedTarget?.Title);
+        Assert.True(waiting.ConfirmCommand.CanExecute(null));
     }
 
     [AvaloniaFact]

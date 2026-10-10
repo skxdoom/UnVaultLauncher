@@ -173,11 +173,12 @@ public partial class MainViewModel : ViewModelBase
 
     /// <summary>
     /// Engine versions the account owns but hasn't installed (stale EGL records count as not installed), leaving out
-    /// any an operation is installing right now: a second install would write into the same folder.
+    /// any an install in the downloads list is for, running or waiting to be retried: a second install would write into
+    /// the same folder. Dismissing a paused one offers the version again.
     /// </summary>
     public IReadOnlyList<EpicAsset> InstallableEngines =>
         _owned.Where(o => !_local.Any(l => l.Exists && Same(l.AppName, o.AppName))
-                          && !Operations.Any(op => op.IsRunning && op.EngineAppName is { } busy && Same(busy, o.AppName)))
+                          && !Operations.Any(op => op.State != OperationState.Completed && op.WorksOn(o.AppName)))
             .ToList();
 
     private static bool Same(string a, string b) => string.Equals(a, b, StringComparison.OrdinalIgnoreCase);
@@ -292,7 +293,6 @@ public partial class MainViewModel : ViewModelBase
         var ownedList = owned.ToList();
         _local = localList;
         _owned = ownedList;
-        var busy = Operations.Where(o => o.IsRunning && o.EngineAppName is not null).Select(o => o.EngineAppName!).ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         var engines = localList.Select(l => l.AppName)
             .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -300,7 +300,7 @@ public partial class MainViewModel : ViewModelBase
                 localList.FirstOrDefault(l => Same(l.AppName, app) && l.Exists) ?? localList.First(l => Same(l.AppName, app)),
                 ownedList.FirstOrDefault(o => Same(o.AppName, app)))
             {
-                IsBusy = busy.Contains(app),
+                IsBusy = IsEngineBusy(app),
             })
             .OrderByDescending(e => e.Version.Major)
             .ThenByDescending(e => e.Version.Minor)
@@ -313,14 +313,27 @@ public partial class MainViewModel : ViewModelBase
         HasNoEngines = Engines.Count == 0;
     }
 
-    internal void SetBusy(OperationViewModel operation, bool busy)
+    /// <summary>An operation is working on the engine, so nothing else may start on it.</summary>
+    internal bool IsEngineBusy(string appName) => Operations.Any(o => o.IsRunning && o.WorksOn(appName));
+
+    /// <summary>The running operation that works on the same engine or Library item, if any.</summary>
+    internal OperationViewModel? RunningOverlap(OperationViewModel operation) =>
+        Operations.FirstOrDefault(o => o != operation && o.IsRunning && o.Overlaps(operation));
+
+    /// <summary>
+    /// An operation started or ended. Busy is worked out from all the running ones, not switched per operation: one ending
+    /// mustn't free an engine another one is still working on.
+    /// </summary>
+    internal void UpdateBusy()
     {
-        Fab.SetBusy(operation.FabItemKey, busy);
-        if (operation.EngineAppName is not { } appName)
-            return;
-        foreach (var engine in Engines.Where(e => string.Equals(e.AppName, appName, StringComparison.OrdinalIgnoreCase)))
-            engine.IsBusy = busy;
+        foreach (var engine in Engines)
+            engine.IsBusy = IsEngineBusy(engine.AppName);
+        Fab.UpdateBusy();
+        (Dialog as IShowsBusy)?.UpdateBusy();
     }
+
+    /// <summary>An operation is working on the Library item.</summary>
+    internal bool IsItemBusy(string itemKey) => Operations.Any(o => o.IsRunning && o.FabItemKey == itemKey);
 
     [RelayCommand]
     private async Task SignInAsync()
@@ -446,7 +459,7 @@ public partial class MainViewModel : ViewModelBase
             operation.SetPhase(Strings.PhaseDownloading);
             await InstallWorkflow.InstallAsync(source, plan, tags, null, directory, CreateInstaller(), status, register: true, cancellationToken);
             return Localized.Format(Strings.EngineInstalled, directory, appName[3..]);
-        }, appName));
+        }, [appName]));
     }
 
     internal void StartModify(EngineCardViewModel engine, ModifyPlan plan)
@@ -463,7 +476,7 @@ public partial class MainViewModel : ViewModelBase
                 (true, null) => Localized.Format(Strings.ModifyDoneFreed, freed),
                 _ => Strings.ModifyDone,
             };
-        }, engine.AppName));
+        }, [engine.AppName]));
     }
 
     internal void StartVerify(EngineCardViewModel engine)
@@ -484,7 +497,7 @@ public partial class MainViewModel : ViewModelBase
 
             operation.OfferFollowUp(Strings.Repair, () => StartRepair(engine, install, bad)); // the message beside it says how many
             return Localized.Plural(nameof(Strings.VerifyBad_Other), bad.Count, files.Count);
-        }, engine.AppName));
+        }, [engine.AppName]));
     }
 
     private void StartRepair(EngineCardViewModel engine, ExistingInstall install, IReadOnlyList<BadFile> bad)
@@ -497,7 +510,7 @@ public partial class MainViewModel : ViewModelBase
             var plan = InstallPlan.Create(install.Manifest, bad.Select(b => b.File));
             await CreateInstaller().InstallAsync(plan, install.Directory, install.Sources, new Dictionary<string, string>(), status, cancellationToken);
             return Localized.Plural(nameof(Strings.Repaired_Other), plan.Files.Count);
-        }, engine.AppName));
+        }, [engine.AppName]));
     }
 
     internal void StartOperation(OperationViewModel operation)

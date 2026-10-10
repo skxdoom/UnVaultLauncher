@@ -283,11 +283,8 @@ public partial class FabLibraryViewModel : ViewModelBase
             items.Add(Row("vault:" + group.Key, first.Title, FabKinds.FromVault(first), null, versions, installs, first.Thumbnail));
         }
 
-        var busy = Owner.Operations.Where(o => o.IsRunning && o.FabItemKey is not null).Select(o => o.FabItemKey!).ToHashSet(StringComparer.Ordinal);
-        foreach (var row in items)
-            row.IsBusy = busy.Contains(row.Key);
-
         _all = items.OrderBy(i => i.Title, StringComparer.OrdinalIgnoreCase).ToList();
+        UpdateBusy();
 
         // Rebuilding the options makes the combo box clear its selection; that's not the user changing the filter.
         _rebuilding = true;
@@ -367,12 +364,12 @@ public partial class FabLibraryViewModel : ViewModelBase
         return installs;
     }
 
-    internal void SetBusy(string? itemKey, bool busy)
+    /// <summary>Marks the items running operations work on; see <see cref="MainViewModel.UpdateBusy"/>.</summary>
+    internal void UpdateBusy()
     {
-        if (itemKey is null)
-            return;
-        foreach (var item in _all.Where(i => i.Key == itemKey))
-            item.IsBusy = busy;
+        var busy = Owner.Operations.Where(o => o.IsRunning && o.FabItemKey is not null).Select(o => o.FabItemKey!).ToHashSet(StringComparer.Ordinal);
+        foreach (var item in _all)
+            item.IsBusy = busy.Contains(item.Key);
     }
 
     internal async void OpenAction(FabItemViewModel item)
@@ -417,7 +414,7 @@ public partial class FabLibraryViewModel : ViewModelBase
                 await FabWorkflow.InstallPluginAsync(source, artifact, engine.Directory, Owner.CreateInstaller(), status, cancellationToken);
             }
             return Localized.Format(Strings.PluginInstalledInto, engine.Directory);
-        }, engineAppName: engine.AppName, fabItemKey: item.Key));
+        }, engines: [engine.AppName], fabItemKey: item.Key));
     }
 
     internal void StartAddToProject(FabItemViewModel item, FabVersion version, UnrealProject project)
@@ -461,7 +458,7 @@ public partial class FabLibraryViewModel : ViewModelBase
             operation.SetPhase(Strings.PhaseDeletingFiles);
             var removed = await Task.Run(() => FabWorkflow.UninstallPlugin(install.EngineDirectory, install.ArtifactID, folder: install.Folder));
             return Localized.Format(Strings.RemovedFreed, engine, ByteSize.Format(removed.BytesFreed));
-        }, engineAppName: install.EngineAppName, fabItemKey: itemKey);
+        }, engines: [install.EngineAppName], fabItemKey: itemKey);
         Owner.StartOperation(removal);
         return removal;
     }
@@ -515,7 +512,7 @@ public partial class FabLibraryViewModel : ViewModelBase
             }
             int count = downloads.Count + installs.Count;
             return Localized.Plural(nameof(Strings.UpdatedCopies_Other), count);
-        }, fabItemKey: item.Key));
+        }, engines: [.. installs.Select(i => i.EngineAppName).Distinct(StringComparer.OrdinalIgnoreCase)], fabItemKey: item.Key));
     }
 
     private static FabArtifact Artifact(FabItemViewModel item, FabVersion version) =>

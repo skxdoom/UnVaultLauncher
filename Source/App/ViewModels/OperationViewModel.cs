@@ -30,23 +30,31 @@ public partial class OperationViewModel : ViewModelBase
     private long _lastBytes;
     private double _bytesPerSecond;
 
-    public OperationViewModel(MainViewModel owner, string title, Work work, string? engineAppName = null, string? fabItemKey = null)
+    /// <param name="engines">The engines it works on (installing one, or plugins in them), by app name.</param>
+    /// <param name="fabItemKey">The Library item it works on.</param>
+    public OperationViewModel(MainViewModel owner, string title, Work work, IReadOnlyList<string>? engines = null, string? fabItemKey = null)
     {
         _owner = owner;
         _work = work;
         Title = title;
-        EngineAppName = engineAppName;
+        EngineAppNames = engines ?? [];
         FabItemKey = fabItemKey;
         _timer = new DispatcherTimer(TimeSpan.FromMilliseconds(250), DispatcherPriority.Background, (_, _) => UpdateProgress());
     }
 
     public string Title { get; }
 
-    /// <summary>The engine this works on (by app name, since library cards are rebuilt on refresh).</summary>
-    public string? EngineAppName { get; }
+    /// <summary>The engines this works on (by app name, since engine cards are rebuilt on refresh).</summary>
+    public IReadOnlyList<string> EngineAppNames { get; }
 
     /// <summary>The Fab library row this works on (by its key, since rows are rebuilt on refresh).</summary>
     public string? FabItemKey { get; }
+
+    public bool WorksOn(string engineAppName) => EngineAppNames.Contains(engineAppName, StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Works on an engine or a Library item the other one does too: the two would write the same files.</summary>
+    public bool Overlaps(OperationViewModel other) =>
+        EngineAppNames.Any(other.WorksOn) || FabItemKey is not null && FabItemKey == other.FabItemKey;
 
     [ObservableProperty] public partial string Phase { get; set; } = "Starting…";
     [ObservableProperty] public partial double Progress { get; set; }
@@ -96,6 +104,17 @@ public partial class OperationViewModel : ViewModelBase
     {
         if (_work is not { } work)
             return;
+        // Checked at every start, a retry too: the screen offers nothing that's busy, but a retry or a dialog left open can
+        // still ask for it. It stays ready to retry once the other one is done.
+        if (_owner.RunningOverlap(this) is { } other)
+        {
+            if (State == OperationState.Running)
+                State = OperationState.Cancelled; // never started
+            Phase = Strings.PhaseWaiting;
+            Message = Localized.Format(Strings.WaitsForOther, other.Title);
+            return;
+        }
+
         _cancellation = new CancellationTokenSource();
         _status = new InstallStatus();
         _lastBytes = 0;
@@ -104,7 +123,7 @@ public partial class OperationViewModel : ViewModelBase
         State = OperationState.Running;
         Message = null;
         FollowUpText = null;
-        _owner.SetBusy(this, true);
+        _owner.UpdateBusy();
         _timer.Start();
 
         try
@@ -133,7 +152,7 @@ public partial class OperationViewModel : ViewModelBase
             _timer.Stop();
             UpdateProgress();
             SpeedText = "";
-            _owner.SetBusy(this, false);
+            _owner.UpdateBusy();
             _cancellation.Dispose();
             _cancellation = null;
             MemoryRelief.Release();

@@ -13,21 +13,35 @@ namespace UnVault.App.ViewModels;
 public enum FabActionMode { InstallPlugin, AddToProject, CreateProject, Download, RemovePlugin }
 
 /// <summary>Something a Fab item can go into: an engine (plugins) or a project (asset packs).</summary>
-public sealed class FabTargetViewModel(string title, string subtitle, string? badge, FabVersion? version, bool isAvailable, LocalEngine? engine, UnrealProject? project)
+/// <param name="badge">Why it can't be picked, if anything rules it out for good.</param>
+/// <param name="isUsable">Nothing rules it out; it can still be busy for a while.</param>
+public sealed partial class FabTargetViewModel(string title, string subtitle, string? badge, FabVersion? version, bool isUsable, LocalEngine? engine, UnrealProject? project)
+    : ViewModelBase
 {
     public string Title { get; } = title;
     public string Subtitle { get; } = subtitle;
-    public string? Badge { get; } = badge;
+    public string? Badge => badge ?? (IsBusy ? Strings.BadgeEngineBusy : null);
 
     /// <summary>Why the badge says what it does (its tooltip).</summary>
     public string? BadgeTip { get; init; }
     public FabVersion? Version { get; } = version;
-    public bool IsAvailable { get; } = isAvailable;
+    public bool IsUsable { get; } = isUsable;
+
+    /// <summary>Can be picked now: usable, and no operation is working on its engine.</summary>
+    public bool IsAvailable => IsUsable && !IsBusy;
+
     public LocalEngine? Engine { get; } = engine;
     public UnrealProject? Project { get; } = project;
 
     /// <summary>For removal: the plugin install this row stands for.</summary>
     public FabInstall? Install { get; init; }
+
+    /// <summary>The engine it stands for, which an operation may be working on.</summary>
+    public string? EngineAppName { get; init; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Badge), nameof(IsAvailable))]
+    public partial bool IsBusy { get; set; }
 }
 
 public sealed record FabVersionOption(FabVersion Version, string Label);
@@ -36,7 +50,7 @@ public sealed record FabVersionOption(FabVersion Version, string Label);
 /// The dialog behind a Fab row's buttons: pick the engine (plugin) or project (asset pack) it goes into, the
 /// version and folder for a new project / a plain download, or the engine to remove a plugin from.
 /// </summary>
-public partial class FabActionViewModel : ViewModelBase
+public partial class FabActionViewModel : ViewModelBase, IShowsBusy
 {
     private readonly FabLibraryViewModel _library;
     private readonly FabItemViewModel _item;
@@ -168,10 +182,25 @@ public partial class FabActionViewModel : ViewModelBase
                 : !CanGet(version) ? Strings.BadgeSignInToDownload
                 : null;
             Targets.Add(new FabTargetViewModel($"Unreal Engine {engine.AppName[3..]}", engine.Directory, badge, version,
-                isAvailable: badge is null, engine, project: null));
+                isUsable: badge is null, engine, project: null) { EngineAppName = engine.AppName });
         }
-        SelectedTarget = Targets.FirstOrDefault(t => t.IsAvailable);
-        EmptyText = Targets.Count == 0 ? Strings.NoInstalledEngines : SelectedTarget is null ? Strings.PluginFitsNoEngine : null;
+        UpdateBusy();
+        EmptyText = Targets.Count == 0 ? Strings.NoInstalledEngines : !Targets.Any(t => t.IsUsable) ? Strings.PluginFitsNoEngine : null;
+    }
+
+    /// <summary>
+    /// Marks the engines an operation is working on, as they start and end while the dialog is open. A busy engine can't
+    /// be picked; one already picked stays picked (Confirm waits), so the plugin never goes into an engine nobody chose.
+    /// </summary>
+    public void UpdateBusy()
+    {
+        foreach (var target in Targets)
+        {
+            if (target.EngineAppName is { } app)
+                target.IsBusy = _library.Owner.IsEngineBusy(app);
+        }
+        SelectedTarget ??= Targets.FirstOrDefault(t => t.IsAvailable);
+        ConfirmCommand.NotifyCanExecuteChanged();
     }
 
     private async Task LoadInstallsAsync()
@@ -187,9 +216,10 @@ public partial class FabActionViewModel : ViewModelBase
                 : sizes[i] > 0 ? $"{install.Folder}  ·  {ByteSize.Format(sizes[i])}"
                 : install.Folder;
             Targets.Add(new FabTargetViewModel($"Unreal Engine {install.EngineAppName[3..]}", where,
-                badge, version: null, isAvailable: install.CanRemove, engine: null, project: null) { Install = install });
+                badge, version: null, isUsable: install.CanRemove, engine: null, project: null) { Install = install, EngineAppName = install.EngineAppName });
         }
-        SelectedTarget = Targets.FirstOrDefault(t => t.IsAvailable) ?? Targets.FirstOrDefault();
+        UpdateBusy();
+        SelectedTarget ??= Targets.FirstOrDefault(); // nothing removable: the first row still says why
         EmptyText = Targets.Count == 0 ? Strings.PluginInNoEngine : null;
     }
 
@@ -244,7 +274,7 @@ public partial class FabActionViewModel : ViewModelBase
                     ? Strings.CustomEngineNotRegistered
                     : Localized.Format(Strings.CustomEngineVersionUnreadable, custom.Directory);
                 return new FabTargetViewModel(project.Name, $"{engineName}  ·  {project.Directory}",
-                    custom is null ? Strings.BadgeEngineNotInstalled : Strings.BadgeEngineVersionUnknown, version: null, isAvailable: false, engine: null, project)
+                    custom is null ? Strings.BadgeEngineNotInstalled : Strings.BadgeEngineVersionUnknown, version: null, isUsable: false, engine: null, project)
                 {
                     BadgeTip = why,
                 };
@@ -278,7 +308,7 @@ public partial class FabActionViewModel : ViewModelBase
         }
 
         return new FabTargetViewModel(project.Name, $"{engineName}  ·  {project.Directory}", badge, version,
-            isAvailable: version is not null, engine: null, project)
+            isUsable: version is not null, engine: null, project)
         {
             BadgeTip = tip,
         };

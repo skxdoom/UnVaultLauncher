@@ -14,7 +14,7 @@ namespace UnVault.App.ViewModels;
 /// An engine's Installed Plugins, as in the Epic Games Launcher: every Fab plugin in it, whoever put it there, with the
 /// version the plugin gives itself, to find on disk or remove.
 /// </summary>
-public partial class InstalledPluginsViewModel(MainViewModel owner, LocalEngine engine, string engineTitle) : ViewModelBase
+public partial class InstalledPluginsViewModel(MainViewModel owner, LocalEngine engine, string engineTitle) : ViewModelBase, IShowsBusy
 {
     /// <summary>Icons show at 32 px; decoded for twice that, so they stay sharp on high-DPI screens.</summary>
     private const int IconPixels = 64;
@@ -71,7 +71,17 @@ public partial class InstalledPluginsViewModel(MainViewModel owner, LocalEngine 
             : size > 0 ? $"{version}  ·  {ByteSize.Format(size)}"
             : version;
         var install = new FabInstall(engine.AppName, engine.Directory, plugin.ArtifactID, plugin.Source, plugin.Folder, plugin.CanRemove, plugin.BuildVersion);
-        return new InstalledPluginViewModel(this, install, title, details, icon, item?.Key, isBusy: item?.IsBusy == true);
+        return new InstalledPluginViewModel(this, install, title, details, icon, item?.Key) { IsBusy = WorkedOn(item?.Key) };
+    }
+
+    /// <summary>Something works on the plugin's engine or its Library item: nothing else may start on its files.</summary>
+    private bool WorkedOn(string? itemKey) => owner.IsEngineBusy(engine.AppName) || itemKey is not null && owner.IsItemBusy(itemKey);
+
+    /// <summary>Operations start and end while the list is open: Remove follows.</summary>
+    public void UpdateBusy()
+    {
+        foreach (var plugin in Plugins)
+            plugin.IsBusy = WorkedOn(plugin.ItemKey);
     }
 
     /// <summary>"v1.2" → "1.2", so it doesn't read "Version v1.2".</summary>
@@ -134,7 +144,7 @@ public partial class InstalledPluginsViewModel(MainViewModel owner, LocalEngine 
 
 /// <summary>A plugin in an engine's Installed Plugins list.</summary>
 public partial class InstalledPluginViewModel(InstalledPluginsViewModel owner, FabInstall install, string title, string details, Bitmap? icon,
-    string? itemKey, bool isBusy) : ViewModelBase
+    string? itemKey) : ViewModelBase
 {
     public FabInstall Install { get; } = install;
     public string Title { get; } = title;
@@ -153,14 +163,20 @@ public partial class InstalledPluginViewModel(InstalledPluginsViewModel owner, F
 
     public string Details => IsRemoving ? Strings.Removing : details;
 
+    /// <summary>An operation works on its engine or its Library item (its own removal included).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanRemove), nameof(RemoveTip))]
+    [NotifyCanExecuteChangedFor(nameof(RemoveCommand))]
+    public partial bool IsBusy { get; set; }
+
     public bool HasFolder => Directory.Exists(Install.Folder);
 
     /// <summary>Not while something else works on its files, nor when there's no telling its files from the engine's own.</summary>
-    public bool CanRemove => Install.CanRemove && !isBusy && !IsRemoving;
+    public bool CanRemove => Install.CanRemove && !IsBusy && !IsRemoving;
 
     public string? RemoveTip =>
         !Install.CanRemove ? Strings.CantTellPluginFiles
-        : isBusy || IsRemoving ? Strings.PluginBusy
+        : IsBusy || IsRemoving ? Strings.PluginBusy
         : null;
 
     [RelayCommand]
