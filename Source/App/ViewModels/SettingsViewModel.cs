@@ -39,6 +39,8 @@ public partial class SettingsViewModel : ViewModelBase
 {
     private readonly MainViewModel _owner;
     private readonly EGLLauncherSettings _egl;
+    private readonly string _automaticEngineRoot;
+    private readonly string _automaticVault;
     private int _summaryRequest;
 
     public SettingsViewModel(MainViewModel owner, EGLLauncherSettings egl)
@@ -49,6 +51,8 @@ public partial class SettingsViewModel : ViewModelBase
         var automatic = new AppSettings();
         var engineRoot = automatic.ResolveEngineInstallRoot(egl);
         var vault = automatic.ResolveVaultCache(egl);
+        _automaticEngineRoot = engineRoot.Path;
+        _automaticVault = vault.Path;
         EngineRootPlaceholder = Localized.Format(Strings.AutomaticPath, engineRoot.Path);
         EngineRootHint = Describe(engineRoot.Source, Strings.EngineRootPurpose);
         VaultPlaceholder = Localized.Format(Strings.AutomaticPath, vault.Path);
@@ -137,6 +141,30 @@ public partial class SettingsViewModel : ViewModelBase
     {
         if (await PickAsync(Strings.PickVaultFolder, VaultCacheDirectory) is { } picked)
             VaultCacheDirectory = picked;
+    }
+
+    [RelayCommand]
+    private Task ShowEngineRootFolderAsync() => ShowFolderAsync(Normalize(EngineInstallRoot) ?? _automaticEngineRoot);
+
+    [RelayCommand]
+    private Task ShowVaultFolderAsync() => ShowFolderAsync(Normalize(VaultCacheDirectory) ?? _automaticVault);
+
+    /// <summary>Opens the folder typed in a field, or the automatic one, in File Explorer; one that isn't there is said so instead.</summary>
+    private async Task ShowFolderAsync(string folder)
+    {
+        if (!Path.IsPathFullyQualified(folder))
+        {
+            Error = Localized.Format(Strings.NotFullPath, folder);
+            return;
+        }
+        // Off the UI thread: a typed network path can take a while to answer. Only a folder is opened, never a file.
+        if (!await Task.Run(() => Directory.Exists(folder)))
+        {
+            Error = Localized.Format(Strings.FolderNotThereYet, folder);
+            return;
+        }
+        Error = null;
+        _owner.OpenURL(folder);
     }
 
     [RelayCommand]

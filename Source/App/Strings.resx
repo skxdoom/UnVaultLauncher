@@ -1031,7 +1031,7 @@
     <comment>{0}: a folder, or several separated by commas.</comment>
   </data>
   <data name="EngineRootPurpose" xml:space="preserve">
-    <value>New engines go into a subfolder here, e.g. UE_5.8.</value>
+    <value>New engines go into a subfolder here.</value>
     <comment>UE_5.8 is a folder name and stays as it is.</comment>
   </data>
   <data name="LeaveEmptyEGLInstallFolder" xml:space="preserve">
@@ -1077,6 +1077,10 @@
   <data name="NotFullPath" xml:space="preserve">
     <value>"{0}" isn't a full folder path (like E:\Epic Games).</value>
     <comment>{0}: what was typed.</comment>
+  </data>
+  <data name="FolderNotThereYet" xml:space="preserve">
+    <value>{0} doesn't exist yet.</value>
+    <comment>{0}: a folder path.</comment>
   </data>
   <data name="SettingsSaveFailed" xml:space="preserve">
     <value>Couldn't save settings: {0}</value>

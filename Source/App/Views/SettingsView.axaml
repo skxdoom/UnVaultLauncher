@@ -14,16 +14,18 @@
             <ScrollViewer Grid.Row="1">
                 <StackPanel Margin="24,0">
                     <TextBlock Text="{x:Static s:Strings.SectionEngineInstallFolder}" Classes="section" />
-                    <Grid ColumnDefinitions="*,Auto">
+                    <Grid ColumnDefinitions="*,Auto,Auto">
                         <TextBox Text="{Binding EngineInstallRoot}" PlaceholderText="{Binding EngineRootPlaceholder}" />
                         <Button Grid.Column="1" Content="{x:Static s:Strings.Browse}" Margin="8,0,0,0" Command="{Binding BrowseEngineRootCommand}" />
+                        <Button Grid.Column="2" Content="{x:Static s:Strings.ShowInFolder}" Margin="8,0,0,0" Command="{Binding ShowEngineRootFolderCommand}" />
                     </Grid>
                     <TextBlock Text="{Binding EngineRootHint}" Classes="muted small" TextWrapping="Wrap" Margin="0,6,0,0" />
 
                     <TextBlock Text="{x:Static s:Strings.SectionVaultCacheFolder}" Classes="section" />
-                    <Grid ColumnDefinitions="*,Auto">
+                    <Grid ColumnDefinitions="*,Auto,Auto">
                         <TextBox Text="{Binding VaultCacheDirectory}" PlaceholderText="{Binding VaultPlaceholder}" />
                         <Button Grid.Column="1" Content="{x:Static s:Strings.Browse}" Margin="8,0,0,0" Command="{Binding BrowseVaultCacheCommand}" />
+                        <Button Grid.Column="2" Content="{x:Static s:Strings.ShowInFolder}" Margin="8,0,0,0" Command="{Binding ShowVaultFolderCommand}" />
                     </Grid>
                     <TextBlock Text="{Binding VaultSummary}" Classes="muted small" TextWrapping="Wrap" Margin="0,6,0,0" />
 

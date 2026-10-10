@@ -391,6 +391,19 @@ public class ScreenshotTests
         Save(window, "settings-automatic.png");
     }
 
+    /// <summary>Show in Folder opens a folder only when there is one; otherwise the dialog says why.</summary>
+    [AvaloniaFact]
+    public async Task Show_in_Folder_says_when_there_is_no_folder_to_show()
+    {
+        var settings = new SettingsViewModel(SampleMainViewModel(), Core.EGL.EGLLauncherSettings.Empty) { EngineInstallRoot = @"Z:\Fictional\Engines" };
+        await settings.ShowEngineRootFolderCommand.ExecuteAsync(null);
+        Assert.Equal(@"Z:\Fictional\Engines doesn't exist yet.", settings.Error);
+
+        settings.VaultCacheDirectory = "VaultCache";
+        await settings.ShowVaultFolderCommand.ExecuteAsync(null);
+        Assert.Equal(@"""VaultCache"" isn't a full folder path (like E:\Epic Games).", settings.Error);
+    }
+
     [Theory]
     [InlineData("UE_5.6,UE_5.7,UE_5.8", "5.6–5.8")]
     [InlineData("UE_5.7,UE_5.8", "5.7, 5.8")] // two in a row read better listed
