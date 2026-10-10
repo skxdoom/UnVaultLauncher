@@ -353,10 +353,11 @@ public partial class MainViewModel : ViewModelBase
         }
         FabLibraryCache.Delete();
         OwnedEnginesCache.Delete();
-        if (Interaction is not null)
-            await Interaction.ForgetSignInAsync();
+        bool forgotten = Interaction is null || await Interaction.ForgetSignInAsync();
 
         UpdateAccount();
+        if (!forgotten)
+            Notice = Strings.SignInBrowserNotCleared;
         await RefreshAfterAccountChangeAsync();
     }
 

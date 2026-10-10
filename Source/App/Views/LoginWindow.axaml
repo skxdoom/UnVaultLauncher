@@ -7,15 +7,25 @@
         WindowStartupLocation="CenterOwner"
         Background="{StaticResource WindowBackgroundBrush}">
 
-    <Grid>
+    <Grid RowDefinitions="Auto,*">
+        <!-- The site the page comes from, as a browser's address bar shows it; the embedded browser sits below. -->
+        <Border x:Name="AddressBar" IsVisible="False" Height="32" Padding="12,0"
+                Background="{StaticResource HeaderBackgroundBrush}" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="0,0,0,1">
+            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                <Path x:Name="LockIcon" Data="M3,6 V4 A3,3 0 0 1 9,4 V6 M1.5,6 H10.5 V13 H1.5 Z" VerticalAlignment="Center"
+                      Stroke="{StaticResource MutedTextBrush}" StrokeThickness="1.4" StrokeJoin="Round" />
+                <TextBlock x:Name="AddressText" VerticalAlignment="Center" />
+            </StackPanel>
+        </Border>
+
         <!-- Shown until the embedded browser covers the window. -->
-        <StackPanel x:Name="LoadingPanel" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="12">
+        <StackPanel x:Name="LoadingPanel" Grid.RowSpan="2" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="12">
             <ProgressBar IsIndeterminate="True" Width="200" />
-            <TextBlock Text="{x:Static s:Strings.OpeningSignInPage}" Classes="muted" HorizontalAlignment="Center" />
+            <TextBlock x:Name="LoadingText" Text="{x:Static s:Strings.OpeningSignInPage}" Classes="muted" HorizontalAlignment="Center" />
         </StackPanel>
 
         <!-- Fallback without WebView2: sign in in the normal browser and paste the result. -->
-        <StackPanel x:Name="FallbackPanel" IsVisible="False" Margin="28" Spacing="14" VerticalAlignment="Center">
+        <StackPanel x:Name="FallbackPanel" Grid.RowSpan="2" IsVisible="False" Margin="28" Spacing="14" VerticalAlignment="Center">
             <TextBlock Text="{x:Static s:Strings.SignInWithBrowser}" FontSize="20" FontWeight="SemiBold" />
             <TextBlock x:Name="FallbackReason" Classes="muted small" TextWrapping="Wrap" />
             <TextBlock TextWrapping="Wrap"

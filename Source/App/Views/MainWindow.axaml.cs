@@ -84,7 +84,7 @@ public partial class MainWindow : Window, IUserInteraction
 
     public Task<string?> SignInAsync() => new LoginWindow().ShowAndWaitAsync(this);
 
-    public Task ForgetSignInAsync() => SignInBrowser.ClearAsync();
+    public Task<bool> ForgetSignInAsync() => SignInBrowser.ClearAsync();
 
     public async Task<string?> PickFolderAsync(string title, string? startPath)
     {

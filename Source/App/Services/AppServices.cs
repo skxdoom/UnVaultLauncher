@@ -29,8 +29,8 @@ public interface IUserInteraction
     /// <summary>Lets the user sign in to Epic; returns the authorization code, or null if they gave up.</summary>
     Task<string?> SignInAsync();
 
-    /// <summary>Clears the sign-in browser's cookies so the next sign-in can use another account.</summary>
-    Task ForgetSignInAsync();
+    /// <summary>Clears the sign-in browser's cookies so the next sign-in can use another account. Returns whether they're gone.</summary>
+    Task<bool> ForgetSignInAsync();
 
     Task<string?> PickFolderAsync(string title, string? startPath);
 

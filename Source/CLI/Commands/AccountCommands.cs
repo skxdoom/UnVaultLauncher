@@ -75,7 +75,7 @@ internal sealed class LogoutCommand : EpicCommand<NoSettings>
         AnsiConsole.MarkupLine("Logged out; the saved session was removed.");
         // The app's sign-in browser would otherwise sign in to the same Epic account again without asking.
         if (!await SignInBrowser.ClearAsync())
-            AnsiConsole.MarkupLine($"[yellow]Couldn't clear the app's sign-in browser data while the app is using it:[/] {Markup.Escape(SignInBrowser.DataDirectory)}");
+            AnsiConsole.MarkupLine($"[yellow]Couldn't clear the app's sign-in browser data while the app is using it[/] ({Markup.Escape(SignInBrowser.DataDirectory)}); the app clears it when it next starts.");
         return 0;
     }
 }

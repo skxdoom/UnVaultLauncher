@@ -5,6 +5,7 @@ using Avalonia.Threading;
 using UnVault.App.Services;
 using UnVault.App.ViewModels;
 using UnVault.App.Views;
+using UnVault.Core.Epic;
 
 namespace UnVault.App;
 
@@ -25,6 +26,7 @@ public partial class App : Application
             viewModel.Interaction = window;
             desktop.MainWindow = window;
             HandleUnexpectedErrors(viewModel);
+            _ = Task.Run(SignInBrowser.ClearPendingAsync); // a sign-out that couldn't delete the sign-in browser's data
             _ = viewModel.StartAsync();
         }
 

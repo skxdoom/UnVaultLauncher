@@ -199,6 +199,9 @@
   <data name="OpeningSignInPage" xml:space="preserve">
     <value>Opening Epic's sign-in page…</value>
   </data>
+  <data name="SigningIn" xml:space="preserve">
+    <value>Signing in…</value>
+  </data>
   <data name="PasteHere" xml:space="preserve">
     <value>Paste here</value>
   </data>
@@ -426,6 +429,9 @@
   <data name="SignInFailed" xml:space="preserve">
     <value>Sign-in failed: {0}</value>
     <comment>{0}: what went wrong, possibly in English.</comment>
+  </data>
+  <data name="SignInBrowserNotCleared" xml:space="preserve">
+    <value>Signed out, but the sign-in window's saved Epic session couldn't be deleted yet. It will be before the next sign-in, or when UnVault Launcher next starts.</value>
   </data>
   <data name="NoEngineVersionsListed" xml:space="preserve">
     <value>Epic didn't list any engine versions for your account. Try Refresh.</value>
