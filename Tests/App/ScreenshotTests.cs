@@ -787,7 +787,7 @@ public class ScreenshotTests
                 File.WriteAllBytes(picture, ThumbnailCacheTests.TinyPNG);
             else
                 File.Delete(picture);
-            entry.Thumbnail = "local://" + picture;
+            entry.StoredThumbnail = "local://" + picture;
             return entry;
         }
 

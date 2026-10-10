@@ -19,7 +19,10 @@ public sealed class VaultEntry
     [JsonPropertyName("version")] public string Version { get; set; } = "";
     [JsonPropertyName("build")] public string Build { get; set; } = "";
     [JsonPropertyName("size")] public long Size { get; set; }
-    [JsonPropertyName("thumbnail")] public string? Thumbnail { get; set; }
+
+    /// <summary>The preview picture as vault.json has it: a web link, or EGL's local:// and a file in the download. Show <see cref="Thumbnail"/>.</summary>
+    [JsonPropertyName("thumbnail")] public string? StoredThumbnail { get; set; }
+
     [JsonPropertyName("categories")] public string? Categories { get; set; }
 
     // Fields EGL writes; kept so entries we write look like EGL's own.
@@ -39,6 +42,37 @@ public sealed class VaultEntry
 
     /// <summary>Complete when EGL or we finished it: the manifest is written last, after all files.</summary>
     [JsonIgnore] public bool IsComplete => File.Exists(ManifestPath) && System.IO.Directory.Exists(DataDirectory);
+
+    private const string LocalScheme = "local://";
+
+    /// <summary>
+    /// The preview picture to show. A local:// one is only read from this entry's own folder: elsewhere, such as on
+    /// another computer on the network, Windows would connect to that computer and send it your sign-in. EGL writes the
+    /// folder it downloaded to, so for a moved or copied cache the picture is looked up where the entry is now.
+    /// </summary>
+    [JsonIgnore]
+    public string? Thumbnail
+    {
+        get
+        {
+            if (StoredThumbnail is not { } link || !link.StartsWith(LocalScheme, StringComparison.OrdinalIgnoreCase))
+                return StoredThumbnail;
+            try
+            {
+                string file = link[LocalScheme.Length..];
+                if (Directory.Length == 0 || !Path.IsPathFullyQualified(file))
+                    return null;
+                if (StoredPath is { } downloadedTo && Path.IsPathFullyQualified(downloadedTo) && ContainedPath.IsInside(downloadedTo, file))
+                    file = Path.Join(Directory, Path.GetRelativePath(downloadedTo, file));
+                file = Path.GetFullPath(file);
+                return ContainedPath.IsInside(Path.GetFullPath(Directory), file) ? LocalScheme + file : null;
+            }
+            catch (ArgumentException)
+            {
+                return null; // not a usable path, such as one with a null character in it
+            }
+        }
+    }
 }
 
 public sealed record VaultSummary(int Count, long TotalBytes);

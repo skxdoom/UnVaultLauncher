@@ -161,7 +161,8 @@ public partial class FabItemViewModel : ViewModelBase
     {
         if (++_viewers > 1 || _thumbnailURL is null)
             return;
-        var use = _thumbnailUse = _owner.Owner.Services.Thumbnails.Get(_thumbnailURL, Key); // by item: Fab rotates the link
+        // By item, as Fab rotates the link; its upload date tells a creator's new picture from a rotated one.
+        var use = _thumbnailUse = _owner.Owner.Services.Thumbnails.Get(_thumbnailURL, Key, Library?.ThumbnailImage?.UploadedDate);
         try
         {
             var bitmap = await use.Picture;

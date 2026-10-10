@@ -31,10 +31,16 @@ public sealed class FabLibraryItem
     [JsonPropertyName("categories")] public List<FabCategory>? Categories { get; set; }
     [JsonPropertyName("images")] public List<FabImage>? Images { get; set; }
 
-    /// <summary>A small preview image: the narrowest one at least 300 px wide (or the widest if all are smaller).</summary>
+    /// <summary>
+    /// A small preview image: the narrowest one at least 300 px wide (or the widest if all are smaller). Web pictures
+    /// only: a local:// link would have the app read whatever file the server named.
+    /// </summary>
     [JsonIgnore]
-    public string? ThumbnailURL =>
-        (Images ?? []).Where(i => !string.IsNullOrEmpty(i.URL)).OrderBy(i => i.Width >= 300 ? i.Width : int.MaxValue - i.Width).FirstOrDefault()?.URL;
+    public FabImage? ThumbnailImage =>
+        (Images ?? []).Where(i => i.URL?.StartsWith("https://", StringComparison.OrdinalIgnoreCase) == true) // JSON can give a null
+            .OrderBy(i => i.Width >= 300 ? i.Width : int.MaxValue - i.Width).FirstOrDefault();
+
+    [JsonIgnore] public string? ThumbnailURL => ThumbnailImage?.URL;
 
     /// <summary>One downloadable artifact per supported engine version (e.g. MyPlugin_5.4, MyPlugin_5.5).</summary>
     [JsonPropertyName("projectVersions")] public List<FabProjectVersion>? ProjectVersions { get; set; }

@@ -310,11 +310,11 @@
     <value>{0:N0} items have updates on Fab</value>
   </data>
   <data name="InstalledCheckingEpic_One" xml:space="preserve">
-    <value>{0:N0} installed  ·  checking Epic for versions and updates…</value>
+    <value>{0:N0} installed  ·  Checking Epic for versions and updates…</value>
     <comment>{0}: engines found on this PC.</comment>
   </data>
   <data name="InstalledCheckingEpic_Other" xml:space="preserve">
-    <value>{0:N0} installed  ·  checking Epic for versions and updates…</value>
+    <value>{0:N0} installed  ·  Checking Epic for versions and updates…</value>
   </data>
   <data name="ModifyDoneAdded_One" xml:space="preserve">
     <value>Done: added {0:N0} file.</value>

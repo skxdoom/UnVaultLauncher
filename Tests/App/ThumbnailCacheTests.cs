@@ -1,4 +1,7 @@
+using System.Buffers.Binary;
+using System.IO.Compression;
 using System.Net;
+using System.Text;
 using Avalonia.Headless.XUnit;
 using UnVault.App.Services;
 
@@ -111,6 +114,84 @@ public sealed class ThumbnailCacheTests : IDisposable
     public async Task Unusable_thumbnails_give_a_placeholder_instead_of_an_exception(string url) =>
         Assert.Null(await NewCache().Get(url).Picture);
 
+    [AvaloniaFact]
+    public async Task Pictures_are_only_fetched_over_https()
+    {
+        var server = new FakePictureServer();
+        Assert.Null(await NewCache(server).Get("http://media.fab.com/image_previews/gallery_images/a/one.jpg").Picture);
+        Assert.Empty(server.Requests);
+    }
+
+    /// <summary>A server sending more than any preview picture is cut off, whether or not it says how much it sends.</summary>
+    [AvaloniaTheory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task A_download_bigger_than_any_preview_is_cut_off(bool saysHowBig)
+    {
+        var server = new FakePictureServer { SaysHowBig = saysHowBig };
+        const string url = "https://example.com/picture.png";
+
+        var fits = new ThumbnailCache(new HttpClient(server), _folder) { MaxDownloadBytes = TinyPNG.Length };
+        Assert.NotNull(await fits.Get(url, "fits").Picture);
+        var tooBig = new ThumbnailCache(new HttpClient(server), _folder) { MaxDownloadBytes = TinyPNG.Length - 1 };
+        Assert.Null(await tooBig.Get(url, "too big").Picture);
+    }
+
+    /// <summary>Decoding can need the whole picture in memory, so the size a header claims is checked first.</summary>
+    [AvaloniaFact]
+    public async Task A_picture_claiming_a_huge_size_is_left_as_a_placeholder()
+    {
+        string folder = Directory.CreateDirectory(Path.Combine(_folder, "Download")).FullName;
+        string huge = Path.Combine(folder, "Huge.png"), small = Path.Combine(folder, "Small.png");
+        await File.WriteAllBytesAsync(huge, BlackAndWhitePNG(side: ThumbnailCache.MaxSide + 4000, rows: 1));
+        await File.WriteAllBytesAsync(small, BlackAndWhitePNG(side: 64, rows: 64));
+
+        var cache = NewCache();
+        Assert.NotNull(await cache.Get("local://" + small).Picture); // the same kind of file, sized like a preview
+        Assert.Null(await cache.Get("local://" + huge).Picture);
+    }
+
+    /// <summary>A square PNG with the first <paramref name="rows"/> rows of pixels; its header may claim more than the file holds.</summary>
+    private static byte[] BlackAndWhitePNG(int side, int rows)
+    {
+        var png = new MemoryStream();
+        png.Write([0x89, (byte)'P', (byte)'N', (byte)'G', 0x0D, 0x0A, 0x1A, 0x0A]);
+        var header = new byte[13];
+        BinaryPrimitives.WriteInt32BigEndian(header, side);
+        BinaryPrimitives.WriteInt32BigEndian(header.AsSpan(4), side);
+        header[8] = 1; // bits per pixel; the rest (greyscale, no interlacing) are zeros
+        Chunk("IHDR", header);
+        var pixels = new MemoryStream();
+        using (var zlib = new ZLibStream(pixels, CompressionLevel.Fastest, leaveOpen: true))
+            zlib.Write(new byte[rows * (1 + (side + 7) / 8)]); // each row: a filter byte, then the pixels
+        Chunk("IDAT", pixels.ToArray());
+        Chunk("IEND", []);
+        return png.ToArray();
+
+        void Chunk(string type, byte[] data)
+        {
+            byte[] typed = [.. Encoding.ASCII.GetBytes(type), .. data];
+            var number = new byte[4];
+            BinaryPrimitives.WriteInt32BigEndian(number, data.Length);
+            png.Write(number);
+            png.Write(typed);
+            BinaryPrimitives.WriteUInt32BigEndian(number, CRC32(typed));
+            png.Write(number);
+        }
+    }
+
+    private static uint CRC32(byte[] data)
+    {
+        uint crc = 0xFFFFFFFF;
+        foreach (byte b in data)
+        {
+            crc ^= b;
+            for (int bit = 0; bit < 8; bit++)
+                crc = (crc & 1) != 0 ? 0xEDB88320 ^ (crc >> 1) : crc >> 1;
+        }
+        return ~crc;
+    }
+
     /// <summary>A decoded picture is native memory the GC doesn't see, so the cache frees the ones no tile shows itself.</summary>
     [AvaloniaFact]
     public async Task Pictures_no_tile_shows_are_kept_for_scrolling_back_then_freed()
@@ -157,6 +238,41 @@ public sealed class ThumbnailCacheTests : IDisposable
         Assert.DoesNotContain(server.Requests, r => r.EndsWith("/7.jpg", StringComparison.Ordinal));
     }
 
+    /// <summary>
+    /// Fab gives each picture's upload date: one uploaded after ours was saved is the creator's new picture, fetched even
+    /// while the old one is on screen; an older one Fab swaps in changes nothing.
+    /// </summary>
+    [AvaloniaFact]
+    public async Task A_picture_the_creator_changed_is_fetched_again()
+    {
+        var server = new FakePictureServer();
+        var longAgo = DateTimeOffset.UtcNow - TimeSpan.FromDays(10);
+        Assert.NotNull(await NewCache(server).Get("https://media.fab.com/image_previews/a/one.jpg", "fab:item", longAgo).Picture);
+        string kept = Directory.GetFiles(Path.Combine(_folder, "items")).Single();
+        File.SetLastWriteTimeUtc(kept, DateTime.UtcNow - TimeSpan.FromDays(2)); // saved two days ago
+
+        // Next start: the picture comes from disk, and a tile shows it.
+        var cache = NewCache(server);
+        var shown = cache.Get("https://media.fab.com/image_previews/a/one.jpg", "fab:item", longAgo);
+        var old = await shown.Picture;
+        Assert.Single(server.Requests);
+
+        // The library is refreshed: the creator uploaded a new picture yesterday.
+        var yesterday = DateTimeOffset.UtcNow - TimeSpan.FromDays(1);
+        var changed = await cache.Get("https://media.fab.com/image_previews/a/new.jpg", "fab:item", yesterday).Picture;
+        Assert.NotNull(changed);
+        Assert.NotSame(old, changed);
+        Assert.Equal(2, server.Requests.Count);
+        Assert.EndsWith("/new.jpg", server.Requests[^1], StringComparison.Ordinal);
+
+        // The old one is freed once its tile is gone; the new one stays, whatever older picture Fab names next.
+        cache.Release(shown);
+        Assert.ThrowsAny<Exception>(() => old!.PixelSize);
+        Assert.Same(changed, await cache.Get("https://media.fab.com/image_previews/a/two.jpg", "fab:item", longAgo).Picture);
+        Assert.Same(changed, await cache.Get("https://media.fab.com/image_previews/a/new.jpg", "fab:item", yesterday).Picture);
+        Assert.Equal(2, server.Requests.Count);
+    }
+
     private static async Task WaitUntil(Func<bool> condition)
     {
         for (int i = 0; i < 100 && !condition(); i++)
@@ -169,12 +285,18 @@ public sealed class ThumbnailCacheTests : IDisposable
         public List<string> Requests { get; } = [];
         public TimeSpan Delay { get; init; }
 
+        /// <summary>False sends no length, as a server streaming its answer does.</summary>
+        public bool SaysHowBig { get; init; } = true;
+
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             lock (Requests)
                 Requests.Add(request.RequestUri!.AbsoluteUri);
             await Task.Delay(Delay, cancellationToken);
-            return new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(TinyPNG) };
+            var content = new ByteArrayContent(TinyPNG);
+            if (!SaysHowBig)
+                content.Headers.ContentLength = null;
+            return new HttpResponseMessage(HttpStatusCode.OK) { Content = content };
         }
     }
 }

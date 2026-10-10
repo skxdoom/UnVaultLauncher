@@ -44,7 +44,7 @@ public static class FabWorkflow
             Title = artifact.Item.Title,
             Build = manifest.Meta.BuildVersion,
             Version = EngineLibrary.WithoutBranch(manifest.Meta.BuildVersion),
-            Thumbnail = artifact.Item.ThumbnailURL,
+            StoredThumbnail = artifact.Item.ThumbnailURL,
             Categories = "|" + string.Join("|", (artifact.Item.Categories ?? []).Select(c => c.Name).Append(KindCategory(FabKinds.FromManifest(manifest)))) + "|",
             Directory = Path.Combine(vaultDirectory, EnginePlugins.ArtifactFolderName(artifact.ArtifactID)),
         };

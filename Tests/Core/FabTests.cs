@@ -83,6 +83,7 @@ public sealed class FabTests : IDisposable
         Assert.Equal(FabItemKind.AssetPack, FabKinds.FromLibrary(items[0]));
         Assert.Equal(640, items[0].Images![0].Width);
         Assert.Equal("https://media.fab.com/b.jpg", items[0].ThumbnailURL); // 320 px: the narrowest at least 300 wide
+        Assert.Equal(new DateTimeOffset(2024, 10, 17, 13, 34, 32, TimeSpan.Zero), items[0].ThumbnailImage!.UploadedDate);
         Assert.True(FabKinds.IsEngine(items[1]));
         Assert.Equal(FabItemKind.Plugin, FabKinds.FromLibrary(items[2]));
         Assert.Null(items[2].ThumbnailURL);
@@ -142,15 +143,15 @@ public sealed class FabTests : IDisposable
 
         var merged = EpicAPIClient.MergeDuplicateEntries(
         [
-            Entry("a", "Fabrikam Studio", "old.jpg", new(2024, 10, 18, 0, 0, 0, TimeSpan.Zero), Version("GardenV1", "UE_4.27"), Version("GardenV2", "UE_5.4")),
-            Entry("b", "Contoso Art", "other.jpg", new(2025, 1, 1, 0, 0, 0, TimeSpan.Zero), Version("GardenPack", "UE_5.4")),
-            Entry("a", "Fabrikam Studio", "new.jpg", new(2025, 6, 18, 0, 0, 0, TimeSpan.Zero), Version("GardenV2", "UE_5.4", "UE_5.5"), Version("GardenV3", "UE_5.8")),
+            Entry("a", "Fabrikam Studio", "https://media.fab.com/old.jpg", new(2024, 10, 18, 0, 0, 0, TimeSpan.Zero), Version("GardenV1", "UE_4.27"), Version("GardenV2", "UE_5.4")),
+            Entry("b", "Contoso Art", "https://media.fab.com/other.jpg", new(2025, 1, 1, 0, 0, 0, TimeSpan.Zero), Version("GardenPack", "UE_5.4")),
+            Entry("a", "Fabrikam Studio", "https://media.fab.com/new.jpg", new(2025, 6, 18, 0, 0, 0, TimeSpan.Zero), Version("GardenV2", "UE_5.4", "UE_5.5"), Version("GardenV3", "UE_5.8")),
         ]);
 
         // Same title, different asset: a different product, kept.
         Assert.Equal(["a", "b"], merged.Select(i => i.AssetID));
         var plants = merged[0];
-        Assert.Equal("new.jpg", plants.ThumbnailURL);
+        Assert.Equal("https://media.fab.com/new.jpg", plants.ThumbnailURL);
         Assert.Equal(["GardenV2", "GardenV3", "GardenV1"], plants.ProjectVersions!.Select(v => v.ArtifactID));
         Assert.Equal(["UE_5.4", "UE_5.5"], plants.ProjectVersions![0].EngineVersions!);
     }
@@ -168,6 +169,35 @@ public sealed class FabTests : IDisposable
     [InlineData("|Industrial|projects|", FabItemKind.Project)]
     public void Kind_from_EGL_vault_categories(string categories, FabItemKind expected) =>
         Assert.Equal(expected, FabKinds.FromVault(new VaultEntry { Categories = categories }));
+
+    /// <summary>A picture elsewhere, such as on another computer, would have Windows connect to it and send it your sign-in.</summary>
+    [Theory]
+    [InlineData(@"local://E:\Studio Vault\Garden_5.4\data\Preview.png", @"local://E:\Studio Vault\Garden_5.4\data\Preview.png")]
+    [InlineData(@"local://D:\Old Vault\Garden_5.4\data\Preview.png", @"local://E:\Studio Vault\Garden_5.4\data\Preview.png")] // the cache moved since
+    [InlineData(@"local://\\fileserver\share\Preview.png", null)]
+    [InlineData(@"local://E:\Studio Vault\Garden_5.4\..\Other\Preview.png", null)]
+    [InlineData(@"local://D:\Old Vault\Garden_5.4\..\..\Windows\Preview.png", null)]
+    [InlineData(@"local://C:\Users\Someone\Preview.png", null)]
+    [InlineData(@"local://data\Preview.png", null)]
+    [InlineData("local://E:\\Studio Vault\\Garden_5.4\\data\\\0.png", null)]
+    [InlineData("https://media.fab.com/preview.jpg", "https://media.fab.com/preview.jpg")]
+    public void Vault_pictures_are_only_read_from_the_downloads_own_folder(string stored, string? expected) =>
+        Assert.Equal(expected, new VaultEntry { Directory = @"E:\Studio Vault\Garden_5.4", StoredPath = @"D:\Old Vault\Garden_5.4\", StoredThumbnail = stored }.Thumbnail);
+
+    [Fact]
+    public void Library_pictures_are_web_pictures()
+    {
+        var item = new FabLibraryItem
+        {
+            Images =
+            [
+                new FabImage { URL = @"local://\\fileserver\share\Preview.png", Width = 320 },
+                new FabImage { URL = "http://media.fab.com/plain.jpg", Width = 320 },
+                new FabImage { URL = "https://media.fab.com/large.jpg", Width = 1920 },
+            ],
+        };
+        Assert.Equal("https://media.fab.com/large.jpg", item.ThumbnailURL);
+    }
 
     [Theory]
     [InlineData("5.7.0-48201490", "UE_5.7")]

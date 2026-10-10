@@ -2,6 +2,7 @@ using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
 using Avalonia.Media.Imaging;
+using SkiaSharp;
 using UnVault.Core;
 
 namespace UnVault.App.Services;
@@ -11,8 +12,10 @@ namespace UnVault.App.Services;
 /// (the originals are many times bigger than a tile shows), keeps them on disk per item, decodes off the UI
 /// thread, and holds in memory only the pictures on screen plus the most recently shown others.
 /// Kept per item rather than per link because Fab sends a different gallery picture as "featured" for many items from
-/// one library fetch to the next: keyed by link, every refresh re-downloaded those pictures and left the old files behind. A picture is fetched again after <see cref="MaxAge"/>, so a seller's new
-/// picture shows up eventually, and pictures not used for that long are deleted.
+/// one library fetch to the next: keyed by link, every refresh re-downloaded those pictures and left the old files behind.
+/// Fab gives each picture's upload date, so a picture uploaded after ours was saved (the creator changed it) is fetched
+/// again, while an older one Fab swaps in isn't. Any picture is fetched again after <see cref="MaxAge"/>, and pictures not
+/// used for that long are deleted.
 /// Best effort throughout: a picture that can't be had just leaves the placeholder.
 /// </summary>
 /// <remarks>
@@ -31,8 +34,20 @@ public sealed class ThumbnailCache
 
     public static readonly TimeSpan MaxAge = TimeSpan.FromDays(30);
 
-    /// <summary>EGL's vault.json uses this for pictures inside the download itself, e.g. local://E:\…\data\Preview.png.</summary>
+    /// <summary>
+    /// EGL's vault.json uses this for pictures inside the download itself, e.g. local://E:\…\data\Preview.png. Read as
+    /// given: VaultEntry.Thumbnail only passes ones in the entry's own folder.
+    /// </summary>
     private const string LocalScheme = "local://";
+
+    /// <summary>Far more than any preview picture; a server sending more is cut off rather than let fill memory.</summary>
+    internal long MaxDownloadBytes { get; init; } = 16 * 1024 * 1024;
+
+    /// <summary>
+    /// No preview picture is this big on a side. Decoding can need the whole picture in memory before it's scaled down,
+    /// so a small file claiming a huge one is left as a placeholder.
+    /// </summary>
+    internal const int MaxSide = 8192;
 
     private readonly HttpClient _http;
     private readonly string _folder;
@@ -49,6 +64,10 @@ public sealed class ThumbnailCache
         public string Key { get; } = key;
         public Task<Bitmap?> Loading { get; set; } = Task.FromResult<Bitmap?>(null);
         public Bitmap? Bitmap { get; set; }
+
+        /// <summary>When the picture's file was saved, to tell whether the source has a newer one.</summary>
+        public DateTime SavedUtc { get; set; }
+
         public int Users { get; set; }
         public LinkedListNode<Entry>? UnusedNode { get; set; }
     }
@@ -87,7 +106,8 @@ public sealed class ThumbnailCache
 
     /// <summary>Takes a picture for a tile: from memory, or loaded from disk or the web.</summary>
     /// <param name="key">What the picture belongs to (e.g. the Fab item), so a changing link doesn't mean a new download. Defaults to the link.</param>
-    public Use Get(string url, string? key = null)
+    /// <param name="uploaded">When the source says the picture was uploaded; one uploaded after ours was saved is the creator's new picture.</param>
+    public Use Get(string url, string? key = null, DateTimeOffset? uploaded = null)
     {
         int width = Width;
         string memoryKey = $"{key ?? url}|{width}";
@@ -95,10 +115,15 @@ public sealed class ThumbnailCache
         {
             if (_failed.Contains(memoryKey))
                 return new Use(null, Task.FromResult<Bitmap?>(null));
-            if (!_entries.TryGetValue(memoryKey, out var entry))
+            if (_entries.TryGetValue(memoryKey, out var entry) && entry.Bitmap is not null && IsNewer(uploaded, entry.SavedUtc))
+            {
+                Forget(entry);
+                entry = null;
+            }
+            if (entry is null)
             {
                 _entries[memoryKey] = entry = new Entry(memoryKey);
-                entry.Loading = Task.Run(() => LoadAsync(entry, url, key ?? url, width));
+                entry.Loading = Task.Run(() => LoadAsync(entry, url, key ?? url, width, uploaded));
             }
             if (entry.UnusedNode is not null)
             {
@@ -119,7 +144,30 @@ public sealed class ThumbnailCache
                 return;
             use.Entry = null; // a second release changes nothing
             if (--entry.Users == 0 && entry.Bitmap is not null)
-                KeepUnused(entry);
+            {
+                if (IsCurrent(entry))
+                    KeepUnused(entry);
+                else
+                    entry.Bitmap.Dispose(); // a newer picture replaced it meanwhile
+            }
+        }
+    }
+
+    /// <summary>Whether the picture was uploaded after our copy was saved.</summary>
+    private static bool IsNewer(DateTimeOffset? uploaded, DateTime savedUtc) => uploaded?.UtcDateTime > savedUtc;
+
+    /// <summary>Under the lock: whether this is the picture new tiles get for its key.</summary>
+    private bool IsCurrent(Entry entry) => _entries.TryGetValue(entry.Key, out var current) && current == entry;
+
+    /// <summary>Under the lock: a newer picture takes this one's place. Freed now if no tile shows it, else once the last one gives it back.</summary>
+    private void Forget(Entry entry)
+    {
+        _entries.Remove(entry.Key);
+        if (entry.UnusedNode is not null)
+        {
+            _unused.Remove(entry.UnusedNode);
+            entry.UnusedNode = null;
+            entry.Bitmap?.Dispose();
         }
     }
 
@@ -147,7 +195,8 @@ public sealed class ThumbnailCache
         {
             if (entry.Users > 0)
                 return true;
-            _entries.Remove(entry.Key);
+            if (IsCurrent(entry))
+                _entries.Remove(entry.Key);
             return false;
         }
     }
@@ -163,15 +212,17 @@ public sealed class ThumbnailCache
         _ => uri,
     };
 
-    private async Task<Bitmap?> LoadAsync(Entry entry, string url, string key, int width)
+    private async Task<Bitmap?> LoadAsync(Entry entry, string url, string key, int width, DateTimeOffset? uploaded)
     {
         Bitmap? bitmap = null;
+        DateTime saved = default;
         try
         {
+            // Over https only, so nobody on the network can see or swap the pictures; .NET doesn't follow a redirect to http.
             string? file = url.StartsWith(LocalScheme, StringComparison.OrdinalIgnoreCase)
                 ? url[LocalScheme.Length..]
-                : Uri.TryCreate(url, UriKind.Absolute, out var uri) && (uri.Scheme == Uri.UriSchemeHttps || uri.Scheme == Uri.UriSchemeHttp)
-                    ? await DownloadAsync(uri, key, width, entry)
+                : Uri.TryCreate(url, UriKind.Absolute, out var uri) && uri.Scheme == Uri.UriSchemeHttps
+                    ? await DownloadAsync(uri, key, width, uploaded, entry)
                     : null;
             if (file is not null && File.Exists(file))
             {
@@ -180,8 +231,12 @@ public sealed class ThumbnailCache
                 {
                     if (!StillWanted(entry))
                         return null;
-                    await using var stream = File.OpenRead(file);
-                    bitmap = Bitmap.DecodeToWidth(stream, width);
+                    if (IsPreviewSized(file))
+                    {
+                        saved = File.GetLastWriteTimeUtc(file);
+                        await using var stream = File.OpenRead(file);
+                        bitmap = Bitmap.DecodeToWidth(stream, width);
+                    }
                 }
                 finally
                 {
@@ -196,7 +251,7 @@ public sealed class ThumbnailCache
 
         lock (_lock)
         {
-            if (!_entries.TryGetValue(entry.Key, out var current) || current != entry)
+            if (!IsCurrent(entry))
             {
                 bitmap?.Dispose(); // forgotten meanwhile: nobody can be handed it
                 return null;
@@ -209,6 +264,7 @@ public sealed class ThumbnailCache
             else
             {
                 entry.Bitmap = bitmap;
+                entry.SavedUtc = saved;
                 if (entry.Users == 0)
                     KeepUnused(entry); // its tiles scrolled away while it loaded
             }
@@ -217,10 +273,11 @@ public sealed class ThumbnailCache
     }
 
     /// <returns>The picture's file, or null when no tile wants it any more by the time a download could start.</returns>
-    private async Task<string?> DownloadAsync(Uri uri, string key, int width, Entry entry)
+    private async Task<string?> DownloadAsync(Uri uri, string key, int width, DateTimeOffset? uploaded, Entry entry)
     {
         string file = Path.Combine(ItemsFolder, $"{Convert.ToHexString(SHA1.HashData(Encoding.UTF8.GetBytes(key)))}-{width}.thumb");
-        if (File.Exists(file) && DateTime.UtcNow - File.GetLastWriteTimeUtc(file) < MaxAge)
+        var saved = File.GetLastWriteTimeUtc(file); // long ago for a missing file
+        if (DateTime.UtcNow - saved < MaxAge && !IsNewer(uploaded, saved))
             return file;
 
         await _downloads.WaitAsync();
@@ -232,11 +289,11 @@ public sealed class ThumbnailCache
             byte[] data;
             try
             {
-                data = await _http.GetByteArrayAsync(resized);
+                data = await FetchAsync(resized);
             }
             catch (HttpRequestException) when (resized != uri)
             {
-                data = await _http.GetByteArrayAsync(uri);
+                data = await FetchAsync(uri);
             }
 
             Directory.CreateDirectory(ItemsFolder);
@@ -253,6 +310,35 @@ public sealed class ThumbnailCache
         {
             _downloads.Release();
         }
+    }
+
+    /// <summary>The picture's bytes, up to <see cref="MaxDownloadBytes"/>; a server may send no length, or the wrong one.</summary>
+    private async Task<byte[]> FetchAsync(Uri uri)
+    {
+        // The client's time limit covers a whole request only when it reads the body itself; this one is read here.
+        using var timeout = new CancellationTokenSource(_http.Timeout);
+        using var response = await _http.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, timeout.Token);
+        response.EnsureSuccessStatusCode();
+        if (response.Content.Headers.ContentLength > MaxDownloadBytes)
+            throw new InvalidDataException($"Too big for a preview picture: {uri}");
+
+        await using var body = await response.Content.ReadAsStreamAsync(timeout.Token);
+        using var data = new MemoryStream();
+        byte[] buffer = new byte[81920];
+        for (int read; (read = await body.ReadAsync(buffer, timeout.Token)) > 0;)
+        {
+            if (data.Length + read > MaxDownloadBytes)
+                throw new InvalidDataException($"Too big for a preview picture: {uri}");
+            data.Write(buffer, 0, read);
+        }
+        return data.ToArray();
+    }
+
+    /// <summary>Whether the picture's header gives a size a preview can have; reads only the header.</summary>
+    private static bool IsPreviewSized(string file)
+    {
+        using var codec = SKCodec.Create(file);
+        return codec is { Info: { Width: <= MaxSide, Height: <= MaxSide } };
     }
 
     /// <summary>Drops pictures not refreshed for <see cref="MaxAge"/>, and the per-link files earlier builds kept directly in the folder.</summary>
