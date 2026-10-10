@@ -84,6 +84,7 @@ public static class FabWorkflow
         RequirePlugin(manifest, artifact.Item.Title);
 
         var plan = InstallPlan.Create(manifest, manifest.Files);
+        PluginInstalls.SaveManifest(engineDirectory, artifact.ArtifactID, source.Downloaded.RawBytes); // first: see SaveManifest
         await installer.InstallAsync(plan, engineDirectory, source.Downloaded.Sources, source.Downloaded.Secrets, status, cancellationToken,
             stateDirectory: PluginInstalls.StateDirectory(engineDirectory, artifact.ArtifactID));
 
@@ -190,6 +191,7 @@ public static class FabWorkflow
         var manifest = Manifest.Parse(raw);
         RequirePlugin(manifest, entry.Title);
 
+        PluginInstalls.SaveManifest(engineDirectory, entry.ArtifactID, raw); // first: see SaveManifest
         await CopyFilesAsync(entry.DataDirectory, engineDirectory, manifest.Files, status, cancellationToken);
         RecordPlugin(engineDirectory, new PluginRecord
         {
@@ -210,18 +212,23 @@ public static class FabWorkflow
     public static InstallCleaner.Result UninstallPlugin(string engineDirectory, string artifactID, string? launcherInstalledPath = null, string? folder = null)
     {
         InstallCleaner.Result result;
-        if (PluginInstalls.Load(engineDirectory, artifactID) is { } installed)
+        if ((PluginInstalls.Load(engineDirectory, artifactID)?.Manifest ?? PluginInstalls.LoadManifest(engineDirectory, artifactID)) is { } ours)
         {
-            // Ours: exactly the files we put there (only plugin files, whatever an older record lists).
-            result = InstallCleaner.DeleteFiles(engineDirectory, installed.Manifest.Files.Where(f => EnginePlugins.IsPluginFile(f.Filename)));
+            // Ours, finished or not: exactly the files we put (or were putting) there; only plugin files, whatever an older
+            // record lists.
+            result = InstallCleaner.DeleteFiles(engineDirectory, ours.Files.Where(f => EnginePlugins.IsPluginFile(f.Filename)));
         }
         else
         {
             // EGL's, or copied in some other way: no file list, but its own folder in Marketplace is the plugin.
             folder ??= EnginePlugins.MarketplaceFolder(engineDirectory, artifactID);
-            if (!EnginePlugins.IsMarketplaceFolder(engineDirectory, folder) || !Directory.Exists(folder))
+            bool started = PluginInstalls.Unfinished(engineDirectory).Contains(artifactID, StringComparer.OrdinalIgnoreCase);
+            if (started && !Directory.Exists(folder))
+                result = default; // an install interrupted before it wrote anything
+            else if (!EnginePlugins.IsMarketplaceFolder(engineDirectory, folder) || !Directory.Exists(folder))
                 throw new InstallException($"{artifactID} isn't in Engine\\Plugins\\Marketplace, so its files can't be told apart from the engine's. Remove it with the Epic Games Launcher.");
-            result = InstallCleaner.DeleteFolder(folder);
+            else
+                result = InstallCleaner.DeleteFolder(folder);
         }
         // Also whatever an interrupted install left there: its resume journal mustn't vouch for files that are gone now.
         PluginInstalls.Delete(engineDirectory, artifactID);

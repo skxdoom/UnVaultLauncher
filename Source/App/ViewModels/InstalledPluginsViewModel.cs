@@ -68,6 +68,7 @@ public partial class InstalledPluginsViewModel(MainViewModel owner, LocalEngine 
         string title = item?.Title ?? descriptor?.FriendlyName ?? plugin.ArtifactID;
         string version = descriptor?.VersionName is { } name ? Localized.Format(Strings.VersionValue, WithoutV(name)) : Strings.VersionUnknown;
         string details = !plugin.CanRemove ? Strings.InstalledByEGL
+            : !plugin.IsComplete ? (size > 0 ? $"{Strings.InstallNotFinished}  ·  {ByteSize.Format(size)}" : Strings.InstallNotFinished)
             : size > 0 ? $"{version}  ·  {ByteSize.Format(size)}"
             : version;
         var install = new FabInstall(engine.AppName, engine.Directory, plugin.ArtifactID, plugin.Source, plugin.Folder, plugin.CanRemove, plugin.BuildVersion);

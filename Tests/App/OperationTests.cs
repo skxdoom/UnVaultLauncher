@@ -7,11 +7,16 @@ using UnVault.Core.Install;
 namespace UnVault.App.Tests;
 
 /// <summary>Two operations never work on the same engine or Library item at once: they'd write the same files.</summary>
-public class OperationTests
+public sealed class OperationTests : IDisposable
 {
-    private static MainViewModel WithEngines()
+    /// <summary>A history of each test's own: a shared one would carry what one test leaves into the next.</summary>
+    private readonly string _history = Path.Combine(Path.GetTempPath(), $"unvault-history-{Guid.NewGuid():N}.json");
+
+    public void Dispose() => File.Delete(_history);
+
+    private MainViewModel WithEngines()
     {
-        var viewModel = new MainViewModel(new AppServices());
+        var viewModel = new MainViewModel(new AppServices(), _history);
         viewModel.Settings.EngineInstallRoot = @"E:\Epic Games"; // set, so nothing asks this PC's Epic Games Launcher
         viewModel.SetEngines(
             [.. new[] { "UE_5.7", "UE_5.6", "UE_5.5" }.Select(app => new LocalEngine(app, $@"E:\Epic Games\{app}", "build", 1, LocalInstallKind.UnVault))],
@@ -150,7 +155,7 @@ public class OperationTests
             Assert.True(repaired);
             Assert.False(entry.HasFollowUp);
 
-            var restarted = new MainViewModel(new AppServices());
+            var restarted = new MainViewModel(new AppServices(), _history);
             Assert.Equal(["Verifying Unreal Engine 5.6"], restarted.History.Select(h => h.Title));
             Assert.False(restarted.History[0].HasFollowUp); // what it would run isn't kept
         }
@@ -158,7 +163,7 @@ public class OperationTests
         {
             viewModel.ClearHistoryCommand.Execute(null);
         }
-        Assert.Empty(new MainViewModel(new AppServices()).History);
+        Assert.Empty(new MainViewModel(new AppServices(), _history).History);
     }
 
     /// <summary>Paused and failed ones stay in progress until resumed, or put in the history by hand.</summary>
@@ -223,6 +228,37 @@ public class OperationTests
         finally
         {
             File.Delete(path);
+        }
+    }
+
+    /// <summary>Nothing resumes after a restart, so closing the app puts what's unfinished into the history, newest on top.</summary>
+    [AvaloniaFact]
+    public async Task Closing_the_app_puts_unfinished_operations_into_the_history()
+    {
+        var viewModel = WithEngines();
+        var paused = new Started(viewModel, "Downloading Garden Pack", [], "fab:garden").Start();
+        await paused.PauseAsync();
+        var failed = new OperationViewModel(viewModel, "Installing Greybox Tools into UE 5.7",
+            (_, _, _) => throw new InstallException("The disk is full."), ["UE_5.7"]);
+        viewModel.Operations.Insert(0, failed);
+        await failed.RunAsync();
+        var running = new Started(viewModel, "Installing Unreal Engine 5.8", ["UE_5.8"]).Start();
+        try
+        {
+            viewModel.RecordUnfinished();
+
+            Assert.Empty(viewModel.Operations);
+            Assert.Equal(
+                [("Installing Unreal Engine 5.8", OperationOutcome.Paused, "Stopped before it finished."),
+                 ("Installing Greybox Tools into UE 5.7", OperationOutcome.Failed, "The disk is full."),
+                 ("Downloading Garden Pack", OperationOutcome.Paused, "Stopped before it finished.")],
+                viewModel.History.Select(h => (h.Title, h.Record.Outcome, h.Message)));
+            Assert.Equal(3, new MainViewModel(new AppServices(), _history).History.Count); // saved
+        }
+        finally
+        {
+            await running.PauseAsync();
+            viewModel.ClearHistoryCommand.Execute(null);
         }
     }
 }

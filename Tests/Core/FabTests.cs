@@ -293,6 +293,69 @@ public sealed class FabTests : IDisposable
         Assert.False(Directory.Exists(plugin.Folder));
     }
 
+    /// <summary>
+    /// An install stopped part way leaves part of the plugin's files: not a plugin yet, so not listed as one (nor as a folder
+    /// someone copied in), and Install continues it. Removing it takes exactly the files it was putting there.
+    /// </summary>
+    [Fact]
+    public async Task An_install_that_did_not_finish_is_not_installed_yet()
+    {
+        var entry = MakeVaultEntry("StreetLights_4.27", "Street Lights", "4.27.0-1+++UE5+Dev-Marketplace-Windows",
+            ("Engine/Plugins/Marketplace/StreetLights/Binaries/Win64/StreetLights.dll", 50),
+            ("Engine/Plugins/Marketplace/StreetLights/StreetLights.uplugin", 20));
+        string engine = Directory.CreateDirectory(Path.Combine(_dir, "UE_4.27")).FullName;
+        string uplugin = Path.Combine(entry.DataDirectory, "Engine/Plugins/Marketplace/StreetLights/StreetLights.uplugin");
+        File.Move(uplugin, uplugin + ".aside"); // the copy stops at the second file
+        await Assert.ThrowsAsync<InstallException>(() => FabWorkflow.InstallPluginFromVaultAsync(entry, engine, new InstallStatus(), default, LauncherInstalled));
+        string folder = Path.Combine(EnginePlugins.MarketplaceDirectory(engine), "StreetLights");
+        Assert.True(File.Exists(Path.Combine(folder, @"Binaries\Win64\StreetLights.dll")));
+
+        var unfinished = Assert.Single(EnginePlugins.Find(engine, EGL.EGLInstallations.ReadLauncherInstalledFrom(LauncherInstalled)));
+        Assert.Equal(("StreetLights_4.27", PluginSource.UnVault, false, folder), (unfinished.ArtifactID, unfinished.Source, unfinished.IsComplete, unfinished.Folder));
+
+        // Installing again finishes it.
+        File.Move(uplugin + ".aside", uplugin);
+        await FabWorkflow.InstallPluginFromVaultAsync(entry, engine, new InstallStatus(), default, LauncherInstalled);
+        Assert.True(Assert.Single(EnginePlugins.Find(engine, [])).IsComplete);
+    }
+
+    [Fact]
+    public void An_unfinished_install_is_removed_with_what_it_wrote()
+    {
+        string engine = Directory.CreateDirectory(Path.Combine(_dir, "UE_5.6")).FullName;
+        string folder = Directory.CreateDirectory(Path.Combine(EnginePlugins.MarketplaceDirectory(engine), "StreetLights")).FullName;
+        File.WriteAllBytes(Path.Combine(folder, "StreetLights.dll"), new byte[50]);
+        File.WriteAllBytes(Path.Combine(folder, "Notes.txt"), new byte[5]); // not the plugin's: stays
+        PluginInstalls.SaveManifest(engine, "StreetLights_5.6", Encoding.UTF8.GetBytes(JSONManifestBuilder.Build("StreetLights_5.6", "5.6.0-1",
+            ("Engine/Plugins/Marketplace/StreetLights/StreetLights.dll", 50), ("Engine/Plugins/Marketplace/StreetLights/StreetLights.uplugin", 20))));
+
+        var removed = FabWorkflow.UninstallPlugin(engine, "StreetLights_5.6", LauncherInstalled, folder);
+
+        Assert.Equal(1, removed.FilesDeleted);
+        Assert.Equal(["Notes.txt"], Directory.EnumerateFiles(folder).Select(Path.GetFileName));
+        Assert.Empty(PluginInstalls.Unfinished(engine));
+    }
+
+    /// <summary>Installs from before the file list was kept first leave only their resume journal: the folder is the artifact's.</summary>
+    [Fact]
+    public void An_unfinished_install_known_by_its_journal_alone_is_found_and_removed()
+    {
+        string engine = Directory.CreateDirectory(Path.Combine(_dir, "UE_5.6")).FullName;
+        File.WriteAllText(Path.Combine(Directory.CreateDirectory(PluginInstalls.StateDirectory(engine, "GetRelief0a1b2c3dV7")).FullName, "0123456789ABCDEF.journal"), "");
+        string folder = Directory.CreateDirectory(Path.Combine(EnginePlugins.MarketplaceDirectory(engine), "GetRelief0a1b2c3dV7", "Content")).Parent!.FullName;
+        File.WriteAllBytes(Path.Combine(folder, @"Content\Rock.uasset"), new byte[30]);
+        File.WriteAllText(Path.Combine(Directory.CreateDirectory(PluginInstalls.StateDirectory(engine, "Waiting0a1b2c3dV2")).FullName, "FEDCBA9876543210.journal"), "");
+
+        var plugins = EnginePlugins.Find(engine, []);
+
+        Assert.Equal([("GetRelief0a1b2c3dV7", false, true), ("Waiting0a1b2c3dV2", false, false)],
+            plugins.Select(p => (p.ArtifactID, p.IsComplete, Directory.Exists(p.Folder))).OrderBy(p => p.ArtifactID));
+        foreach (var plugin in plugins)
+            FabWorkflow.UninstallPlugin(engine, plugin.ArtifactID, LauncherInstalled, plugin.Folder); // the second wrote nothing yet
+        Assert.False(Directory.Exists(folder));
+        Assert.Empty(PluginInstalls.Unfinished(engine));
+    }
+
     /// <summary>EGL keeps each install's file list, which says where its plugins really are; only a folder in Marketplace is removed whole.</summary>
     [Fact]
     public void Plugins_EGL_installed_are_found_where_their_file_lists_put_them()

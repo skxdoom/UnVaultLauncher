@@ -353,7 +353,8 @@ public partial class FabLibraryViewModel : ViewModelBase
         {
             try
             {
-                installs.AddRange(EnginePlugins.Find(engine.Directory, launcherInstalled, eglItems)
+                // An install that didn't finish isn't installed: Install is offered again, and continues it.
+                installs.AddRange(EnginePlugins.Find(engine.Directory, launcherInstalled, eglItems).Where(p => p.IsComplete)
                     .Select(p => new FabInstall(engine.AppName, engine.Directory, p.ArtifactID, p.Source, p.Folder, p.CanRemove, p.BuildVersion)));
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)

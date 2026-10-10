@@ -177,14 +177,13 @@ public partial class OperationViewModel : ViewModelBase
     [RelayCommand(CanExecute = nameof(CanRetry))]
     private void MoveToHistory()
     {
-        if (IsPaused)
-            Message = Strings.StoppedBeforeFinished;
-        _owner.MoveToHistory(this, IsFailed ? OperationOutcome.Failed : OperationOutcome.Paused);
+        if (IsFailed)
+            _owner.MoveToHistory(this, OperationOutcome.Failed);
+        else
+            _owner.MoveToHistory(this, OperationOutcome.Paused, Strings.StoppedBeforeFinished);
         _work = null; // a failed install kept its manifest for retry
         MemoryRelief.Release();
     }
-
-    private bool IsPaused => State == OperationState.Cancelled;
 
     private void UpdateProgress()
     {

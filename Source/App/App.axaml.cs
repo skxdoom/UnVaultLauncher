@@ -28,6 +28,7 @@ public partial class App : Application
             SystemTray.Add(this, desktop, window, viewModel);
             Program.Instance?.WhenStartedAgain(() => Dispatcher.UIThread.Post(window.ShowAgain));
             HandleUnexpectedErrors(viewModel);
+            desktop.Exit += (_, _) => viewModel.RecordUnfinished();
             _ = Task.Run(SignInBrowser.ClearPendingAsync); // a sign-out that couldn't delete the sign-in browser's data
             _ = viewModel.StartAsync();
         }

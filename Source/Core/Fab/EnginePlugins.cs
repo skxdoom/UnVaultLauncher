@@ -25,7 +25,8 @@ public enum PluginSource
 /// telling their files from the engine's own.
 /// </param>
 /// <param name="BuildVersion">The installed build (as Fab lists it), when UnVault or EGL recorded one; unknown for a bare folder.</param>
-public sealed record EnginePlugin(string ArtifactID, PluginSource Source, string Folder, bool CanRemove, string? BuildVersion = null);
+/// <param name="IsComplete">False for an install UnVault started and didn't finish: part of the files, not yet a plugin.</param>
+public sealed record EnginePlugin(string ArtifactID, PluginSource Source, string Folder, bool CanRemove, string? BuildVersion = null, bool IsComplete = true);
 
 /// <summary>What a plugin's .uplugin file says about it: the name and version its author gave it, and its icon if it has one.</summary>
 public sealed record PluginDescriptor(string? FriendlyName, string? VersionName, string? IconPath = null);
@@ -82,6 +83,13 @@ public static class EnginePlugins
                 // Without a file list, only a plugin's own folder in Marketplace can be told apart from the engine's files.
                 found[entry.AppName] = new EnginePlugin(entry.AppName, PluginSource.EGL, folder, CanRemove: Directory.Exists(folder) && IsMarketplaceFolder(engineDir, folder), entry.AppVersion);
             }
+        }
+
+        // Installs that started and didn't finish: their folder holds part of the files, which isn't a plugin yet.
+        foreach (string artifactID in PluginInstalls.Unfinished(engineDir).Where(id => !found.ContainsKey(id)))
+        {
+            string folder = FolderOf(engineDir, () => PluginInstalls.LoadManifest(engineDir, artifactID)) ?? SafeFolder(engineDir, artifactID);
+            found[artifactID] = new EnginePlugin(artifactID, PluginSource.UnVault, folder, CanRemove: true, IsComplete: false);
         }
 
         // Plugin folders none of the above accounts for. A plugin's folder can be named otherwise than its artifact.

@@ -26,6 +26,38 @@ public static class PluginInstalls
     private static string RecordPath(string engineDir, string artifactID) => Path.Combine(StateDirectory(engineDir, artifactID), "plugin.json");
     private static string ManifestPath(string engineDir, string artifactID) => Path.Combine(StateDirectory(engineDir, artifactID), "install.manifest");
 
+    /// <summary>
+    /// The file list alone, kept as an install starts: an interrupted one then still says which folder and files are its,
+    /// to continue or remove. The record follows once every file is there.
+    /// </summary>
+    public static void SaveManifest(string engineDir, string artifactID, byte[] rawManifest)
+    {
+        Directory.CreateDirectory(StateDirectory(engineDir, artifactID));
+        AtomicFile.WriteAllBytes(ManifestPath(engineDir, artifactID), rawManifest);
+    }
+
+    /// <summary>The kept file list, also of an install that didn't finish; null when there's none.</summary>
+    public static Manifest? LoadManifest(string engineDir, string artifactID)
+    {
+        string path = ManifestPath(engineDir, artifactID);
+        return File.Exists(path) ? Manifest.Load(path) : null;
+    }
+
+    /// <summary>
+    /// Installs into this engine that started but didn't finish: their state is there (the file list, or the resume
+    /// journal of an install from before the list was kept first), but no record. Installing again continues them.
+    /// </summary>
+    public static IReadOnlyList<string> Unfinished(string engineDir)
+    {
+        string root = Path.Combine(InstallJournal.DirectoryFor(engineDir), "plugins");
+        if (!Directory.Exists(root))
+            return [];
+        return [.. Directory.EnumerateDirectories(root)
+            .Where(folder => !File.Exists(Path.Combine(folder, "plugin.json"))
+                             && (File.Exists(Path.Combine(folder, "install.manifest")) || Directory.EnumerateFiles(folder, "*.journal").Any()))
+            .Select(folder => Path.GetFileName(folder))];
+    }
+
     public static void Save(string engineDir, PluginRecord record, byte[] rawManifest)
     {
         string directory = StateDirectory(engineDir, record.ArtifactID);

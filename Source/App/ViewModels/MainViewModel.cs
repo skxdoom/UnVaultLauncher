@@ -21,9 +21,11 @@ public partial class MainViewModel : ViewModelBase
     private IReadOnlyList<LocalEngine> _local = [];
     private IReadOnlyList<EpicAsset> _owned = [];
 
-    public MainViewModel(AppServices services)
+    /// <param name="historyPath">Where the Downloads history is kept; tests give each a file of its own.</param>
+    public MainViewModel(AppServices services, string? historyPath = null)
     {
         Services = services;
+        _historyPath = historyPath ?? OperationHistory.FilePath;
         Fab = new FabLibraryViewModel(this);
         Fab.PropertyChanged += (_, e) =>
         {
@@ -38,12 +40,13 @@ public partial class MainViewModel : ViewModelBase
             OnPropertyChanged(nameof(HasOperations));
             OnPropertyChanged(nameof(HasRunningOperations));
         };
-        History = [.. OperationHistory.Load().Select(record => new HistoryEntryViewModel(record))];
+        History = [.. OperationHistory.Load(_historyPath).Select(record => new HistoryEntryViewModel(record))];
         History.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasHistory));
         UpdateAccount();
     }
 
     public AppServices Services { get; }
+    private readonly string _historyPath;
     public IUserInteraction? Interaction { get; set; }
 
     /// <summary>Shared with the CLI: %LOCALAPPDATA%\UnVaultLauncher\settings.json.</summary>
@@ -96,24 +99,40 @@ public partial class MainViewModel : ViewModelBase
     public bool HasHistory => History.Count > 0;
 
     /// <summary>Done, or paused or failed and given up on: the operation leaves the list for the history.</summary>
-    internal void MoveToHistory(OperationViewModel operation, OperationOutcome outcome)
+    /// <param name="message">What the history says about it; what the operation last said, if not given.</param>
+    internal void MoveToHistory(OperationViewModel operation, OperationOutcome outcome, string? message = null)
     {
         Operations.Remove(operation);
-        History.Insert(0, new HistoryEntryViewModel(new OperationRecord(operation.Title, outcome, operation.Message, DateTimeOffset.Now))
+        History.Insert(0, new HistoryEntryViewModel(new OperationRecord(operation.Title, outcome, message ?? operation.Message, DateTimeOffset.Now))
         {
             FollowUpText = operation.FollowUp?.Text,
             FollowUp = operation.FollowUp?.Action,
         });
         while (History.Count > OperationHistory.MaxEntries)
             History.RemoveAt(History.Count - 1);
-        OperationHistory.Save(History.Select(h => h.Record));
+        OperationHistory.Save(History.Select(h => h.Record), _historyPath);
+    }
+
+    /// <summary>
+    /// The app is closing: whatever is still running, paused or failed goes into the history, as nothing resumes it after a
+    /// restart (installing it again continues it). The oldest first, so the newest ends up on top.
+    /// </summary>
+    internal void RecordUnfinished()
+    {
+        foreach (var operation in Operations.Reverse().ToList())
+        {
+            if (operation.IsFailed)
+                MoveToHistory(operation, OperationOutcome.Failed);
+            else
+                MoveToHistory(operation, OperationOutcome.Paused, Strings.StoppedBeforeFinished);
+        }
     }
 
     [RelayCommand]
     private void ClearHistory()
     {
         History.Clear();
-        OperationHistory.Save([]);
+        OperationHistory.Save([], _historyPath);
     }
 
     [ObservableProperty]

@@ -649,6 +649,10 @@ public class ScreenshotTests
         foreach (string name in new[] { "Cloud Layers", "Decal Painter", "Foliage Wind", "Mesh Tools", "Road Splines", "Water Edges" })
             Plugin(name.Replace(" ", "") + "0a1b2c3dV1", $$"""{ "FriendlyName": "{{name}}", "VersionName": "1.0" }""");
 
+        // An install that was stopped part way: its resume journal, and part of its files.
+        File.WriteAllText(Path.Combine(Directory.CreateDirectory(PluginInstalls.StateDirectory(engineDir, "Unfinished7e6d5cV2")).FullName, "0123456789ABCDEF.journal"), "");
+        Plugin("Unfinished7e6d5cV2", null);
+
         var viewModel = SampleMainViewModel();
         SampleFab(viewModel);
         var engine = new LocalEngine("UE_5.7", engineDir, "5.7.4-51494982+++UE5+Release-5.7-Windows", 26 * GB, LocalInstallKind.UnVault);
@@ -663,6 +667,7 @@ public class ScreenshotTests
             dialog.Plugins.Where(p => p.Title is "Greybox Tools" or "Loose4f3e2d1c0bV1" or "Terrain Brushes")
                 .Select(p => (p.Title, p.Details.Split("  ·  ")[0], p.HasIcon)));
         Assert.All(dialog.Plugins, p => Assert.True(p.RemoveCommand.CanExecute(null)));
+        Assert.StartsWith("Not finished installing", dialog.Plugins.Single(p => p.Title == "Unfinished7e6d5cV2").Details);
         Save(window, "installed-plugins.png");
 
         // While an operation works on the engine nothing is removed, and once it ends Remove is back, list still open.
@@ -888,7 +893,9 @@ public class ScreenshotTests
 
     private static MainViewModel SampleMainViewModel()
     {
-        var viewModel = new MainViewModel(new AppServices()) { IsSignedIn = true, DisplayName = "Test Account" };
+        // A history file nobody else writes: what other tests leave in the shared one isn't the screenshots' to show.
+        string history = Path.Combine(Path.GetTempPath(), $"unvault-history-{Guid.NewGuid():N}.json");
+        var viewModel = new MainViewModel(new AppServices(), history) { IsSignedIn = true, DisplayName = "Test Account" };
         viewModel.Settings.EngineInstallRoot = @"E:\Epic Games"; // set, so nothing asks this PC's Epic Games Launcher
         viewModel.SetEngines(
         [

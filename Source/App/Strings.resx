@@ -681,6 +681,10 @@
   <data name="StoppedRetry" xml:space="preserve">
     <value>Resume continues where it left off.</value>
   </data>
+  <data name="InstallNotFinished" xml:space="preserve">
+    <value>Not finished installing</value>
+    <comment>In Installed Plugins, for a plugin whose install was paused or interrupted: installing it again continues it.</comment>
+  </data>
   <data name="StoppedBeforeFinished" xml:space="preserve">
     <value>Stopped before it finished.</value>
     <comment>In the Downloads history, for an operation that was paused and not resumed.</comment>
