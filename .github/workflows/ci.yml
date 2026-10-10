@@ -1,4 +1,5 @@
 # Builds and tests every push to main and every pull request, so a broken build or a failing test shows on the commit.
+# Actions are pinned to a commit, not a tag: a tag can be moved to other code, a commit can't. Dependabot proposes updates.
 name: CI
 
 on:
@@ -21,11 +22,11 @@ jobs:
       contents: read
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
-      - uses: actions/setup-dotnet@v6
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           global-json-file: global.json
 

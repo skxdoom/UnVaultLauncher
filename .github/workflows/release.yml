@@ -2,7 +2,9 @@
 # Release: set <Version> in Directory.Build.props, push, then Actions > Release > Run workflow.
 # The draft keeps the commit it was built from; GitHub tags that commit (e.g. v0.3.1) when the release is published.
 # Building runs other people's code (NuGet packages, the tests), so that job can only read the repository. The two small
-# jobs around it run none of that: one checks the version, the other signs the exe and makes the draft.
+# jobs around it run none of that: one checks the version, the other records where the exe was built (a signed
+# attestation; the exe itself isn't code-signed) and makes the draft.
+# Actions are pinned to a commit, not a tag: a tag can be moved to other code, a commit can't. Dependabot proposes updates.
 name: Release
 
 on:
@@ -29,7 +31,7 @@ jobs:
       tag: ${{ steps.version.outputs.tag }}
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
           sparse-checkout: Directory.Build.props
@@ -64,11 +66,11 @@ jobs:
       contents: read
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
-      - uses: actions/setup-dotnet@v6
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           global-json-file: global.json
 
@@ -83,7 +85,7 @@ jobs:
           # A missing profile is only a warning to dotnet publish; it then builds something else, without the exe.
           if (-not (Test-Path UnVaultLauncher.exe)) { throw "The publish didn't produce UnVaultLauncher.exe; see its warnings above." }
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: UnVaultLauncher
           path: UnVaultLauncher.exe
@@ -104,7 +106,7 @@ jobs:
       TAG: ${{ needs.version.outputs.tag }}
 
     steps:
-      - uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: UnVaultLauncher
 
@@ -123,7 +125,7 @@ jobs:
           "@ | Out-File notes.md -Encoding utf8
 
       # A signed record that the exe came from this workflow and commit (checked with gh attestation verify).
-      - uses: actions/attest@v4
+      - uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
           subject-path: UnVaultLauncher.exe
 

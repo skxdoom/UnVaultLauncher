@@ -1,0 +1,14 @@
+# Proposes updates to the GitHub Actions the workflows use. They're pinned to commits, so this is how they get newer:
+# one pull request a month for all of them, which CI builds and tests and a person merges.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    # A release must be a week old before it's proposed, so one found to be malicious is usually pulled by then.
+    cooldown:
+      default-days: 7
+    groups:
+      actions:
+        patterns: ["*"]
