@@ -178,6 +178,18 @@
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="Foreground" Value="{StaticResource MutedTextBrush}" />
+            <!-- Room on the right for a tab's dot -->
+            <Setter Property="Padding" Value="18,5,18,6" />
+        </Style>
+        <!-- A tab's dot (Library updates, Downloads running): past the text's right edge, in the padding. It takes no room
+             in the layout, so the tabs keep their places when it shows. -->
+        <Style Selector="Ellipse.tabDot">
+            <Setter Property="Width" Value="7" />
+            <Setter Property="Height" Value="7" />
+            <Setter Property="Fill" Value="{StaticResource WarningBrush}" />
+            <Setter Property="HorizontalAlignment" Value="Right" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="0,0,-12,0" />
         </Style>
         <Style Selector="Button.tab.active /template/ ContentPresenter#PART_ContentPresenter, Button.tab.active:pointerover /template/ ContentPresenter#PART_ContentPresenter">
             <Setter Property="Background" Value="#2A2A2A" />

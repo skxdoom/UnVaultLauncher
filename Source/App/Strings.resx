@@ -96,6 +96,10 @@
     <value>Library</value>
     <comment>Tab with the account's Fab library, and its title.</comment>
   </data>
+  <data name="Downloads" xml:space="preserve">
+    <value>Downloads</value>
+    <comment>Tab with downloads, installs and other operations, running and finished, and its title.</comment>
+  </data>
   <data name="NoEngines" xml:space="preserve">
     <value>No engines installed yet.</value>
   </data>
@@ -224,6 +228,32 @@
   </data>
 
   <!-- Downloads and other work in progress -->
+  <data name="Resume" xml:space="preserve">
+    <value>Resume</value>
+    <comment>Continues a paused download, install or other operation.</comment>
+  </data>
+  <data name="Pause" xml:space="preserve">
+    <value>Pause</value>
+  </data>
+  <data name="MoveToHistory" xml:space="preserve">
+    <value>Move to History</value>
+    <comment>Tooltip of the ✕ beside a paused or failed operation: it won't be resumed.</comment>
+  </data>
+  <data name="SectionInProgress" xml:space="preserve">
+    <value>IN PROGRESS</value>
+  </data>
+  <data name="SectionHistory" xml:space="preserve">
+    <value>HISTORY</value>
+  </data>
+  <data name="ClearHistory" xml:space="preserve">
+    <value>Clear History</value>
+  </data>
+  <data name="NothingInProgress" xml:space="preserve">
+    <value>Nothing is downloading or installing right now.</value>
+  </data>
+  <data name="NoHistory" xml:space="preserve">
+    <value>Finished downloads, installs and other operations are listed here.</value>
+  </data>
   <data name="Retry" xml:space="preserve">
     <value>Retry</value>
   </data>
@@ -649,7 +679,11 @@
     <value>Failed</value>
   </data>
   <data name="StoppedRetry" xml:space="preserve">
-    <value>Stopped. Retry continues where it left off.</value>
+    <value>Resume continues where it left off.</value>
+  </data>
+  <data name="StoppedBeforeFinished" xml:space="preserve">
+    <value>Stopped before it finished.</value>
+    <comment>In the Downloads history, for an operation that was paused and not resumed.</comment>
   </data>
   <data name="WaitsForOther" xml:space="preserve">
     <value>"{0}" is working on the same files. Retry once it's done.</value>

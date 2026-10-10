@@ -280,10 +280,16 @@ public class ScreenshotTests
     }
 
     [AvaloniaFact]
-    public void Engines_page_with_downloads()
+    public void Downloads_tab()
     {
         var viewModel = SampleMainViewModel();
-        viewModel.Operations.Add(new OperationViewModel(viewModel, "Installing Unreal Engine 5.8.3", (_, _, _) => Task.FromResult<string?>(null), ["UE_5.8"])
+        var window = Show(viewModel);
+        var tabs = window.GetVisualDescendants().OfType<Button>().Where(b => b.Classes.Contains("tab")).ToList();
+        var placesBefore = tabs.Select(t => t.Bounds).ToList();
+
+        // In progress: running, paused and failed, each with what can be done about it.
+        static Task<string?> Nothing(OperationViewModel _, Core.Install.InstallStatus __, CancellationToken ___) => Task.FromResult<string?>(null);
+        viewModel.Operations.Add(new OperationViewModel(viewModel, "Installing Unreal Engine 5.8.3", Nothing, ["UE_5.8"])
         {
             Phase = "Downloading",
             IsIndeterminate = false,
@@ -291,16 +297,39 @@ public class ScreenshotTests
             ProgressText = "4.1 GB of 10.9 GB  ·  61 204/206 255 files",
             SpeedText = "48.2 MB/s  ·  2m left",
         });
+        viewModel.Operations.Add(new OperationViewModel(viewModel, "Downloading Garden Pack for UE 5.7", Nothing, fabItemKey: "fab:garden")
+            { State = OperationState.Cancelled, Phase = "Paused", Message = "Resume continues where it left off." });
+        viewModel.Operations.Add(new OperationViewModel(viewModel, "Installing Greybox Tools into UE 5.6", Nothing, ["UE_5.6"])
+            { State = OperationState.Failed, Phase = "Failed", Message = "Couldn't reach Epic: the request timed out." });
         Assert.DoesNotContain("UE_5.8", viewModel.InstallableEngines.Select(e => e.AppName)); // already being installed
-        viewModel.Operations.Add(new OperationViewModel(viewModel, "Verifying Unreal Engine 5.6.1", (_, _, _) => Task.FromResult<string?>(null))
-        {
-            State = OperationState.Completed,
-            Phase = "Done",
-            Message = "3 of 198 112 files are missing or damaged.",
-            FollowUpText = "Repair",
-        });
+        Assert.Equal(["Resume", "Retry"], viewModel.Operations.Where(o => o.CanRetry).Select(o => o.RetryText));
 
-        Save(Show(viewModel), "engines-downloads.png");
+        // History: newest first; a next step an operation offered is there for this session.
+        HistoryEntryViewModel Entry(string title, OperationOutcome outcome, string message, TimeSpan ago) =>
+            new(new OperationRecord(title, outcome, message, DateTimeOffset.Now - ago));
+        viewModel.History.Add(Entry("Verifying Unreal Engine 5.6.1", OperationOutcome.Completed, "3 of 198 112 files are missing or damaged.", TimeSpan.FromMinutes(5)));
+        viewModel.History[0].FollowUpText = "Repair";
+        viewModel.History.Add(Entry("Adding Street Vehicles to Hillside", OperationOutcome.Completed, @"Added 214 files to D:\Projects\Hillside.", TimeSpan.FromHours(2)));
+        viewModel.History.Add(Entry("Changing components of Unreal Engine 5.7", OperationOutcome.Paused, "Stopped before it finished.", TimeSpan.FromDays(1)));
+        viewModel.History.Add(Entry("Removing Edge Smoother from UE 5.5", OperationOutcome.Failed, "Access to the path is denied.", TimeSpan.FromDays(3)));
+
+        viewModel.ShowDownloadsCommand.Execute(null);
+        Dispatcher.UIThread.RunJobs();
+
+        // The tab's dot shows while something runs, and no tab moves or grows for it.
+        Assert.True(viewModel.HasRunningOperations);
+        var dot = tabs[2].GetVisualDescendants().OfType<Avalonia.Controls.Shapes.Ellipse>().Single();
+        Assert.True(dot.IsVisible);
+        Assert.Equal(placesBefore, tabs.Select(t => t.Bounds));
+
+        // The ✕ beside Resume: a square as tall as Resume, inside the card.
+        var paused = window.GetVisualDescendants().OfType<OperationView>().Single(v => v.DataContext is OperationViewModel { State: OperationState.Cancelled });
+        var buttons = paused.GetVisualDescendants().OfType<Button>().Where(b => b.IsEffectivelyVisible).ToList();
+        var resume = buttons.Single(b => b.Content as string == "Resume");
+        var moveToHistory = buttons.Single(b => AutomationProperties.GetName(b) == "Move to History");
+        Assert.Equal(resume.Bounds.Height, moveToHistory.Bounds.Height);
+        Assert.Equal(moveToHistory.Bounds.Height, moveToHistory.Bounds.Width);
+        Save(window, "downloads.png");
     }
 
     [AvaloniaFact]

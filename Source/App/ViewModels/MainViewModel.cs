@@ -14,6 +14,8 @@ namespace UnVault.App.ViewModels;
 
 public enum UpdateCheckState { NotChecked, Checking, UpToDate, Available, Failed }
 
+public enum AppTab { Engines, Library, Downloads }
+
 public partial class MainViewModel : ViewModelBase
 {
     private IReadOnlyList<LocalEngine> _local = [];
@@ -31,7 +33,13 @@ public partial class MainViewModel : ViewModelBase
                 OnPropertyChanged(nameof(LibraryUpdatesText));
             }
         };
-        Operations.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasOperations));
+        Operations.CollectionChanged += (_, _) =>
+        {
+            OnPropertyChanged(nameof(HasOperations));
+            OnPropertyChanged(nameof(HasRunningOperations));
+        };
+        History = [.. OperationHistory.Load().Select(record => new HistoryEntryViewModel(record))];
+        History.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasHistory));
         UpdateAccount();
     }
 
@@ -59,16 +67,54 @@ public partial class MainViewModel : ViewModelBase
     public IReadOnlyList<LocalEngine> LocalEngines => _local;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsEnginesTab))]
-    public partial bool IsFabTab { get; set; }
+    [NotifyPropertyChangedFor(nameof(IsEnginesTab), nameof(IsFabTab), nameof(IsDownloadsTab))]
+    public partial AppTab Tab { get; set; }
 
-    public bool IsEnginesTab => !IsFabTab;
+    public bool IsEnginesTab => Tab == AppTab.Engines;
+
+    /// <summary>The Library tab; turning it off shows Engines.</summary>
+    public bool IsFabTab
+    {
+        get => Tab == AppTab.Library;
+        set => Tab = value ? AppTab.Library : AppTab.Engines;
+    }
+
+    public bool IsDownloadsTab => Tab == AppTab.Downloads;
 
     /// <summary>The engine cards: every engine on this PC, newest first.</summary>
     public ObservableCollection<EngineCardViewModel> Engines { get; } = [];
 
+    /// <summary>Running operations, and paused or failed ones waiting to be resumed or put in the history.</summary>
     public ObservableCollection<OperationViewModel> Operations { get; } = [];
     public bool HasOperations => Operations.Count > 0;
+
+    /// <summary>Shows the dot on the Downloads tab.</summary>
+    public bool HasRunningOperations => Operations.Any(o => o.IsRunning);
+
+    /// <summary>Finished operations, newest first: this session's and earlier ones'.</summary>
+    public ObservableCollection<HistoryEntryViewModel> History { get; }
+    public bool HasHistory => History.Count > 0;
+
+    /// <summary>Done, or paused or failed and given up on: the operation leaves the list for the history.</summary>
+    internal void MoveToHistory(OperationViewModel operation, OperationOutcome outcome)
+    {
+        Operations.Remove(operation);
+        History.Insert(0, new HistoryEntryViewModel(new OperationRecord(operation.Title, outcome, operation.Message, DateTimeOffset.Now))
+        {
+            FollowUpText = operation.FollowUp?.Text,
+            FollowUp = operation.FollowUp?.Action,
+        });
+        while (History.Count > OperationHistory.MaxEntries)
+            History.RemoveAt(History.Count - 1);
+        OperationHistory.Save(History.Select(h => h.Record));
+    }
+
+    [RelayCommand]
+    private void ClearHistory()
+    {
+        History.Clear();
+        OperationHistory.Save([]);
+    }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsSignedOut))]
@@ -206,7 +252,10 @@ public partial class MainViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void ShowEngines() => IsFabTab = false;
+    private void ShowEngines() => Tab = AppTab.Engines;
+
+    [RelayCommand]
+    private void ShowDownloads() => Tab = AppTab.Downloads;
 
     /// <summary>
     /// Switches at once; the first visit starts loading the library, which shows its own progress. Not awaited: an async
@@ -215,7 +264,7 @@ public partial class MainViewModel : ViewModelBase
     [RelayCommand]
     private void ShowFab()
     {
-        IsFabTab = true;
+        Tab = AppTab.Library;
         if (!Fab.HasLoaded && !Fab.IsLoading)
             _ = Fab.LoadAsync(includeLibrary: true);
     }
@@ -330,6 +379,7 @@ public partial class MainViewModel : ViewModelBase
             engine.IsBusy = IsEngineBusy(engine.AppName);
         Fab.UpdateBusy();
         (Dialog as IShowsBusy)?.UpdateBusy();
+        OnPropertyChanged(nameof(HasRunningOperations));
     }
 
     /// <summary>An operation is working on the Library item.</summary>

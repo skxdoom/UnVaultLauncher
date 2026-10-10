@@ -11,7 +11,7 @@
         Background="{StaticResource WindowBackgroundBrush}">
 
     <Grid>
-        <Grid RowDefinitions="Auto,Auto,*,Auto">
+        <Grid RowDefinitions="Auto,Auto,*">
 
             <!-- Header -->
             <Border Grid.Row="0" Background="{StaticResource HeaderBackgroundBrush}" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="0,0,0,1" Padding="20,10">
@@ -34,12 +34,20 @@
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                             <Button Content="{x:Static s:Strings.Engines}" Classes="tab" Classes.active="{Binding IsEnginesTab}" Command="{Binding ShowEnginesCommand}" />
+                            <!-- A tab's dot sits in the button's padding, outside the layout, so no tab moves when one shows -->
                             <Button Classes="tab" Classes.active="{Binding IsFabTab}" Command="{Binding ShowFabCommand}" ToolTip.Tip="{Binding LibraryUpdatesText}">
-                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                <Panel>
                                     <TextBlock Text="{x:Static s:Strings.Library}" />
                                     <!-- Something in the library has a newer build on Fab -->
-                                    <Ellipse Width="7" Height="7" Fill="{StaticResource WarningBrush}" VerticalAlignment="Center" IsVisible="{Binding HasLibraryUpdates}" />
-                                </StackPanel>
+                                    <Ellipse Classes="tabDot" IsVisible="{Binding HasLibraryUpdates}" />
+                                </Panel>
+                            </Button>
+                            <Button Classes="tab" Classes.active="{Binding IsDownloadsTab}" Command="{Binding ShowDownloadsCommand}">
+                                <Panel>
+                                    <TextBlock Text="{x:Static s:Strings.Downloads}" />
+                                    <!-- Something is downloading, installing or otherwise working -->
+                                    <Ellipse Classes="tabDot" IsVisible="{Binding HasRunningOperations}" />
+                                </Panel>
                             </Button>
                         </StackPanel>
                     </StackPanel>
@@ -149,24 +157,56 @@
             <!-- Fab -->
             <views:FabLibraryView Grid.Row="2" DataContext="{Binding Fab}" IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext).IsFabTab}" />
 
-            <!-- Downloads / running jobs -->
-            <Border Grid.Row="3" IsVisible="{Binding HasOperations}" Background="{StaticResource HeaderBackgroundBrush}"
-                    BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="0,1,0,0" Padding="20,12" MaxHeight="260">
-                <ScrollViewer>
+            <!-- Downloads: what's running or waiting to be resumed, then what's finished -->
+            <ScrollViewer Grid.Row="2" IsVisible="{Binding IsDownloadsTab}">
+                <StackPanel Margin="24,20,24,24" MaxWidth="{StaticResource PageMaxWidth}">
+                    <Grid Classes="title">
+                        <TextBlock Text="{x:Static s:Strings.Downloads}" FontSize="22" FontWeight="SemiBold" VerticalAlignment="Center" />
+                    </Grid>
+
+                    <TextBlock Text="{x:Static s:Strings.SectionInProgress}" Classes="section" />
+                    <TextBlock Text="{x:Static s:Strings.NothingInProgress}" Classes="muted" IsVisible="{Binding !HasOperations}" />
                     <ItemsControl ItemsSource="{Binding Operations}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
-                                <StackPanel Spacing="12" />
+                                <StackPanel Spacing="10" />
                             </ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate DataType="vm:OperationViewModel">
-                                <views:OperationView />
+                                <Border Classes="card">
+                                    <views:OperationView />
+                                </Border>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
-                </ScrollViewer>
-            </Border>
+
+                    <Grid ColumnDefinitions="*,Auto" Margin="0,12,0,0">
+                        <TextBlock Text="{x:Static s:Strings.SectionHistory}" Classes="section" VerticalAlignment="Bottom" />
+                        <Button Grid.Column="1" Classes="subtle" Content="{x:Static s:Strings.ClearHistory}" Command="{Binding ClearHistoryCommand}"
+                                IsVisible="{Binding HasHistory}" VerticalAlignment="Bottom" Margin="0,0,0,2" />
+                    </Grid>
+                    <TextBlock Text="{x:Static s:Strings.NoHistory}" Classes="muted" IsVisible="{Binding !HasHistory}" />
+                    <!-- One panel of rows rather than a card each: the history can be long -->
+                    <Border Background="{StaticResource CardBackgroundBrush}" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1"
+                            CornerRadius="10" IsVisible="{Binding HasHistory}">
+                        <ItemsControl ItemsSource="{Binding History}">
+                            <ItemsControl.Styles>
+                                <Style Selector="ContentPresenter:nth-child(n+2) > Border.historyRow">
+                                    <Setter Property="BorderThickness" Value="0,1,0,0" />
+                                </Style>
+                            </ItemsControl.Styles>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="vm:HistoryEntryViewModel">
+                                    <Border Classes="historyRow" BorderBrush="{StaticResource CardBorderBrush}" Padding="16,12">
+                                        <views:HistoryEntryView />
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
         </Grid>
 
         <!-- Dialog overlay: Tab goes round the dialog's controls and never reaches the page behind -->

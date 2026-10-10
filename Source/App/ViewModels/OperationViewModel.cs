@@ -64,19 +64,24 @@ public partial class OperationViewModel : ViewModelBase
     [ObservableProperty] public partial string? Message { get; set; }
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsRunning), nameof(IsFinished), nameof(CanRetry), nameof(IsFailed), nameof(IsSucceededOrCancelled))]
-    [NotifyCanExecuteChangedFor(nameof(CancelCommand), nameof(RetryCommand))]
+    [NotifyPropertyChangedFor(nameof(IsRunning), nameof(IsFinished), nameof(CanRetry), nameof(IsFailed), nameof(IsSucceededOrCancelled), nameof(RetryText))]
+    [NotifyCanExecuteChangedFor(nameof(PauseCommand), nameof(RetryCommand), nameof(MoveToHistoryCommand))]
     public partial OperationState State { get; set; }
 
-    /// <summary>An optional next step offered when done, e.g. "Repair 3 files" after a verify.</summary>
-    [ObservableProperty] public partial string? FollowUpText { get; set; }
-    public Action? FollowUp { get; set; }
+    /// <summary>A next step offered when done, e.g. Repair after a verify; it goes with the operation into the history.</summary>
+    public (string Text, Action Action)? FollowUp => Volatile.Read(ref _followUp) is { } offered ? (offered.Text, offered.Action) : null;
+
+    private sealed record Offer(string Text, Action Action);
+    private Offer? _followUp;
 
     public bool IsRunning => State == OperationState.Running;
     public bool IsFinished => !IsRunning;
     public bool IsFailed => State == OperationState.Failed;
     public bool IsSucceededOrCancelled => State is OperationState.Completed or OperationState.Cancelled;
     public bool CanRetry => State is OperationState.Failed or OperationState.Cancelled;
+
+    /// <summary>Paused ones continue where they stopped; failed ones try again (which also continues, where it can).</summary>
+    public string RetryText => IsFailed ? Strings.Retry : Strings.Resume;
 
     public void SetPhase(string phase) => Dispatcher.UIThread.Post(() => Phase = phase);
 
@@ -94,11 +99,7 @@ public partial class OperationViewModel : ViewModelBase
     }
 
     /// <summary>Offers a next step once done (callable from the work's background thread).</summary>
-    public void OfferFollowUp(string text, Action action) => Dispatcher.UIThread.Post(() =>
-    {
-        FollowUp = action;
-        FollowUpText = text;
-    });
+    public void OfferFollowUp(string text, Action action) => Volatile.Write(ref _followUp, new Offer(text, action));
 
     public async Task RunAsync()
     {
@@ -122,7 +123,7 @@ public partial class OperationViewModel : ViewModelBase
         _speedClock.Restart();
         State = OperationState.Running;
         Message = null;
-        FollowUpText = null;
+        _followUp = null;
         _owner.UpdateBusy();
         _timer.Start();
 
@@ -159,30 +160,31 @@ public partial class OperationViewModel : ViewModelBase
         }
 
         if (State == OperationState.Completed)
+        {
+            _owner.MoveToHistory(this, OperationOutcome.Completed);
             await _owner.OnOperationCompletedAsync(this);
+        }
     }
 
+    /// <summary>Stops it; Resume continues where it left off.</summary>
     [RelayCommand(CanExecute = nameof(IsRunning))]
-    private void Cancel() => _cancellation?.Cancel();
+    private void Pause() => _cancellation?.Cancel();
 
     [RelayCommand(CanExecute = nameof(CanRetry))]
     private Task RetryAsync() => RunAsync();
 
-    [RelayCommand]
-    private void Dismiss()
+    /// <summary>Paused or failed and not to be resumed: into the history. What it wrote stays; starting it anew continues from there.</summary>
+    [RelayCommand(CanExecute = nameof(CanRetry))]
+    private void MoveToHistory()
     {
-        if (IsRunning)
-            return;
-        _owner.Operations.Remove(this);
-        MemoryRelief.Release(); // a failed install kept its manifest for retry
+        if (IsPaused)
+            Message = Strings.StoppedBeforeFinished;
+        _owner.MoveToHistory(this, IsFailed ? OperationOutcome.Failed : OperationOutcome.Paused);
+        _work = null; // a failed install kept its manifest for retry
+        MemoryRelief.Release();
     }
 
-    [RelayCommand]
-    private void RunFollowUp()
-    {
-        FollowUp?.Invoke();
-        _owner.Operations.Remove(this);
-    }
+    private bool IsPaused => State == OperationState.Cancelled;
 
     private void UpdateProgress()
     {

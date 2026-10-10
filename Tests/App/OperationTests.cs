@@ -48,7 +48,7 @@ public class OperationTests
 
         public async Task PauseAsync()
         {
-            Operation.CancelCommand.Execute(null);
+            Operation.PauseCommand.Execute(null);
             await Run;
         }
     }
@@ -108,7 +108,7 @@ public class OperationTests
         Assert.All(viewModel.Engines, e => Assert.False(e.IsBusy));
     }
 
-    /// <summary>Offered again while paused, a version could be installed twice into the same folder.</summary>
+    /// <summary>Offered again while paused, a version could be installed twice into the same folder; put in the history, it's offered again.</summary>
     [AvaloniaFact]
     public async Task A_paused_install_keeps_its_version_out_of_the_install_list()
     {
@@ -120,7 +120,109 @@ public class OperationTests
         await install.PauseAsync();
         Assert.Empty(viewModel.InstallableEngines); // waiting for Retry
 
-        install.Operation.DismissCommand.Execute(null);
+        install.Operation.MoveToHistoryCommand.Execute(null);
         Assert.Equal(["UE_5.8"], viewModel.InstallableEngines.Select(e => e.AppName));
+    }
+
+    /// <summary>Done ones go into the history at once, with what they said; it's still there after a restart.</summary>
+    [AvaloniaFact]
+    public async Task A_finished_operation_goes_into_the_history_and_stays_there()
+    {
+        var viewModel = WithEngines();
+        bool repaired = false;
+        var verify = new OperationViewModel(viewModel, "Verifying Unreal Engine 5.6", (operation, _, _) =>
+        {
+            operation.OfferFollowUp("Repair", () => repaired = true);
+            return Task.FromResult<string?>("3 of 120 files are missing or damaged.");
+        }, ["UE_5.6"]);
+        viewModel.Operations.Insert(0, verify);
+        try
+        {
+            await verify.RunAsync();
+
+            Assert.Empty(viewModel.Operations);
+            var entry = Assert.Single(viewModel.History);
+            Assert.Equal(("Verifying Unreal Engine 5.6", OperationOutcome.Completed, "3 of 120 files are missing or damaged."),
+                (entry.Title, entry.Record.Outcome, entry.Message));
+            // The next step it offered goes with it, once.
+            Assert.True(entry.HasFollowUp);
+            entry.RunFollowUpCommand.Execute(null);
+            Assert.True(repaired);
+            Assert.False(entry.HasFollowUp);
+
+            var restarted = new MainViewModel(new AppServices());
+            Assert.Equal(["Verifying Unreal Engine 5.6"], restarted.History.Select(h => h.Title));
+            Assert.False(restarted.History[0].HasFollowUp); // what it would run isn't kept
+        }
+        finally
+        {
+            viewModel.ClearHistoryCommand.Execute(null);
+        }
+        Assert.Empty(new MainViewModel(new AppServices()).History);
+    }
+
+    /// <summary>Paused and failed ones stay in progress until resumed, or put in the history by hand.</summary>
+    [AvaloniaFact]
+    public async Task Paused_and_failed_operations_wait_until_moved_to_the_history()
+    {
+        var viewModel = WithEngines();
+        var paused = new Started(viewModel, "Downloading Garden Pack", [], "fab:garden").Start();
+        await paused.PauseAsync();
+        var failed = new OperationViewModel(viewModel, "Installing Greybox Tools into UE 5.7",
+            (_, _, _) => throw new InstallException("The disk is full."), ["UE_5.7"]);
+        viewModel.Operations.Insert(0, failed);
+        await failed.RunAsync();
+        try
+        {
+            Assert.Equal(["Retry", "Resume"], viewModel.Operations.Select(o => o.RetryText));
+            Assert.Empty(viewModel.History);
+
+            paused.Operation.MoveToHistoryCommand.Execute(null);
+            failed.MoveToHistoryCommand.Execute(null);
+
+            Assert.Empty(viewModel.Operations);
+            Assert.Equal(
+                [("Installing Greybox Tools into UE 5.7", OperationOutcome.Failed, "The disk is full."),
+                 ("Downloading Garden Pack", OperationOutcome.Paused, "Stopped before it finished.")],
+                viewModel.History.Select(h => (h.Title, h.Record.Outcome, h.Message)));
+        }
+        finally
+        {
+            viewModel.ClearHistoryCommand.Execute(null);
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task The_Downloads_tab_shows_a_dot_while_something_runs()
+    {
+        var viewModel = WithEngines();
+        Assert.False(viewModel.HasRunningOperations);
+        var download = new Started(viewModel, "Downloading Garden Pack", [], "fab:garden").Start();
+        Assert.True(viewModel.HasRunningOperations);
+        await download.PauseAsync();
+        Assert.False(viewModel.HasRunningOperations); // paused: nothing is going on
+    }
+
+    [Fact]
+    public void The_saved_history_keeps_the_newest()
+    {
+        string path = Path.Combine(Path.GetTempPath(), $"unvault-history-{Guid.NewGuid():N}.json");
+        try
+        {
+            var start = new DateTimeOffset(2026, 10, 1, 12, 0, 0, TimeSpan.Zero);
+            OperationHistory.Save(Enumerable.Range(0, OperationHistory.MaxEntries + 20)
+                .Select(i => new OperationRecord($"Download {i}", OperationOutcome.Completed, null, start.AddMinutes(-i))), path);
+
+            var loaded = OperationHistory.Load(path);
+            Assert.Equal(OperationHistory.MaxEntries, loaded.Count);
+            Assert.Equal("Download 0", loaded[0].Title);
+
+            File.WriteAllText(path, "{ damaged");
+            Assert.Empty(OperationHistory.Load(path));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
     }
 }

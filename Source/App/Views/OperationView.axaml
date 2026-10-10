@@ -12,11 +12,14 @@
         </StackPanel>
 
         <StackPanel Grid.Column="1" Grid.RowSpan="3" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Margin="16,0,0,0">
-            <Button Content="{Binding FollowUpText}" Classes="accent" Command="{Binding RunFollowUpCommand}"
-                    IsVisible="{Binding FollowUpText, Converter={x:Static ObjectConverters.IsNotNull}}" />
-            <Button Content="{x:Static s:Strings.Cancel}" Command="{Binding CancelCommand}" IsVisible="{Binding IsRunning}" />
-            <Button Content="{x:Static s:Strings.Retry}" Command="{Binding RetryCommand}" IsVisible="{Binding CanRetry}" />
-            <Button Content="{x:Static s:Strings.Dismiss}" Classes="subtle" Command="{Binding DismissCommand}" IsVisible="{Binding IsFinished}" />
+            <Button Content="{x:Static s:Strings.Pause}" Command="{Binding PauseCommand}" IsVisible="{Binding IsRunning}" />
+            <Button Content="{Binding RetryText}" Classes="accent" Command="{Binding RetryCommand}" IsVisible="{Binding CanRetry}" />
+            <!-- Not to be resumed: into the history. A square as tall as the button beside it. -->
+            <Button Command="{Binding MoveToHistoryCommand}" IsVisible="{Binding CanRetry}" VerticalAlignment="Stretch"
+                    Width="{Binding $self.Bounds.Height}" Padding="0" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                    ToolTip.Tip="{x:Static s:Strings.MoveToHistory}" AutomationProperties.Name="{x:Static s:Strings.MoveToHistory}">
+                <Path Data="M0,0 L9,9 M9,0 L0,9" Stroke="{Binding $parent[Button].Foreground}" StrokeThickness="1.6" StrokeLineCap="Round" />
+            </Button>
         </StackPanel>
 
         <ProgressBar Grid.Row="1" Margin="0,6" Value="{Binding Progress}" IsIndeterminate="{Binding IsIndeterminate}" IsVisible="{Binding IsRunning}" />
