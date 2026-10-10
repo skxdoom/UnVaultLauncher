@@ -38,6 +38,9 @@ public sealed class AppSettings
     /// <summary>Ask GitHub at startup whether a newer release is out.</summary>
     public bool CheckForUpdates { get; set; } = true;
 
+    /// <summary>Closing the window keeps the app running in the system tray, downloads included; Quit is in the tray icon's menu.</summary>
+    public bool CloseToTray { get; set; }
+
     public static string FilePath => Path.Combine(AppPaths.DataDirectory, "settings.json");
 
     public static AppSettings Load(string? path = null)

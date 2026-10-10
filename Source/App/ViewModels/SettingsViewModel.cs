@@ -74,6 +74,7 @@ public partial class SettingsViewModel : ViewModelBase
             AddProjectFolder(folder);
         ParallelDownloads = current.ParallelDownloads;
         CheckForUpdates = current.CheckForUpdates;
+        CloseToTray = current.CloseToTray;
         UpdateVaultSummary();
     }
 
@@ -91,6 +92,7 @@ public partial class SettingsViewModel : ViewModelBase
     [ObservableProperty] public partial string VaultCacheDirectory { get; set; } = "";
     [ObservableProperty] public partial decimal? ParallelDownloads { get; set; }
     [ObservableProperty] public partial bool CheckForUpdates { get; set; }
+    [ObservableProperty] public partial bool CloseToTray { get; set; }
     [ObservableProperty] public partial string VaultSummary { get; set; } = "";
 
     [ObservableProperty]
@@ -208,6 +210,7 @@ public partial class SettingsViewModel : ViewModelBase
         settings.ProjectDirectories = projectFolders.Count == 0 ? null : projectFolders;
         settings.ParallelDownloads = (int)Math.Clamp(ParallelDownloads ?? AppSettings.DefaultParallelDownloads, 1, AppSettings.MaxParallelDownloads);
         settings.CheckForUpdates = CheckForUpdates;
+        settings.CloseToTray = CloseToTray;
         try
         {
             settings.Save();
@@ -217,6 +220,7 @@ public partial class SettingsViewModel : ViewModelBase
             Error = Localized.Format(Strings.SettingsSaveFailed, ex.Message);
             return;
         }
+        _owner.SettingsSaved();
         _owner.CloseDialog();
     }
 

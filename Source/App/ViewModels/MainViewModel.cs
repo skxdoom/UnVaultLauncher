@@ -41,6 +41,12 @@ public partial class MainViewModel : ViewModelBase
     /// <summary>Shared with the CLI: %LOCALAPPDATA%\UnVaultLauncher\settings.json.</summary>
     public AppSettings Settings { get; } = AppSettings.Load();
 
+    /// <summary>Closing the window keeps the app in the system tray, as last saved in Settings.</summary>
+    public bool CloseToTray => Settings.CloseToTray;
+
+    /// <summary>Settings were saved: what follows them right away catches up.</summary>
+    internal void SettingsSaved() => OnPropertyChanged(nameof(CloseToTray));
+
     public FabLibraryViewModel Fab { get; }
 
     /// <summary>Shows the dot on the Library tab.</summary>

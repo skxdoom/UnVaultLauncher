@@ -238,6 +238,12 @@
   <data name="CheckForUpdatesHint" xml:space="preserve">
     <value>Ask GitHub for new releases of UnVault Launcher.</value>
   </data>
+  <data name="CloseToTray" xml:space="preserve">
+    <value>Minimize to System Tray</value>
+  </data>
+  <data name="CloseToTrayHint" xml:space="preserve">
+    <value>Closing the window leaves UnVault Launcher running, downloads included.</value>
+  </data>
   <data name="Default" xml:space="preserve">
     <value>Default</value>
     <comment>Label beside the project folder new projects are created in.</comment>
@@ -264,8 +270,16 @@
   <data name="SectionProjectFolders" xml:space="preserve">
     <value>PROJECT FOLDERS</value>
   </data>
-  <data name="SectionUpdates" xml:space="preserve">
-    <value>UPDATES</value>
+  <data name="SectionSystem" xml:space="preserve">
+    <value>SYSTEM</value>
+  </data>
+
+  <!-- System tray icon menu -->
+  <data name="OpenUnVaultLauncher" xml:space="preserve">
+    <value>Open UnVault Launcher</value>
+  </data>
+  <data name="Quit" xml:space="preserve">
+    <value>Quit</value>
   </data>
   <data name="SectionVaultCacheFolder" xml:space="preserve">
     <value>VAULT CACHE FOLDER</value>

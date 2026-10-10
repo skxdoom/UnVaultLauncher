@@ -66,9 +66,12 @@
                                        FormatString="0" Width="130" />
                     </Grid>
 
-                    <TextBlock Text="{x:Static s:Strings.SectionUpdates}" Classes="section" />
+                    <TextBlock Text="{x:Static s:Strings.SectionSystem}" Classes="section" />
                     <CheckBox Content="{x:Static s:Strings.CheckForUpdatesAtStartup}" IsChecked="{Binding CheckForUpdates}" />
                     <TextBlock Text="{x:Static s:Strings.CheckForUpdatesHint}"
+                               Classes="muted small" TextWrapping="Wrap" Margin="0,4,0,0" />
+                    <CheckBox Content="{x:Static s:Strings.CloseToTray}" IsChecked="{Binding CloseToTray}" Margin="0,12,0,0" />
+                    <TextBlock Text="{x:Static s:Strings.CloseToTrayHint}"
                                Classes="muted small" TextWrapping="Wrap" Margin="0,4,0,0" />
 
                     <Border Classes="banner warning" Margin="0,16,0,0" IsVisible="{Binding HasError}">

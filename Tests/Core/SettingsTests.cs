@@ -78,6 +78,20 @@ public sealed class SettingsTests : IDisposable
         Assert.Equal(expected, AppSettings.Load(path).ParallelDownloads);
     }
 
+    /// <summary>Off unless turned on: settings files from before it existed keep closing the app.</summary>
+    [Fact]
+    public void Keeping_the_app_in_the_system_tray_is_off_until_turned_on()
+    {
+        string path = Path.Combine(_dir, "settings.json");
+        File.WriteAllText(path, """{ "CheckForUpdates": true }""");
+        var settings = AppSettings.Load(path);
+        Assert.False(settings.CloseToTray);
+
+        settings.CloseToTray = true;
+        settings.Save(path);
+        Assert.True(AppSettings.Load(path).CloseToTray);
+    }
+
     [Fact]
     public void Data_folder_moves_from_its_old_name_once()
     {

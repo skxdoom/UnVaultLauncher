@@ -25,6 +25,8 @@ public partial class App : Application
             var window = new MainWindow { DataContext = viewModel };
             viewModel.Interaction = window;
             desktop.MainWindow = window;
+            SystemTray.Add(this, desktop, window, viewModel);
+            Program.Instance?.WhenStartedAgain(() => Dispatcher.UIThread.Post(window.ShowAgain));
             HandleUnexpectedErrors(viewModel);
             _ = Task.Run(SignInBrowser.ClearPendingAsync); // a sign-out that couldn't delete the sign-in browser's data
             _ = viewModel.StartAsync();

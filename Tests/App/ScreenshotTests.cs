@@ -374,6 +374,11 @@ public class ScreenshotTests
         Assert.Equal([true, false], settings.ProjectFolders.Select(f => f.IsDefault));
         Assert.Equal(@"Automatic: C:\Users\Me\Documents\Unreal Projects", settings.ProjectFoldersAutomatic);
         Save(window, "settings.png");
+        var scroller = window.GetVisualDescendants().OfType<SettingsView>().Single().GetVisualDescendants().OfType<ScrollViewer>().First();
+        scroller.ScrollToEnd();
+        Dispatcher.UIThread.RunJobs();
+        Save(window, "settings-end.png");
+        scroller.ScrollToHome();
 
         // A folder's radio button makes it the default, in place; removing the default hands it to the first one left,
         // and removing every folder means automatic again.

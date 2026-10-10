@@ -19,6 +19,31 @@ public partial class MainWindow : Window, IUserInteraction
         Opened += (_, _) => UseScaling();
         ScalingChanged += (_, _) => UseScaling();
         DataContextChanged += (_, _) => WatchDialogs();
+        Closing += (_, e) =>
+        {
+            if (HidesInsteadOfClosing(_watched?.CloseToTray == true, e.CloseReason, e.IsProgrammatic))
+            {
+                e.Cancel = true;
+                Hide();
+                MemoryRelief.Release(); // running in the background, it needn't hold on to what the window showed
+            }
+        };
+    }
+
+    /// <summary>
+    /// With "keep running in the system tray" on, closing the window only hides it, however it's closed (✕, Alt+F4, the
+    /// taskbar); Quit in the tray menu and Windows shutting down still end the app.
+    /// </summary>
+    internal static bool HidesInsteadOfClosing(bool closeToTray, WindowCloseReason reason, bool isProgrammatic) =>
+        closeToTray && reason == WindowCloseReason.WindowClosing && !isProgrammatic;
+
+    /// <summary>Back from the system tray, or to the front when the app is started again.</summary>
+    public void ShowAgain()
+    {
+        Show();
+        if (WindowState == WindowState.Minimized)
+            WindowState = WindowState.Normal;
+        Activate();
     }
 
     private ViewModels.MainViewModel? _watched;
