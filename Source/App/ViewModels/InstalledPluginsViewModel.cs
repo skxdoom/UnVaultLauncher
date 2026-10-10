@@ -31,12 +31,14 @@ public partial class InstalledPluginsViewModel(MainViewModel owner, LocalEngine 
     [ObservableProperty] public partial string? EmptyText { get; set; }
 
     /// <param name="launcherInstalled">EGL's list of what it installed; read from this PC when not given (tests give their own).</param>
-    public async Task LoadAsync(IReadOnlyList<LauncherInstalledEntry>? launcherInstalled = null)
+    /// <param name="eglItems">EGL's records of its installs, with where it keeps their file lists; read from this PC when not given.</param>
+    public async Task LoadAsync(IReadOnlyList<LauncherInstalledEntry>? launcherInstalled = null, IReadOnlyList<EGLItem>? eglItems = null)
     {
         IsLoading = true;
         try
         {
-            var found = await Task.Run(() => EnginePlugins.Find(engine.Directory, launcherInstalled ?? EGLInstallations.ReadLauncherInstalled())
+            var found = await Task.Run(() => EnginePlugins.Find(engine.Directory, launcherInstalled ?? EGLInstallations.ReadLauncherInstalled(),
+                    eglItems ?? EGLInstallations.ReadItems())
                 .Select(p =>
                 {
                     var descriptor = EnginePlugins.ReadDescriptor(p.Folder);

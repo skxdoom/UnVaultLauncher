@@ -116,10 +116,12 @@ public static class FabWorkflow
         }
 
         var bad = await Verifier.FindBadFilesAsync(manifest.Files, engineDirectory, checking, cancellationToken: cancellationToken);
-        // Whatever else is in the plugin's own folder belongs to the old build (or was built from it).
-        string folder = EnginePlugins.MarketplaceFolder(engineDirectory, artifact.ArtifactID);
+        // Whatever else is in the plugin's own folder belongs to the old build (or was built from it). The folder is the
+        // one the build's files go to, which isn't always named after the artifact.
+        string? folder = EnginePlugins.FolderOf(manifest, engineDirectory);
         var wanted = manifest.Files.Select(f => f.Filename).ToHashSet(StringComparer.OrdinalIgnoreCase);
-        var leftovers = !Directory.Exists(folder) ? [] : Directory.EnumerateFiles(folder, "*", EnginePlugins.AllFiles)
+        var leftovers = folder is null || !EnginePlugins.IsMarketplaceFolder(engineDirectory, folder) || !Directory.Exists(folder) ? []
+            : Directory.EnumerateFiles(folder, "*", EnginePlugins.AllFiles)
             .Select(path => Path.GetRelativePath(engineDirectory, path).Replace('\\', '/'))
             .Where(name => !wanted.Contains(name))
             .Select(name => new FileManifest { Filename = name })
@@ -201,7 +203,11 @@ public static class FabWorkflow
     }
 
     /// <summary>Removes a Fab plugin from an engine, whoever installed it, and its LauncherInstalled.dat entry.</summary>
-    public static InstallCleaner.Result UninstallPlugin(string engineDirectory, string artifactID, string? launcherInstalledPath = null)
+    /// <param name="folder">
+    /// Where <see cref="EnginePlugins.Find"/> found it, for a plugin without our file list: its folder isn't always named
+    /// after the artifact. Without it, the folder named after the artifact is taken.
+    /// </param>
+    public static InstallCleaner.Result UninstallPlugin(string engineDirectory, string artifactID, string? launcherInstalledPath = null, string? folder = null)
     {
         InstallCleaner.Result result;
         if (PluginInstalls.Load(engineDirectory, artifactID) is { } installed)
@@ -211,9 +217,9 @@ public static class FabWorkflow
         }
         else
         {
-            // EGL's, or copied in some other way: no file list, but the folder named after the artifact is the plugin.
-            string folder = EnginePlugins.MarketplaceFolder(engineDirectory, artifactID);
-            if (!Directory.Exists(folder))
+            // EGL's, or copied in some other way: no file list, but its own folder in Marketplace is the plugin.
+            folder ??= EnginePlugins.MarketplaceFolder(engineDirectory, artifactID);
+            if (!EnginePlugins.IsMarketplaceFolder(engineDirectory, folder) || !Directory.Exists(folder))
                 throw new InstallException($"{artifactID} isn't in Engine\\Plugins\\Marketplace, so its files can't be told apart from the engine's. Remove it with the Epic Games Launcher.");
             result = InstallCleaner.DeleteFolder(folder);
         }

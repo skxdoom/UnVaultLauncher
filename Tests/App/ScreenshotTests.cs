@@ -623,7 +623,7 @@ public class ScreenshotTests
         var dialog = new InstalledPluginsViewModel(viewModel, engine, "Unreal Engine 5.7.4");
         viewModel.Dialog = dialog;
         var window = Show(viewModel);
-        await dialog.LoadAsync(launcherInstalled: []);
+        await dialog.LoadAsync(launcherInstalled: [], eglItems: []);
 
         // The library's title where it has one, else the plugin's own name, else its folder; the version as the plugin gives it.
         Assert.Equal(

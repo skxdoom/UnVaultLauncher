@@ -272,6 +272,62 @@ public sealed class FabTests : IDisposable
         Assert.Empty(Directory.EnumerateDirectories(EnginePlugins.MarketplaceDirectory(engine)));
     }
 
+    /// <summary>
+    /// Marketplace-era plugins often go into a folder named after the plugin rather than the artifact (StreetLights_4.27
+    /// into Marketplace\StreetLights): found there once, with its record, and removed from there.
+    /// </summary>
+    [Fact]
+    public async Task A_plugin_whose_folder_is_named_otherwise_is_found_in_it_once()
+    {
+        var entry = MakeVaultEntry("StreetLights_4.27", "Street Lights", "4.27.0-1+++UE5+Dev-Marketplace-Windows",
+            ("Engine/Plugins/Marketplace/StreetLights/StreetLights.uplugin", 20),
+            ("Engine/Plugins/Marketplace/StreetLights/Binaries/Win64/StreetLights.dll", 50));
+        string engine = Directory.CreateDirectory(Path.Combine(_dir, "UE_4.27")).FullName;
+        await FabWorkflow.InstallPluginFromVaultAsync(entry, engine, new InstallStatus(), default, LauncherInstalled);
+
+        var plugin = Assert.Single(EnginePlugins.Find(engine, EGL.EGLInstallations.ReadLauncherInstalledFrom(LauncherInstalled)));
+        Assert.Equal(("StreetLights_4.27", PluginSource.UnVault), (plugin.ArtifactID, plugin.Source));
+        Assert.Equal(Path.Combine(EnginePlugins.MarketplaceDirectory(engine), "StreetLights"), plugin.Folder);
+
+        FabWorkflow.UninstallPlugin(engine, plugin.ArtifactID, LauncherInstalled, plugin.Folder);
+        Assert.False(Directory.Exists(plugin.Folder));
+    }
+
+    /// <summary>EGL keeps each install's file list, which says where its plugins really are; only a folder in Marketplace is removed whole.</summary>
+    [Fact]
+    public void Plugins_EGL_installed_are_found_where_their_file_lists_put_them()
+    {
+        string engine = Directory.CreateDirectory(Path.Combine(_dir, "UE_4.27")).FullName;
+        string egstore = Directory.CreateDirectory(Path.Combine(engine, ".egstore")).FullName;
+        // A Marketplace-era plugin in a folder named after it, and one of Epic's own among the engine's plugins.
+        string lights = Directory.CreateDirectory(Path.Combine(EnginePlugins.MarketplaceDirectory(engine), "StreetLights")).FullName;
+        File.WriteAllBytes(Path.Combine(lights, "StreetLights.uplugin"), new byte[10]);
+        string bundled = Directory.CreateDirectory(Path.Combine(engine, @"Engine\Plugins\BundledTool")).FullName;
+        File.WriteAllText(Path.Combine(egstore, "0A1B2C3D4E5F60718293A4B5C6D7E8F9.manifest"),
+            JSONManifestBuilder.Build("StreetLights_4.27", "4.27.0-1", ("Engine/Plugins/Marketplace/StreetLights/StreetLights.uplugin", 10)));
+        string bundledManifest = Path.Combine(egstore, "F9E8D7C6B5A4938271605F4E3D2C1B0A.manifest");
+        File.WriteAllText(bundledManifest, JSONManifestBuilder.Build("BundledTool_4.27", "4.27.0-1", ("Engine/Plugins/BundledTool/BundledTool.uplugin", 10)));
+        foreach (string app in new[] { "StreetLights_4.27", "BundledTool_4.27" })
+            EGL.EGLInstallations.RegisterLauncherInstall(new EGL.LauncherInstalledEntry { AppName = app, ArtifactID = app, InstallLocation = engine }, LauncherInstalled);
+        EGL.EGLItem[] items =
+        [
+            // The file list is {InstallationGuid}.manifest in the install's .egstore, unless the record names it.
+            new() { AppName = "StreetLights_4.27", InstallLocation = engine, ManifestLocation = egstore, InstallationGUID = "0A1B2C3D4E5F60718293A4B5C6D7E8F9" },
+            new() { AppName = "BundledTool_4.27", InstallLocation = engine, CompleteManifestPath = bundledManifest },
+        ];
+
+        var plugins = EnginePlugins.Find(engine, EGL.EGLInstallations.ReadLauncherInstalledFrom(LauncherInstalled), items);
+
+        Assert.Equal(
+            [("BundledTool_4.27", bundled, false), ("StreetLights_4.27", lights, true)],
+            plugins.Select(p => (p.ArtifactID, p.Folder, p.CanRemove)).OrderBy(p => p.ArtifactID));
+        var street = plugins.Single(p => p.ArtifactID == "StreetLights_4.27");
+        FabWorkflow.UninstallPlugin(engine, street.ArtifactID, LauncherInstalled, street.Folder);
+        Assert.False(Directory.Exists(lights));
+        Assert.Throws<InstallException>(() => FabWorkflow.UninstallPlugin(engine, "BundledTool_4.27", LauncherInstalled, bundled));
+        Assert.True(Directory.Exists(bundled));
+    }
+
     [Theory]
     [InlineData("EdgeSmoother.uplugin", """{ "FileVersion": 3, "Version": 7, "VersionName": "1.2.0", "FriendlyName": "Edge Smoother" }""", "Edge Smoother", "1.2.0")]
     [InlineData(@"Source\EdgeSmoother.uplugin", """{ "VersionName": "2.0", "FriendlyName": "Edge Smoother" }""", "Edge Smoother", "2.0")] // one folder down
@@ -405,29 +461,31 @@ public sealed class FabTests : IDisposable
         Assert.Equal("5.4.0-2", VaultCache.Scan(Path.Combine(_dir, "Vault")).Single().Build);
     }
 
-    [Fact]
-    public async Task Plans_an_update_of_a_plugin_EGL_installed_from_what_is_on_disk()
+    [Theory]
+    [InlineData("Greybox9f8e7d6c5b4aV14", "Greybox9f8e7d6c5b4aV14")]
+    [InlineData("GreyboxTools_4.27", "GreyboxTools")] // Marketplace era: the folder goes by the plugin's name
+    public async Task Plans_an_update_of_a_plugin_EGL_installed_from_what_is_on_disk(string artifactID, string folder)
     {
         string engine = Directory.CreateDirectory(Path.Combine(_dir, "UE_5.7")).FullName;
-        const string Root = "Engine/Plugins/Marketplace/Greybox9f8e7d6c5b4aV14";
-        Directory.CreateDirectory(Path.Combine(engine, Root, "Binaries/Win64"));
-        File.WriteAllText(Path.Combine(engine, Root, "Greybox.uplugin"), "same");
-        File.WriteAllText(Path.Combine(engine, Root, "Binaries/Win64/Old.dll"), "old build only");
+        string root = $"Engine/Plugins/Marketplace/{folder}";
+        Directory.CreateDirectory(Path.Combine(engine, root, "Binaries/Win64"));
+        File.WriteAllText(Path.Combine(engine, root, "Greybox.uplugin"), "same");
+        File.WriteAllText(Path.Combine(engine, root, "Binaries/Win64/Old.dll"), "old build only");
         FileManifest Entry(string name, string content) => new()
             { Filename = name, FileSize = content.Length, SHA1 = System.Security.Cryptography.SHA1.HashData(Encoding.UTF8.GetBytes(content)) };
         var next = new Manifest
         {
             Version = 21, Meta = new ManifestMeta { FeatureLevel = 21, BuildVersion = "5.7.0-2" }, Chunks = [],
-            Files = [Entry($"{Root}/Greybox.uplugin", "same"), Entry($"{Root}/Binaries/Win64/New.dll", "new build")],
+            Files = [Entry($"{root}/Greybox.uplugin", "same"), Entry($"{root}/Binaries/Win64/New.dll", "new build")],
             CustomFields = new Dictionary<string, string>(),
         };
         var source = new InstallSource(new DownloadedManifest(next, [], [new ChunkSource("https://cdn.test/CloudDir")], new Dictionary<string, string>()),
             FabKinds.FabNamespace, "item");
 
-        var update = await FabWorkflow.PlanPluginUpdateAsync(source, Artifact("Greybox9f8e7d6c5b4aV14", "Greybox Tools"), engine, new InstallStatus(), default);
+        var update = await FabWorkflow.PlanPluginUpdateAsync(source, Artifact(artifactID, "Greybox Tools"), engine, new InstallStatus(), default);
 
-        Assert.Equal([$"{Root}/Binaries/Win64/New.dll"], update.Write.Select(f => f.Filename));
-        Assert.Equal([$"{Root}/Binaries/Win64/Old.dll"], update.Delete.Select(f => f.Filename));
+        Assert.Equal([$"{root}/Binaries/Win64/New.dll"], update.Write.Select(f => f.Filename));
+        Assert.Equal([$"{root}/Binaries/Win64/Old.dll"], update.Delete.Select(f => f.Filename));
     }
 
     private static InstallSource Source(string jsonManifest) => new(

@@ -350,12 +350,13 @@ public partial class FabLibraryViewModel : ViewModelBase
     private static IReadOnlyList<FabInstall> FindPluginInstalls(IReadOnlyList<LocalEngine> engines)
     {
         var launcherInstalled = EGLInstallations.ReadLauncherInstalled();
+        var eglItems = EGLInstallations.ReadItems();
         var installs = new List<FabInstall>();
         foreach (var engine in engines.Where(e => e.Exists))
         {
             try
             {
-                installs.AddRange(EnginePlugins.Find(engine.Directory, launcherInstalled)
+                installs.AddRange(EnginePlugins.Find(engine.Directory, launcherInstalled, eglItems)
                     .Select(p => new FabInstall(engine.AppName, engine.Directory, p.ArtifactID, p.Source, p.Folder, p.CanRemove, p.BuildVersion)));
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
@@ -458,7 +459,7 @@ public partial class FabLibraryViewModel : ViewModelBase
         var removal = new OperationViewModel(Owner, Localized.Format(Strings.OperationRemoving, title, engine), async (operation, _, _) =>
         {
             operation.SetPhase(Strings.PhaseDeletingFiles);
-            var removed = await Task.Run(() => FabWorkflow.UninstallPlugin(install.EngineDirectory, install.ArtifactID));
+            var removed = await Task.Run(() => FabWorkflow.UninstallPlugin(install.EngineDirectory, install.ArtifactID, folder: install.Folder));
             return Localized.Format(Strings.RemovedFreed, engine, ByteSize.Format(removed.BytesFreed));
         }, engineAppName: install.EngineAppName, fabItemKey: itemKey);
         Owner.StartOperation(removal);

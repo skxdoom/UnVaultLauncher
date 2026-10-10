@@ -62,7 +62,8 @@ internal sealed class ListInstallsCommand : Command<ListInstallsCommand.Settings
     private static void WritePlugins(IReadOnlyList<LocalEngine> engines)
     {
         var launcherInstalled = EGLInstallations.ReadLauncherInstalled();
-        var eglNames = EGLInstallations.ReadItems().Where(i => !i.IsEngine)
+        var eglItems = EGLInstallations.ReadItems();
+        var eglNames = eglItems.Where(i => !i.IsEngine)
             .GroupBy(i => i.AppName, StringComparer.OrdinalIgnoreCase)
             .ToDictionary(g => g.Key, g => g.First().DisplayName, StringComparer.OrdinalIgnoreCase);
 
@@ -73,7 +74,7 @@ internal sealed class ListInstallsCommand : Command<ListInstallsCommand.Settings
             try
             {
                 var titles = PluginInstalls.List(engine.Directory).ToDictionary(p => p.ArtifactID, p => p.Title, StringComparer.OrdinalIgnoreCase);
-                foreach (var plugin in EnginePlugins.Find(engine.Directory, launcherInstalled).OrderBy(p => p.ArtifactID, StringComparer.OrdinalIgnoreCase))
+                foreach (var plugin in EnginePlugins.Find(engine.Directory, launcherInstalled, eglItems).OrderBy(p => p.ArtifactID, StringComparer.OrdinalIgnoreCase))
                 {
                     string name = titles.GetValueOrDefault(plugin.ArtifactID) is { Length: > 0 } title ? title
                         : eglNames.GetValueOrDefault(plugin.ArtifactID) is { Length: > 0 } eglName ? eglName
