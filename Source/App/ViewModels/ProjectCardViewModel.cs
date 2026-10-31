@@ -7,7 +7,7 @@ using UnVault.Core.Util;
 
 namespace UnVault.App.ViewModels;
 
-/// <summary>One project on the Projects tab: the editor's picture of it, the engine it's for, and opening it there.</summary>
+/// <summary>One project on the Projects tab: the editor's picture of it, the engine it's for, and opening it.</summary>
 public partial class ProjectCardViewModel(ProjectsViewModel owner, UnrealProject project) : ViewModelBase
 {
     public UnrealProject Project { get; } = project;
@@ -29,11 +29,13 @@ public partial class ProjectCardViewModel(ProjectsViewModel owner, UnrealProject
 
     /// <summary>The folder of the engine it opens in; null when that engine isn't on this PC (or it names none).</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(CanOpen), nameof(IsEngineMissing), nameof(OpenTip))]
+    [NotifyPropertyChangedFor(nameof(CanOpen), nameof(IsEngineMissing), nameof(OpenText), nameof(OpenTip))]
     [NotifyCanExecuteChangedFor(nameof(OpenCommand))]
     public partial string? EngineDirectory { get; set; }
 
-    public bool CanOpen => EngineDirectory is not null;
+    public bool CanOpen => EngineDirectory is not null || IsEngineMissing;
+
+    public string OpenText => IsEngineMissing ? Strings.ChooseEngine : Strings.Open;
 
     /// <summary>The engine it names isn't installed: said, but not as a warning, as that may well be on purpose.</summary>
     public bool IsEngineMissing => EngineDirectory is null && Project.EngineAssociation.Length > 0;
@@ -54,8 +56,8 @@ public partial class ProjectCardViewModel(ProjectsViewModel owner, UnrealProject
 
     /// <summary>What Open does, or why it can't.</summary>
     public string OpenTip =>
-        CanOpen ? Localized.Format(Strings.OpenProjectIn, EngineText)
-        : IsEngineMissing ? Localized.Format(Strings.ProjectEngineMissing, EngineText)
+        IsEngineMissing ? Localized.Format(Strings.ProjectEngineMissing, EngineText)
+        : CanOpen ? Localized.Format(Strings.OpenProjectIn, EngineText)
         : Strings.ProjectNamesNoEngine;
 
     public bool Matches(string search) =>

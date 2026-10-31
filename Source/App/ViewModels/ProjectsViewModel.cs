@@ -11,8 +11,8 @@ namespace UnVault.App.ViewModels;
 
 /// <summary>
 /// The Projects tab: the projects the editor has opened, and those in the project folders (Settings), alphabetically. Each
-/// opens in the engine it's for. The user can bundle them in categories of their own, as Steam's collections: a project
-/// can be in several, and those in none come after them.
+/// opens in the engine it's for when available, or through its .uproject association otherwise. The user can bundle them
+/// in categories of their own, as Steam's collections: a project can be in several, and those in none come after them.
 /// </summary>
 public partial class ProjectsViewModel(MainViewModel owner) : ViewModelBase
 {
@@ -291,18 +291,27 @@ public partial class ProjectsViewModel(MainViewModel owner) : ViewModelBase
         }
     }
 
-    /// <summary>Opens the project in the editor of the engine it's for.</summary>
+    /// <summary>Opens the project in its engine, or through its .uproject association when that engine is missing.</summary>
     internal void Open(ProjectCardViewModel card)
     {
-        if (card.EngineDirectory is not { } engine)
-            return;
-        if (MainViewModel.EditorIn(engine) is not { } editor)
+        ProcessStartInfo start;
+        if (card.EngineDirectory is { } engine)
         {
-            Owner.Notice = Localized.Format(Strings.NoEditorFound, engine);
-            return;
+            if (MainViewModel.EditorIn(engine) is not { } editor)
+            {
+                Owner.Notice = Localized.Format(Strings.NoEditorFound, engine);
+                return;
+            }
+            start = new ProcessStartInfo(editor) { UseShellExecute = false, WorkingDirectory = Path.GetDirectoryName(editor) };
+            start.ArgumentList.Add(card.Project.ProjectFile);
         }
-        var start = new ProcessStartInfo(editor) { UseShellExecute = false, WorkingDirectory = Path.GetDirectoryName(editor) };
-        start.ArgumentList.Add(card.Project.ProjectFile);
+        else if (card.IsEngineMissing)
+        {
+            // Let the .uproject shell association (normally UnrealVersionSelector) choose an available editor.
+            start = new ProcessStartInfo(card.Project.ProjectFile) { UseShellExecute = true, WorkingDirectory = card.Directory };
+        }
+        else
+            return;
         try
         {
             StartProcess(start);
