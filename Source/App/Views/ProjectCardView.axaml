@@ -36,7 +36,7 @@
             </StackPanel>
 
             <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" Margin="0,0,16,0" VerticalAlignment="Center">
-                <Button Content="{x:Static s:Strings.Open}" Classes="accent" Command="{Binding OpenCommand}"
+                <Button Content="{Binding OpenText}" Classes="accent" Command="{Binding OpenCommand}"
                         ToolTip.Tip="{Binding OpenTip}" ToolTip.ShowOnDisabled="True" />
                 <Button Content="⋯" ToolTip.Tip="{x:Static s:Strings.More}" AutomationProperties.Name="{x:Static s:Strings.More}">
                     <Button.Flyout>

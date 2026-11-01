@@ -1398,7 +1398,11 @@
   </data>
   <data name="Open" xml:space="preserve">
     <value>Open</value>
-    <comment>Opens a project in its engine's editor.</comment>
+    <comment>Opens a project in its engine's editor, or through its Windows file association when that engine is missing.</comment>
+  </data>
+  <data name="ChooseEngine" xml:space="preserve">
+    <value>Choose Engine…</value>
+    <comment>Opens Windows' Unreal Engine version chooser for a project whose engine isn't installed.</comment>
   </data>
   <data name="ProjectEngine" xml:space="preserve">
     <value>UE {0}</value>
@@ -1425,8 +1429,8 @@
     <comment>{0}: the engine, e.g. UE 5.6.</comment>
   </data>
   <data name="ProjectEngineMissing" xml:space="preserve">
-    <value>{0} isn't installed on this PC.</value>
-    <comment>{0}: the engine, e.g. UE 5.3, or Source build.</comment>
+    <value>Open anyway; {0} isn't installed on this PC.</value>
+    <comment>{0}: the engine, e.g. UE 5.3, or Source build. Windows chooses an available editor.</comment>
   </data>
   <data name="ProjectNamesNoEngine" xml:space="preserve">
     <value>Its project file doesn't say which engine it's for. Open it from the engine's editor instead.</value>

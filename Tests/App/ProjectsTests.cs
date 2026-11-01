@@ -87,24 +87,32 @@ public sealed class ProjectsTests : IDisposable
         // What each is for, and whether it can open: only an engine that's missing gets a chip. By name, not when opened.
         Assert.Equal(["Hillside", "Loose", "Quarry", "Ridgeback"], projects.Items.Select(c => c.Name));
         Assert.Equal(["UE 5.6  ·  Last opened: Today", "No engine set", "Source build 5.4", "UE 5.3"], projects.Items.Select(c => c.DetailsText));
-        Assert.Equal([true, false, true, false], projects.Items.Select(c => c.CanOpen));
+        Assert.Equal([true, false, true, true], projects.Items.Select(c => c.CanOpen));
+        Assert.Equal(["Open", "Open", "Open", "Choose Engine…"], projects.Items.Select(c => c.OpenText));
         Assert.Equal([false, false, false, true], projects.Items.Select(c => c.IsEngineMissing));
-        Assert.Equal("UE 5.3 isn't installed on this PC.", Card("Ridgeback").OpenTip);
-        Assert.False(Card("Ridgeback").OpenCommand.CanExecute(null));
+        Assert.Equal("Open anyway; UE 5.3 isn't installed on this PC.", Card("Ridgeback").OpenTip);
+        Assert.True(Card("Ridgeback").OpenCommand.CanExecute(null));
 
-        // Open starts that engine's editor with the project, its path passed as one argument.
+        // Open starts an installed engine's editor with the project, its path passed as one argument. When the named
+        // engine is missing, Windows opens the project so UnrealVersionSelector can choose an available editor.
         Card("Hillside").OpenCommand.Execute(null);
         Card("Quarry").OpenCommand.Execute(null);
+        Card("Ridgeback").OpenCommand.Execute(null);
         Assert.Equal(
             [
                 (Path.Combine(ue56, @"Engine\Binaries\Win64\UnrealEditor.exe"), Card("Hillside").Project.ProjectFile),
                 (Path.Combine(sourceBuild, @"Engine\Binaries\Win64\UnrealEditor.exe"), Card("Quarry").Project.ProjectFile),
             ],
-            started.Select(s => (s.FileName, s.ArgumentList.Single())));
+            started.Take(2).Select(s => (s.FileName, s.ArgumentList.Single())));
+        Assert.Equal((Card("Ridgeback").Project.ProjectFile, true, 0),
+            (started[2].FileName, started[2].UseShellExecute, started[2].ArgumentList.Count));
 
         // UE 5.3 installed since: Ridgeback can open now.
+        var changed = new List<string?>();
+        Card("Ridgeback").PropertyChanged += (_, e) => changed.Add(e.PropertyName);
         viewModel.SetEngines([.. viewModel.LocalEngines, new LocalEngine("UE_5.3", Engine("UE_5.3"), "5.3.2-29314046+++UE5+Release-5.3-Windows", 1, LocalInstallKind.UnVault)], []);
-        Assert.True(Card("Ridgeback").CanOpen);
+        Assert.Equal((true, "Open"), (Card("Ridgeback").CanOpen, Card("Ridgeback").OpenText));
+        Assert.Contains(nameof(ProjectCardViewModel.OpenText), changed);
     }
 
     [AvaloniaFact]
