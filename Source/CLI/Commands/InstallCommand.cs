@@ -85,7 +85,7 @@ internal sealed class InstallCommand : EpicCommand<InstallCommand.Settings>
             return 0;
 
         var status = new InstallStatus();
-        var installer = new Installer(Services.HTTP) { MaxParallelDownloads = Math.Clamp(settings.Connections ?? Services.Settings.ParallelDownloads, 1, AppSettings.MaxParallelDownloads) };
+        var installer = new Installer(Services.HTTP) { MaxParallelDownloads = Math.Clamp(settings.Connections ?? Services.Settings.ParallelDownloads, 1, AppSettings.MaxParallelDownloads), Bandwidth = Services.Bandwidth };
         bool register = !settings.NoRegister;
         await ProgressDisplay.RunInstallAsync(status,
             () => InstallWorkflow.InstallAsync(source, plan, tags, settings.Only, directory, installer, status, register, cancellationToken));

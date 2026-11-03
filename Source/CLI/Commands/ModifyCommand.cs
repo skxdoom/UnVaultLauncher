@@ -66,7 +66,7 @@ internal sealed class ModifyCommand : EpicCommand<ModifyCommand.Settings>
             return 0;
 
         var status = new InstallStatus();
-        var installer = new Installer(Services.HTTP) { MaxParallelDownloads = Math.Clamp(settings.Connections ?? Services.Settings.ParallelDownloads, 1, AppSettings.MaxParallelDownloads) };
+        var installer = new Installer(Services.HTTP) { MaxParallelDownloads = Math.Clamp(settings.Connections ?? Services.Settings.ParallelDownloads, 1, AppSettings.MaxParallelDownloads), Bandwidth = Services.Bandwidth };
         InstallCleaner.Result cleaned = default;
         if (plan.ToAdd is null)
             cleaned = await AnsiConsole.Status().StartAsync("Deleting files…", _ => InstallWorkflow.ApplyModifyAsync(plan, installer, status, cancellationToken));

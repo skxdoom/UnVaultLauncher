@@ -74,6 +74,7 @@ public partial class SettingsViewModel : ViewModelBase
         foreach (string folder in current.ProjectDirectories ?? [])
             AddProjectFolder(folder);
         ParallelDownloads = current.ParallelDownloads;
+        DownloadSpeedLimitMBps = (decimal)current.DownloadSpeedLimitMBps;
         ManifestCacheLimitMB = current.ManifestCacheLimitMB;
         _ = Task.Run(() =>
         {
@@ -98,6 +99,7 @@ public partial class SettingsViewModel : ViewModelBase
     [ObservableProperty] public partial string EngineInstallRoot { get; set; } = "";
     [ObservableProperty] public partial string VaultCacheDirectory { get; set; } = "";
     [ObservableProperty] public partial decimal? ParallelDownloads { get; set; }
+    [ObservableProperty] public partial decimal? DownloadSpeedLimitMBps { get; set; }
     [ObservableProperty] public partial decimal? ManifestCacheLimitMB { get; set; }
 
     /// <summary>How much the manifest cache takes now; the limit is applied on Save.</summary>
@@ -220,6 +222,7 @@ public partial class SettingsViewModel : ViewModelBase
         settings.VaultCacheDirectory = vault;
         settings.ProjectDirectories = projectFolders.Count == 0 ? null : projectFolders;
         settings.ParallelDownloads = (int)Math.Clamp(ParallelDownloads ?? AppSettings.DefaultParallelDownloads, 1, AppSettings.MaxParallelDownloads);
+        settings.DownloadSpeedLimitMBps = Math.Clamp((double)(DownloadSpeedLimitMBps ?? 0), 0, AppSettings.MaxDownloadSpeedLimitMBps);
         settings.ManifestCacheLimitMB = (int)Math.Clamp(ManifestCacheLimitMB ?? ManifestCache.DefaultLimitMB, 0, AppSettings.MaxManifestCacheMB);
         settings.CheckForUpdates = CheckForUpdates;
         settings.CloseToTray = CloseToTray;
