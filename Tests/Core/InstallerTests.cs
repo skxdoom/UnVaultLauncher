@@ -164,6 +164,23 @@ public sealed class InstallerTests : IDisposable
     }
 
     [Fact]
+    public async Task Keeps_to_the_download_speed_limit()
+    {
+        var (manifest, expected, chunkFiles) = BuildTestBuild();
+        var plan = InstallPlan.Create(manifest, manifest.Files);
+        long bytes = chunkFiles.Values.Sum(f => (long)f.Length);
+        var limiter = new BandwidthLimiter { BytesPerSecond = Math.Max(1, (long)(bytes / 0.4)) }; // about 0.4 s for the build
+
+        var timer = System.Diagnostics.Stopwatch.StartNew();
+        await new Installer(new HttpClient(new FakeCDN(chunkFiles))) { Bandwidth = limiter }.InstallAsync(plan, _dir,
+            [new ChunkSource("https://cdn.test/CloudDir")], new Dictionary<string, string>(), new InstallStatus(), default);
+
+        Assert.True(timer.Elapsed >= TimeSpan.FromSeconds(0.3), $"took {timer.Elapsed}");
+        foreach (var (name, content) in expected)
+            Assert.Equal(content, File.ReadAllBytes(Path.Combine(_dir, name)));
+    }
+
+    [Fact]
     public async Task Resumes_without_refetching_finished_chunks_and_fails_over_between_CDNs()
     {
         var (manifest, expected, chunkFiles) = BuildTestBuild();

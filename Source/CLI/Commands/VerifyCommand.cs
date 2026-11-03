@@ -65,7 +65,7 @@ internal sealed class VerifyCommand : EpicCommand<VerifyCommand.Settings>
         AnsiConsole.MarkupLine($"Repairing {plan.Files.Count:N0} files ({ByteSize.Format(plan.DownloadBytes)} to download)…");
         var status = new InstallStatus();
         await ProgressDisplay.RunInstallAsync(status,
-            () => new Installer(Services.HTTP) { MaxParallelDownloads = Services.Settings.ParallelDownloads }.InstallAsync(plan, install.Directory, install.Sources, new Dictionary<string, string>(), status, cancellationToken));
+            () => new Installer(Services.HTTP) { MaxParallelDownloads = Services.Settings.ParallelDownloads, Bandwidth = Services.Bandwidth }.InstallAsync(plan, install.Directory, install.Sources, new Dictionary<string, string>(), status, cancellationToken));
 
         return await VerifyAndReportAsync(plan.Files, install.Directory, cancellationToken) ? 0 : 1;
     }

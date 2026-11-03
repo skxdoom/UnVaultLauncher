@@ -552,6 +552,13 @@
   <data name="ParallelDownloadsHint" xml:space="preserve">
     <value>More can be faster on fast connections; fewer is gentler on slow ones.</value>
   </data>
+  <data name="DownloadSpeedLimit" xml:space="preserve">
+    <value>Download speed limit, MB/s</value>
+    <comment>Setting: the most all downloads together may take, in megabytes per second.</comment>
+  </data>
+  <data name="DownloadSpeedLimitHint" xml:space="preserve">
+    <value>0 is no limit. Shared by all downloads, and applies to ones already running.</value>
+  </data>
   <data name="ManifestCacheLimit" xml:space="preserve">
     <value>Manifest max cache size, MB</value>
     <comment>Setting: the most room the cache of downloaded manifests may take.</comment>

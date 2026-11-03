@@ -4,6 +4,7 @@ using System.Net;
 using UnVault.Core.Chunks;
 using UnVault.Core.Epic;
 using UnVault.Core.Manifests;
+using UnVault.Core.Util;
 
 namespace UnVault.Core.Install;
 
@@ -27,6 +28,9 @@ public sealed class Installer(HttpClient http)
 
     /// <summary>A chunk download that receives nothing for this long is dropped and tried again.</summary>
     public TimeSpan StallTimeout { get; init; } = TimeSpan.FromSeconds(30);
+
+    /// <summary>Caps the download speed; shared by every installer running at once, so the cap is for them all. Null = no cap.</summary>
+    public BandwidthLimiter? Bandwidth { get; init; }
 
     /// <summary>
     /// Runs the plan into <paramref name="installDir"/>. Safe to cancel and call again with the same plan:
@@ -219,6 +223,12 @@ public sealed class Installer(HttpClient http)
                 if (read == 0)
                     return (buffer, length);
                 length += read;
+                if (Bandwidth is not null)
+                {
+                    // Waiting for the speed cap isn't a stall.
+                    stalled.CancelAfter(Timeout.InfiniteTimeSpan);
+                    await Bandwidth.WaitAsync(read, cancellationToken);
+                }
                 stalled.CancelAfter(StallTimeout); // still receiving
             }
         }

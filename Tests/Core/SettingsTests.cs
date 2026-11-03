@@ -78,6 +78,30 @@ public sealed class SettingsTests : IDisposable
         Assert.Equal(expected, AppSettings.Load(path).ParallelDownloads);
     }
 
+    [Theory]
+    [InlineData("0", 0)]
+    [InlineData("-3", 0)]
+    [InlineData("2.5", 2.5)]
+    [InlineData("1e12", AppSettings.MaxDownloadSpeedLimitMBps)]
+    public void Download_speed_limit_from_a_hand_edited_file_stays_usable(string written, double expected)
+    {
+        string path = Path.Combine(_dir, "settings.json");
+        File.WriteAllText(path, $$"""{ "DownloadSpeedLimitMBps": {{written}} }""");
+        Assert.Equal(expected, AppSettings.Load(path).DownloadSpeedLimitMBps);
+    }
+
+    /// <summary>No limit unless one is set: settings files from before it existed keep downloading at full speed.</summary>
+    [Fact]
+    public void Download_speed_is_unlimited_until_a_limit_is_set()
+    {
+        string path = Path.Combine(_dir, "settings.json");
+        File.WriteAllText(path, """{ "ParallelDownloads": 8 }""");
+        Assert.Equal(0, AppSettings.Load(path).DownloadSpeedLimit);
+
+        new AppSettings { DownloadSpeedLimitMBps = 1.5 }.Save(path);
+        Assert.Equal(1536 * 1024, AppSettings.Load(path).DownloadSpeedLimit);
+    }
+
     /// <summary>Off unless turned on: settings files from before it existed keep closing the app.</summary>
     [Fact]
     public void Keeping_the_app_in_the_system_tray_is_off_until_turned_on()

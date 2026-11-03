@@ -24,6 +24,7 @@ public sealed class AppSettings
     public const int DefaultParallelDownloads = 16;
     public const int MaxParallelDownloads = 64;
     public const int MaxManifestCacheMB = 100 * 1024;
+    public const double MaxDownloadSpeedLimitMBps = 100 * 1024;
 
     /// <summary>Parent folder for new engines (UE_5.8 goes to {this}\UE_5.8). Null = automatic.</summary>
     public string? EngineInstallRoot { get; set; }
@@ -35,6 +36,11 @@ public sealed class AppSettings
     public List<string>? ProjectDirectories { get; set; }
 
     public int ParallelDownloads { get; set; } = DefaultParallelDownloads;
+
+    /// <summary>The most all downloads together may take, in MB per second; 0 = no limit.</summary>
+    public double DownloadSpeedLimitMBps { get; set; }
+
+    [JsonIgnore] public long DownloadSpeedLimit => (long)(DownloadSpeedLimitMBps * 1024 * 1024);
 
     /// <summary>The most room downloaded manifests may take (<see cref="Epic.ManifestCache"/>), in MB; 0 keeps none.</summary>
     public int ManifestCacheLimitMB { get; set; } = Epic.ManifestCache.DefaultLimitMB;
@@ -66,6 +72,8 @@ public sealed class AppSettings
         // The file can be edited by hand; 0 would stop every download.
         settings.ParallelDownloads = Math.Clamp(settings.ParallelDownloads, 1, MaxParallelDownloads);
         settings.ManifestCacheLimitMB = Math.Clamp(settings.ManifestCacheLimitMB, 0, MaxManifestCacheMB);
+        settings.DownloadSpeedLimitMBps = double.IsFinite(settings.DownloadSpeedLimitMBps)
+            ? Math.Clamp(settings.DownloadSpeedLimitMBps, 0, MaxDownloadSpeedLimitMBps) : 0;
         return settings;
     }
 

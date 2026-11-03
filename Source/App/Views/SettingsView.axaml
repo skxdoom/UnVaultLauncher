@@ -67,6 +67,14 @@
                     </Grid>
                     <Grid ColumnDefinitions="*,Auto" Margin="0,12,0,0">
                         <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="{x:Static s:Strings.DownloadSpeedLimit}" />
+                            <TextBlock Text="{x:Static s:Strings.DownloadSpeedLimitHint}" Classes="muted small" TextWrapping="Wrap" />
+                        </StackPanel>
+                        <NumericUpDown Grid.Column="1" Value="{Binding DownloadSpeedLimitMBps}" Minimum="0" Maximum="102400" Increment="1"
+                                       FormatString="0.#" Width="130" Margin="16,0,0,0" VerticalAlignment="Center" />
+                    </Grid>
+                    <Grid ColumnDefinitions="*,Auto" Margin="0,12,0,0">
+                        <StackPanel VerticalAlignment="Center">
                             <TextBlock Text="{x:Static s:Strings.ManifestCacheLimit}" />
                             <TextBlock Text="{x:Static s:Strings.ManifestCacheHint}" Classes="muted small" TextWrapping="Wrap" />
                             <TextBlock Text="{Binding ManifestCacheUsed}" Classes="muted small" />

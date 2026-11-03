@@ -1,10 +1,11 @@
 using System.Net.Http;
 using UnVault.Core;
 using UnVault.Core.Epic;
+using UnVault.Core.Util;
 
 namespace UnVault.App.Services;
 
-/// <summary>Process-wide singletons: one HTTP client, the signed-in account, the API client.</summary>
+/// <summary>Process-wide singletons: one HTTP client, the signed-in account, the API client, the download speed cap.</summary>
 public sealed class AppServices
 {
     public AppServices() : this(EpicHTTP.CreateClient(), SessionStore.Default)
@@ -26,6 +27,9 @@ public sealed class AppServices
     public EpicAPIClient API { get; }
     public ThumbnailCache Thumbnails { get; }
     public UpdateChecker Updates { get; }
+
+    /// <summary>Shared by every download, so the limit in Settings is for all of them together.</summary>
+    public BandwidthLimiter Bandwidth { get; } = new();
 }
 
 /// <summary>Things view models need a window for. Implemented by the main window; faked in tests.</summary>

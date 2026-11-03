@@ -65,10 +65,13 @@ public partial class MainViewModel : ViewModelBase
     internal void SettingsSaved()
     {
         OnPropertyChanged(nameof(CloseToTray));
+        ApplyDownloadSpeedLimit(); // downloads already running slow down or speed up too
         PruneManifestCache(); // the limit may be lower now
         if (Projects.HasLoaded)
             _ = Projects.LoadAsync(); // the project folders may have changed
     }
+
+    private void ApplyDownloadSpeedLimit() => Services.Bandwidth.BytesPerSecond = Settings.DownloadSpeedLimit;
 
     /// <summary>Applies the limit from Settings and makes room, in the background: it's only a cache.</summary>
     private void PruneManifestCache()
@@ -304,6 +307,7 @@ public partial class MainViewModel : ViewModelBase
     {
         if (Settings.CheckForUpdates)
             _ = CheckForUpdatesAsync(); // alongside; it never throws
+        ApplyDownloadSpeedLimit();
         PruneManifestCache();
         _ = Task.Run(PluginBuilder.ClearBuilds); // what a build cut short by closing the app left
         await RefreshAsync();
@@ -601,7 +605,7 @@ public partial class MainViewModel : ViewModelBase
     [RelayCommand]
     private void OpenSettings() => Dialog = new SettingsViewModel(this, EGLLauncherSettings.Read());
 
-    internal Installer CreateInstaller() => new(Services.HTTP) { MaxParallelDownloads = Settings.ParallelDownloads };
+    internal Installer CreateInstaller() => new(Services.HTTP) { MaxParallelDownloads = Settings.ParallelDownloads, Bandwidth = Services.Bandwidth };
 
     internal void StartInstall(string appName, string title, InstallSource source, IReadOnlySet<string> tags, string directory)
     {
